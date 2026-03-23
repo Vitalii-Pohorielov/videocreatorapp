@@ -83,6 +83,27 @@ function presetStyles(preset: TemplatePreset) {
         title: "font-medium uppercase tracking-[0.08em]",
         italic: "",
       };
+    case "neon-grid":
+      return {
+        card: "bg-[#08192d]/72 border-[#39f3ff]/28 backdrop-blur-md shadow-[0_0_0_1px_rgba(57,243,255,0.08),0_28px_80px_rgba(0,0,0,0.45)]",
+        accent: "bg-[#39f3ff]",
+        title: "font-black uppercase tracking-[0.12em]",
+        italic: "",
+      };
+    case "paper-cut":
+      return {
+        card: "bg-[#fff8ee] border-[#b05b3b]/18 shadow-[10px_10px_0_rgba(176,91,59,0.14)]",
+        accent: "bg-[#d95734]",
+        title: "font-black tracking-[-0.04em]",
+        italic: "",
+      };
+    case "arctic-glass":
+      return {
+        card: "bg-white/28 border-[#7cdcff]/34 backdrop-blur-xl shadow-[0_20px_70px_rgba(83,150,200,0.16)]",
+        accent: "bg-[#1479ff]",
+        title: "font-semibold tracking-[-0.05em]",
+        italic: "",
+      };
   }
 }
 
@@ -385,6 +406,32 @@ export function SceneStage({ scene, backgroundColor, textColor, preset, progress
   const midSize = compact ? "text-xs" : "text-lg";
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
+  const shellOverlay =
+    preset === "neon-grid"
+      ? {
+          background:
+            "linear-gradient(180deg, rgba(8,19,33,0.18), rgba(8,19,33,0.02) 45%, rgba(8,19,33,0.22)), linear-gradient(rgba(57,243,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(57,243,255,0.08) 1px, transparent 1px)",
+          backgroundSize: "100% 100%, 44px 44px, 44px 44px",
+        }
+      : preset === "paper-cut"
+        ? {
+            background:
+              "radial-gradient(circle at 12% 16%, rgba(217,87,52,0.14), transparent 18%), radial-gradient(circle at 86% 20%, rgba(255,196,90,0.18), transparent 16%), linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0))",
+          }
+        : preset === "arctic-glass"
+          ? {
+              background:
+                "radial-gradient(circle at 20% 18%, rgba(255,255,255,0.8), transparent 18%), radial-gradient(circle at 80% 22%, rgba(124,220,255,0.34), transparent 20%), linear-gradient(180deg, rgba(255,255,255,0.42), rgba(223,245,255,0.05) 46%, rgba(20,121,255,0.06))",
+            }
+          : null;
+  const shellDeco =
+    preset === "neon-grid"
+      ? "border-[#39f3ff]/22"
+      : preset === "paper-cut"
+        ? "border-[#d95734]/16"
+        : preset === "arctic-glass"
+          ? "border-[#7cdcff]/30"
+          : "border-white/10";
   const updateBullet = (index: number, value: string) => {
     const bullets = [...scene.bullets];
     bullets[index] = value;
@@ -406,6 +453,13 @@ export function SceneStage({ scene, backgroundColor, textColor, preset, progress
 
   return (
     <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact}>
+      {shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
+      {(preset === "paper-cut" || preset === "arctic-glass" || preset === "neon-grid") ? (
+        <>
+          <div className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`} style={{ transform: preset === "paper-cut" ? "rotate(-8deg)" : "rotate(14deg)", opacity: preset === "neon-grid" ? 0.4 : 0.22 }} />
+          <div className={`pointer-events-none absolute left-[10%] bottom-[14%] rounded-full border ${shellDeco} ${compact ? "h-14 w-14" : "h-24 w-24"}`} style={{ opacity: preset === "arctic-glass" ? 0.34 : 0.18 }} />
+        </>
+      ) : null}
       {scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} />

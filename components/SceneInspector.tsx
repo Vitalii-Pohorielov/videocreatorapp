@@ -10,7 +10,7 @@ const transitionOptions: Array<{ value: TransitionType; label: string }> = [
   { value: "slide-left", label: "Slide left" },
 ];
 
-const presetOptions: TemplatePreset[] = ["clean", "premium", "bold", "editorial", "sunset", "mono"];
+const presetOptions: TemplatePreset[] = ["clean", "premium", "bold", "editorial", "sunset", "mono", "neon-grid", "paper-cut", "arctic-glass"];
 
 type SceneInspectorProps = {
   scene: Scene;

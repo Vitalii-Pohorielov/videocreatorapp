@@ -1,5 +1,5 @@
 export type TransitionType = "fade" | "slide-left";
-export type TemplatePreset = "clean" | "premium" | "bold" | "editorial" | "sunset" | "mono";
+export type TemplatePreset = "clean" | "premium" | "bold" | "editorial" | "sunset" | "mono" | "neon-grid" | "paper-cut" | "arctic-glass";
 export type SceneType =
   | "brand-reveal"
   | "product-showcase"
@@ -61,6 +61,9 @@ export const presetLabels: Record<TemplatePreset, string> = {
   editorial: "Editorial",
   sunset: "Sunset",
   mono: "Mono",
+  "neon-grid": "Neon Grid",
+  "paper-cut": "Paper Cut",
+  "arctic-glass": "Arctic Glass",
 };
 
 export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor">> = {
@@ -70,6 +73,9 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   editorial: { backgroundColor: "#efe8de", textColor: "#181411" },
   sunset: { backgroundColor: "#1f0f0c", textColor: "#ffd9b3" },
   mono: { backgroundColor: "#111111", textColor: "#f1f1f1" },
+  "neon-grid": { backgroundColor: "#08111f", textColor: "#86f7ff" },
+  "paper-cut": { backgroundColor: "#f3eadf", textColor: "#2d1f18" },
+  "arctic-glass": { backgroundColor: "#dff5ff", textColor: "#0d2236" },
 };
 
 export const sceneDefinitions: SceneDefinition[] = [
