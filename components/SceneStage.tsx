@@ -41,6 +41,20 @@ function motion(progress: number, delay = 0, span = 1) {
   return easeOutCubic(clamp((progress - delay) / span));
 }
 
+function revealStyle(progress: number, options?: { y?: number; x?: number; scaleFrom?: number; blur?: number; minOpacity?: number }): CSSProperties {
+  const y = options?.y ?? 18;
+  const x = options?.x ?? 0;
+  const scaleFrom = options?.scaleFrom ?? 0.98;
+  const blur = options?.blur ?? 10;
+  const minOpacity = options?.minOpacity ?? 0.14;
+
+  return {
+    transform: `translate(${x * (1 - progress)}px, ${y * (1 - progress)}px) scale(${scaleFrom + progress * (1 - scaleFrom)})`,
+    opacity: minOpacity + progress * (1 - minOpacity),
+    filter: `blur(${blur * (1 - progress)}px)`,
+  };
+}
+
 function presetStyles(preset: TemplatePreset) {
   switch (preset) {
     case "clean":
@@ -510,7 +524,7 @@ export function SceneStage({
           <div className={`text-left ${showcaseMediaFirst ? "md:order-2" : ""}`}>
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
-            <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={{ transform: `translateY(${26 * (1 - subIn)}px)`, opacity: 0.2 + subIn * 0.68 }} placeholder="Subtitle" />
+            <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
           </div>
           <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
             <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
@@ -547,7 +561,7 @@ export function SceneStage({
                   ) : (
                     <>
                       <BulletMarker emoji={scene.bulletEmojis[index]} imageUrl={scene.bulletImageUrls[index]} accentClassName={s.accent} compact={compact} />
-                      <p className={compact ? "text-[10px]" : "text-sm"}>{bullet}</p>
+                      <p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { y: 12, blur: 6, minOpacity: 0.22 })}>{bullet}</p>
                     </>
                   )}
                 </div>
@@ -573,7 +587,9 @@ export function SceneStage({
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           </div>
-          <div className={`rounded-[26px] border p-5 text-left ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px)`, opacity: 0.18 + cardIn * 0.82 }}><EditableText as="p" value={scene.description || scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ description: value })} className={midSize} placeholder="Description" /></div>
+          <div className={`rounded-[26px] border p-5 text-left ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px)`, opacity: 0.18 + cardIn * 0.82 }}>
+            <EditableText as="p" value={scene.description || scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ description: value })} className={midSize} style={revealStyle(cardIn, { y: 18, blur: 10, minOpacity: 0.16 })} placeholder="Description" />
+          </div>
         </div>
       )}
 
@@ -617,7 +633,7 @@ export function SceneStage({
                       <div className="flex justify-center">
                         <BulletMarker emoji={scene.bulletEmojis[index]} imageUrl={scene.bulletImageUrls[index]} accentClassName={s.accent} compact={compact} />
                       </div>
-                      <p className={compact ? "text-[10px]" : "text-base font-medium"}>{bullet}</p>
+                      <p className={compact ? "text-[10px]" : "text-base font-medium"} style={revealStyle(itemIn, { y: 10, blur: 6, minOpacity: 0.24 })}>{bullet}</p>
                     </>
                   )}
                 </div>
@@ -633,7 +649,7 @@ export function SceneStage({
             <QuoteAuthorPhoto scene={scene} progress={progress} compact={compact} />
             <div className="mb-4 text-4xl opacity-50">"</div>
             <EditableText as="h2" value={scene.title} editable={editable} multiline onCommit={(value) => onSceneChange?.({ title: value })} className={`leading-tight ${compact ? "text-base" : "text-4xl"} ${s.title} ${s.italic}`} placeholder="Quote" />
-            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize} opacity-75`} placeholder="Author" /> : null}
+            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize} opacity-75`} style={revealStyle(subIn, { y: 14, blur: 8, minOpacity: 0.18 })} placeholder="Author" /> : null}
           </div>
         </div>
       )}
@@ -645,7 +661,7 @@ export function SceneStage({
           <div className="mx-auto mt-8 grid max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
               const itemIn = motion(progress, 0.08 + index * 0.04, 0.24);
-              return <div key={`${bullet}-${index}`} className={`flex items-center gap-3 rounded-[22px] border px-4 py-4 ${s.card}`} style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: 0.14 + itemIn * 0.86 }}><div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20">{index + 1}</div><p className={compact ? "text-[10px]" : "text-sm"}>{bullet}</p></div>;
+              return <div key={`${bullet}-${index}`} className={`flex items-center gap-3 rounded-[22px] border px-4 py-4 ${s.card}`} style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: 0.14 + itemIn * 0.86 }}><div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20">{index + 1}</div><p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0.22 })}>{bullet}</p></div>;
             })}
           </div>
         </div>
@@ -656,8 +672,8 @@ export function SceneStage({
           <div className="max-w-4xl">
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
-            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mx-auto mt-5 max-w-2xl ${midSize}`} placeholder="Subtitle" /> : null}
-            <div className={`mx-auto mt-8 inline-flex rounded-full border px-6 py-3 ${s.card}`}>Get started</div>
+            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mx-auto mt-5 max-w-2xl ${midSize}`} style={revealStyle(subIn, { y: 16, blur: 10, minOpacity: 0.18 })} placeholder="Subtitle" /> : null}
+            <div className={`mx-auto mt-8 inline-flex rounded-full border px-6 py-3 ${s.card}`} style={revealStyle(cardIn, { y: 14, blur: 8, minOpacity: 0.16 })}>Get started</div>
           </div>
         </div>
       )}
