@@ -36,6 +36,18 @@ function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
+function clampProgress(value: number) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: number) {
+  return scenes.reduce((total, scene, sceneIndex) => {
+    const nextScene = scenes[sceneIndex + 1];
+    const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps) - (nextScene ? transitionFrameCount : 0));
+    return total + stillFrameCount + (nextScene ? transitionFrameCount : 0);
+  }, 0);
+}
+
 async function renderSceneDomToCanvas(scene: Scene, settings: ExportSettings, progress: number) {
   const host = document.createElement("div");
   host.style.position = "fixed";
@@ -182,10 +194,20 @@ export async function ensureFFmpegLoaded() {
 
 export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSettings, onProgress?: (value: number) => void) {
   if (scenes.length === 0) throw new Error("Add at least one scene before exporting.");
+  onProgress?.(0.02);
   await ensureFFmpegLoaded();
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
-  latestProgressCallback = onProgress;
+  const fps = settings.fps;
+  const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
+  const totalFrameCount = Math.max(1, getTotalFrameCount(scenes, fps, transitionFrameCount));
+  const frameRenderWeight = 0.88;
+  const encodeWeight = 0.12;
+
+  latestProgressCallback = (progress) => {
+    onProgress?.(clampProgress(frameRenderWeight + progress * encodeWeight));
+  };
+  onProgress?.(0.06);
 
   for (let index = 1; index <= lastFrameCount; index += 1) {
     await ffmpeg.deleteFile(`frame${String(index).padStart(4, "0")}.png`).catch(() => undefined);
@@ -195,9 +217,12 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
     lastOutputFileName = null;
   }
 
-  const fps = settings.fps;
-  const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
   let frameIndex = 1;
+  let renderedFrameCount = 0;
+
+  const reportFrameProgress = () => {
+    onProgress?.(clampProgress((renderedFrameCount / totalFrameCount) * frameRenderWeight));
+  };
 
   for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex += 1) {
     const scene = scenes[sceneIndex];
@@ -209,6 +234,8 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
     for (let repeat = 0; repeat < stillFrameCount; repeat += 1) {
       const sceneProgress = getFrameProgress(repeat + incomingTransitionFrames, totalSceneFrameCount);
       await writeCanvasFrame(frameIndex, await renderStillFrame(scene, settings, sceneProgress));
+      renderedFrameCount += 1;
+      reportFrameProgress();
       frameIndex += 1;
     }
 
@@ -218,11 +245,14 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
         const progress = (transitionStep + 1) / transitionFrameCount;
         const nextSceneProgress = getFrameProgress(transitionStep, nextSceneTotalFrameCount);
         await writeCanvasFrame(frameIndex, await renderTransitionFrame(scene, nextScene, settings, progress, nextSceneProgress));
+        renderedFrameCount += 1;
+        reportFrameProgress();
         frameIndex += 1;
       }
     }
   }
 
+  onProgress?.(frameRenderWeight);
   const outputFileName = `output-${Date.now()}.mp4`;
   await ffmpeg.exec(["-framerate", String(fps), "-i", "frame%04d.png", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", outputFileName]);
   const videoData = (await ffmpeg.readFile(outputFileName, "binary")) as Uint8Array;
