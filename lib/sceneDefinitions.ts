@@ -1,6 +1,7 @@
 export type TransitionType = "fade";
 export type TemplatePreset = "clean" | "premium" | "bold" | "editorial" | "sunset" | "mono" | "neon-grid" | "paper-cut" | "arctic-glass";
 export type ExportResolution = "480p" | "540p" | "720p";
+export type ExportProfile = "draft" | "standard" | "high";
 export type SceneType =
   | "brand-reveal"
   | "product-showcase"
@@ -20,6 +21,7 @@ export type ExportSettings = {
   textColor: string;
   preset: TemplatePreset;
   resolution: ExportResolution;
+  profile: ExportProfile;
 };
 
 export type Scene = {
@@ -84,6 +86,12 @@ export const exportResolutionLabels: Record<ExportResolution, string> = {
   "480p": "480p",
   "540p": "540p",
   "720p": "720p",
+};
+
+export const exportProfileLabels: Record<ExportProfile, string> = {
+  draft: "Draft",
+  standard: "Standard",
+  high: "High",
 };
 
 export const exportResolutionDimensions: Record<ExportResolution, { width: number; height: number }> = {

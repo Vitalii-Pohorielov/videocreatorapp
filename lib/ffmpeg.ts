@@ -15,11 +15,38 @@ let progressHandlerAttached = false;
 let latestProgressCallback: ((value: number) => void) | undefined;
 let lastFrameCount = 0;
 let lastOutputFileName: string | null = null;
+let lastFrameExtension: "png" | "jpg" = "png";
 
 const coreBaseUrl = "/ffmpeg";
 
 function getVideoSize(settings: ExportSettings) {
   return exportResolutionDimensions[settings.resolution];
+}
+
+function getExportProfileConfig(settings: ExportSettings) {
+  switch (settings.profile) {
+    case "draft":
+      return {
+        frameExtension: "jpg" as const,
+        frameMimeType: "image/jpeg",
+        frameQuality: 0.72,
+        ffmpegPreset: "ultrafast",
+      };
+    case "high":
+      return {
+        frameExtension: "png" as const,
+        frameMimeType: "image/png",
+        frameQuality: undefined,
+        ffmpegPreset: "medium",
+      };
+    default:
+      return {
+        frameExtension: "jpg" as const,
+        frameMimeType: "image/jpeg",
+        frameQuality: 0.84,
+        ffmpegPreset: "veryfast",
+      };
+  }
 }
 
 function easeInOut(value: number) {
@@ -119,18 +146,51 @@ async function renderStillFrame(scene: Scene, settings: ExportSettings, progress
   return renderSceneDomToCanvas(scene, settings, progress);
 }
 
+function getRenderCacheKey(scene: Scene, settings: ExportSettings, progress: number) {
+  return [
+    scene.id,
+    scene.type,
+    settings.resolution,
+    settings.preset,
+    settings.backgroundColor,
+    settings.textColor,
+    progress.toFixed(4),
+    scene.title,
+    scene.subtitle,
+    scene.description,
+    scene.eyebrow,
+    scene.websiteImageUrl,
+    scene.logoImageUrl,
+    scene.authorImageUrl,
+    scene.mediaPosition,
+    scene.bullets.join("|"),
+    scene.bulletEmojis.join("|"),
+    scene.bulletImageUrls.join("|"),
+  ].join("::");
+}
+
+async function renderSceneCanvasCached(scene: Scene, settings: ExportSettings, progress: number, cache: Map<string, HTMLCanvasElement>, allowCache: boolean) {
+  if (!allowCache) return renderSceneDomToCanvas(scene, settings, progress);
+  const cacheKey = getRenderCacheKey(scene, settings, progress);
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+  const rendered = await renderSceneDomToCanvas(scene, settings, progress);
+  cache.set(cacheKey, rendered);
+  return rendered;
+}
+
 function getFrameProgress(frameIndex: number, frameCount: number) {
   if (frameCount <= 1) return 1;
   return Math.min(1, Math.max(0, frameIndex / (frameCount - 1)));
 }
 
-async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, nextSceneProgress: number) {
+async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, nextSceneProgress: number, cache: Map<string, HTMLCanvasElement>) {
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
   const eased = easeInOut(progress);
   const [currentCanvas, nextCanvas] = await Promise.all([
-    renderSceneDomToCanvas(currentScene, settings, 1),
-    renderSceneDomToCanvas(nextScene, settings, nextSceneProgress),
+    renderSceneCanvasCached(currentScene, settings, 1, cache, true),
+    renderSceneCanvasCached(nextScene, settings, nextSceneProgress, cache, false),
   ]);
 
   ctx.save();
@@ -146,20 +206,20 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   return canvas;
 }
 
-async function canvasToBlob(canvas: HTMLCanvasElement) {
+async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
       else reject(new Error("Could not convert canvas to PNG."));
-    }, "image/png");
+    }, mimeType, quality);
   });
 }
 
-async function writeCanvasFrame(frameIndex: number, canvas: HTMLCanvasElement) {
+async function writeCanvasFrame(frameIndex: number, canvas: HTMLCanvasElement, frameExtension: "png" | "jpg", frameMimeType: string, frameQuality?: number) {
   if (!ffmpegUtils || !ffmpeg) throw new Error("FFmpeg is not ready yet.");
-  const blob = await canvasToBlob(canvas);
+  const blob = await canvasToBlob(canvas, frameMimeType, frameQuality);
   const fileData = await ffmpegUtils.fetchFile(blob);
-  await ffmpeg.writeFile(`frame${String(frameIndex).padStart(4, "0")}.png`, fileData);
+  await ffmpeg.writeFile(`frame${String(frameIndex).padStart(4, "0")}.${frameExtension}`, fileData);
 }
 
 export async function ensureFFmpegLoaded() {
@@ -191,10 +251,12 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
 
   const fps = settings.fps;
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
+  const { frameExtension, frameMimeType, frameQuality, ffmpegPreset } = getExportProfileConfig(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
   const totalFrameCount = Math.max(1, getTotalFrameCount(scenes, fps, transitionFrameCount));
   const frameRenderWeight = 0.88;
   const encodeWeight = 0.12;
+  const renderCache = new Map<string, HTMLCanvasElement>();
 
   latestProgressCallback = (progress) => {
     onProgress?.(clampProgress(frameRenderWeight + progress * encodeWeight));
@@ -202,7 +264,10 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
   onProgress?.(0.06);
 
   for (let index = 1; index <= lastFrameCount; index += 1) {
-    await ffmpeg.deleteFile(`frame${String(index).padStart(4, "0")}.png`).catch(() => undefined);
+    await ffmpeg.deleteFile(`frame${String(index).padStart(4, "0")}.${lastFrameExtension}`).catch(() => undefined);
+    if (lastFrameExtension !== frameExtension) {
+      await ffmpeg.deleteFile(`frame${String(index).padStart(4, "0")}.${frameExtension}`).catch(() => undefined);
+    }
   }
   if (lastOutputFileName) {
     await ffmpeg.deleteFile(lastOutputFileName).catch(() => undefined);
@@ -225,7 +290,8 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
 
     for (let repeat = 0; repeat < stillFrameCount; repeat += 1) {
       const sceneProgress = getFrameProgress(repeat + incomingTransitionFrames, totalSceneFrameCount);
-      await writeCanvasFrame(frameIndex, await renderStillFrame(scene, settings, sceneProgress));
+      const sceneCanvas = await renderSceneCanvasCached(scene, settings, sceneProgress, renderCache, sceneProgress === 1);
+      await writeCanvasFrame(frameIndex, sceneCanvas, frameExtension, frameMimeType, frameQuality);
       renderedFrameCount += 1;
       reportFrameProgress();
       frameIndex += 1;
@@ -236,7 +302,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       for (let transitionStep = 0; transitionStep < transitionFrameCount; transitionStep += 1) {
         const progress = (transitionStep + 1) / transitionFrameCount;
         const nextSceneProgress = getFrameProgress(transitionStep, nextSceneTotalFrameCount);
-        await writeCanvasFrame(frameIndex, await renderTransitionFrame(scene, nextScene, settings, progress, nextSceneProgress));
+        await writeCanvasFrame(frameIndex, await renderTransitionFrame(scene, nextScene, settings, progress, nextSceneProgress, renderCache), frameExtension, frameMimeType, frameQuality);
         renderedFrameCount += 1;
         reportFrameProgress();
         frameIndex += 1;
@@ -246,7 +312,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
 
   onProgress?.(frameRenderWeight);
   const outputFileName = `output-${Date.now()}.mp4`;
-  await ffmpeg.exec(["-framerate", String(fps), "-i", "frame%04d.png", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", outputFileName]);
+  await ffmpeg.exec(["-framerate", String(fps), "-i", `frame%04d.${frameExtension}`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", ffmpegPreset, outputFileName]);
   const videoData = (await ffmpeg.readFile(outputFileName, "binary")) as Uint8Array;
   const videoBuffer = videoData.buffer.slice(videoData.byteOffset, videoData.byteOffset + videoData.byteLength) as ArrayBuffer;
   const videoBlob = new Blob([videoBuffer], { type: "video/mp4" });
@@ -254,6 +320,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
 
   lastFrameCount = frameIndex - 1;
   lastOutputFileName = outputFileName;
+  lastFrameExtension = frameExtension;
   latestProgressCallback = undefined;
   onProgress?.(1);
 

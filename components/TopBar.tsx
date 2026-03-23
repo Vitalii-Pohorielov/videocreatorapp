@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { exportResolutionLabels, type ExportResolution, type ExportSettings } from "@/store/useStore";
+import { exportProfileLabels, exportResolutionLabels, type ExportProfile, type ExportResolution, type ExportSettings } from "@/store/useStore";
 
 type TopBarProps = {
   settings: ExportSettings;
@@ -13,6 +13,7 @@ type TopBarProps = {
 
 export function TopBar({ settings, isExporting, exportProgress, downloadUrl, onUpdateSettings, onExport }: TopBarProps) {
   const resolutionOptions: ExportResolution[] = ["480p", "540p", "720p"];
+  const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
 
   return (
     <header className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
@@ -23,6 +24,21 @@ export function TopBar({ settings, isExporting, exportProgress, downloadUrl, onU
         </div>
 
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <label className="min-w-[140px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-400">Render mode</span>
+            <select
+              value={settings.profile}
+              onChange={(event) => onUpdateSettings({ profile: event.target.value as ExportProfile })}
+              className="w-full bg-transparent font-medium outline-none"
+            >
+              {profileOptions.map((profile) => (
+                <option key={profile} value={profile}>
+                  {exportProfileLabels[profile]}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="min-w-[132px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
             <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-400">Export size</span>
             <select

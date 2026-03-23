@@ -3,8 +3,8 @@
 import { useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
-import { fileToDataUrl } from "@/lib/imageUpload";
-import type { Scene, TemplatePreset } from "@/store/useStore";
+import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
+import type { ExportProfile, ExportResolution, Scene, TemplatePreset } from "@/store/useStore";
 
 type SceneStageProps = {
   scene: Scene;
@@ -17,6 +17,8 @@ type SceneStageProps = {
   onSceneChange?: (updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onRequestLogoUpload?: () => void;
   onRequestHighlightUpload?: () => void;
+  uploadResolution?: ExportResolution;
+  uploadProfile?: ExportProfile;
 };
 
 function getRenderableImageUrl(value?: string) {
@@ -417,7 +419,20 @@ function StageShell({ backgroundColor, textColor, children, progress, compact }:
   );
 }
 
-export function SceneStage({ scene, backgroundColor, textColor, preset, progress = 1, compact = false, editable = false, onSceneChange, onRequestLogoUpload, onRequestHighlightUpload }: SceneStageProps) {
+export function SceneStage({
+  scene,
+  backgroundColor,
+  textColor,
+  preset,
+  progress = 1,
+  compact = false,
+  editable = false,
+  onSceneChange,
+  onRequestLogoUpload,
+  onRequestHighlightUpload,
+  uploadResolution = "540p",
+  uploadProfile = "standard",
+}: SceneStageProps) {
   const intro = motion(progress, 0.02, 0.34);
   const titleIn = motion(progress, 0.04, 0.28);
   const subIn = motion(progress, 0.08, 0.26);
@@ -468,7 +483,7 @@ export function SceneStage({ scene, backgroundColor, textColor, preset, progress
   const updateBulletImage = async (index: number, value: File | string | null) => {
     const bulletImageUrls = [...scene.bulletImageUrls];
     if (typeof value === "string") bulletImageUrls[index] = value;
-    else bulletImageUrls[index] = value ? await fileToDataUrl(value) : "";
+    else bulletImageUrls[index] = value ? await fileToOptimizedDataUrl(value, uploadResolution, uploadProfile) : "";
     onSceneChange?.({ bulletImageUrls });
   };
 
