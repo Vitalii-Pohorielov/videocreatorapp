@@ -83,6 +83,7 @@ export const useStore = create<StudioStore>((set, get) => ({
                 return {
                   ...scene,
                   ...updates,
+                  transition: "fade",
                   durationSeconds: updates.durationSeconds === undefined ? scene.durationSeconds : clampDuration(updates.durationSeconds),
                   bullets: nextBullets,
                   bulletEmojis: nextBulletEmojis,

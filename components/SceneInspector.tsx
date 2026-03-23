@@ -3,12 +3,7 @@
 import { type ChangeEvent } from "react";
 
 import { fileToDataUrl } from "@/lib/imageUpload";
-import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset, type TransitionType } from "@/store/useStore";
-
-const transitionOptions: Array<{ value: TransitionType; label: string }> = [
-  { value: "fade", label: "Fade" },
-  { value: "slide-left", label: "Slide left" },
-];
+import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = ["clean", "premium", "bold", "editorial", "sunset", "mono", "neon-grid", "paper-cut", "arctic-glass"];
 
@@ -356,30 +351,12 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
           </label>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div>
           <label className="block">
             <span className="mb-2 block text-sm text-slate-600">Duration</span>
             <input type="range" min="1.5" max="8" step="0.5" value={scene.durationSeconds} onChange={(event) => onUpdate(scene.id, { durationSeconds: Number(event.target.value) })} className="w-full accent-sky-500" />
             <p className="mt-2 text-xs text-slate-500">{scene.durationSeconds.toFixed(1)}s</p>
           </label>
-          <div>
-            <span className="mb-2 block text-sm text-slate-600">Transition</span>
-            <div className="grid grid-cols-2 gap-2">
-              {transitionOptions.map((option) => {
-                const active = option.value === scene.transition;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => onUpdate(scene.id, { transition: option.value })}
-                    className={`rounded-2xl border px-3 py-3 text-sm transition ${active ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
     </aside>

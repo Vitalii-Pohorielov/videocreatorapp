@@ -1,4 +1,4 @@
-export type TransitionType = "fade" | "slide-left";
+export type TransitionType = "fade";
 export type TemplatePreset = "clean" | "premium" | "bold" | "editorial" | "sunset" | "mono" | "neon-grid" | "paper-cut" | "arctic-glass";
 export type ExportResolution = "480p" | "540p" | "720p";
 export type SceneType =
@@ -121,7 +121,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "product-showcase",
       durationSeconds: 3.5,
-      transition: "slide-left",
+      transition: "fade",
       eyebrow: "Highlight",
       title: "Your product, clearly explained",
       subtitle: "Use this scene for the main value proposition",
@@ -163,7 +163,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "slogan",
       durationSeconds: 3.5,
-      transition: "slide-left",
+      transition: "fade",
       eyebrow: "Message",
       title: "Built to move fast.",
       subtitle: "Short, bold, memorable",
@@ -205,7 +205,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "website-scroll",
       durationSeconds: 3.5,
-      transition: "slide-left",
+      transition: "fade",
       eyebrow: "Website",
       title: "Show the product page in motion",
       subtitle: "Upload a tall screenshot and the scene will auto-scroll it",
@@ -247,7 +247,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "quote",
       durationSeconds: 3.5,
-      transition: "slide-left",
+      transition: "fade",
       eyebrow: "Social proof",
       title: '"This changed our workflow overnight."',
       subtitle: "— Team lead, Product Ops",
@@ -289,7 +289,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "cta",
       durationSeconds: 3.5,
-      transition: "slide-left",
+      transition: "fade",
       eyebrow: "Call to action",
       title: "Launch your next promo today",
       subtitle: "Start with one scene and build the full story",

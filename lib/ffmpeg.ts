@@ -133,29 +133,15 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
     renderSceneDomToCanvas(nextScene, settings, nextSceneProgress),
   ]);
 
-  if (currentScene.transition === "slide-left") {
-    ctx.save();
-    ctx.globalAlpha = 1 - eased * 0.15;
-    ctx.translate(-videoWidth * eased, 0);
-    ctx.drawImage(currentCanvas, 0, 0, videoWidth, videoHeight);
-    ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = 1 - eased;
+  ctx.drawImage(currentCanvas, 0, 0, videoWidth, videoHeight);
+  ctx.restore();
 
-    ctx.save();
-    ctx.globalAlpha = 0.2 + eased * 0.8;
-    ctx.translate(videoWidth * (1 - eased), 0);
-    ctx.drawImage(nextCanvas, 0, 0, videoWidth, videoHeight);
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.globalAlpha = 1 - eased;
-    ctx.drawImage(currentCanvas, 0, 0, videoWidth, videoHeight);
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = eased;
-    ctx.drawImage(nextCanvas, 0, 0, videoWidth, videoHeight);
-    ctx.restore();
-  }
+  ctx.save();
+  ctx.globalAlpha = eased;
+  ctx.drawImage(nextCanvas, 0, 0, videoWidth, videoHeight);
+  ctx.restore();
 
   return canvas;
 }
