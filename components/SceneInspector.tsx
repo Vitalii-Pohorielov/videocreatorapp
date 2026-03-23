@@ -20,6 +20,12 @@ type SceneInspectorProps = {
 };
 
 export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: SceneInspectorProps) {
+  const normalizeColorInput = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return trimmed;
+    return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  };
+
   const normalizePreviewImageUrl = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed || trimmed === "." || trimmed === "/") return "";
@@ -106,21 +112,39 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm text-slate-600">Background color</span>
-                <input
-                  type="color"
-                  value={settings.backgroundColor}
-                  onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
-                />
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={settings.backgroundColor}
+                    onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
+                  />
+                  <input
+                    type="text"
+                    value={settings.backgroundColor}
+                    onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
+                    placeholder="#F7F4EE"
+                  />
+                </div>
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm text-slate-600">Text color</span>
-                <input
-                  type="color"
-                  value={settings.textColor}
-                  onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
-                />
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={settings.textColor}
+                    onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
+                  />
+                  <input
+                    type="text"
+                    value={settings.textColor}
+                    onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
+                    placeholder="#1B1F23"
+                  />
+                </div>
               </label>
             </div>
           </div>
