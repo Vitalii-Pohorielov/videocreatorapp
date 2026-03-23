@@ -100,12 +100,12 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f6f8] px-4 py-4 text-slate-900">
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
+    <main className="h-screen overflow-hidden bg-[#f4f6f8] px-4 py-4 text-slate-900">
+      <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
         <TopBar settings={exportSettings} isExporting={isExporting} exportProgress={exportProgress} downloadUrl={downloadUrl} onUpdateSettings={updateExportSettings} onExport={handleExport} />
 
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <StudioPreview scene={playbackState.scene} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} resolution={exportSettings.resolution} profile={exportSettings.profile} sceneProgress={playbackState.progress} isPlaying={isPlaying} currentTime={currentTime} totalDuration={totalDuration} onTogglePlayback={togglePlayback} onUpdateScene={(id, updates) => { resetDownload(); updateScene(id, updates); }} />
             <SceneTimeline track={sceneTrack} selectedSceneId={selectedScene.id} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} onSelect={(id) => { setIsPlaying(false); setCurrentTime(0); selectScene(id); }} onDelete={(id) => { resetDownload(); deleteScene(id); }} onAddScene={() => setIsSceneModalOpen(true)} onReorder={reorderScenes} />
           </div>

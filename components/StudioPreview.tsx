@@ -33,8 +33,8 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, resol
   };
 
   return (
-    <section className="flex min-h-[640px] flex-col border-b border-slate-200">
-      <div className="flex items-center justify-between px-6 py-4">
+    <section className="flex min-h-0 flex-1 flex-col border-b border-slate-200">
+      <div className="flex shrink-0 items-center justify-between px-5 py-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Preview</p>
           <h2 className="mt-1 text-lg font-semibold text-slate-900">Video preview</h2>
@@ -42,7 +42,7 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, resol
         <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">{resolutionMeta.width} x {resolutionMeta.height} ({exportResolutionLabels[resolution]})</div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center px-6 pb-6">
+      <div className="flex min-h-0 flex-1 items-center justify-center px-5 pb-4">
         <input
           ref={logoInputRef}
           type="file"
@@ -63,7 +63,7 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, resol
             event.target.value = "";
           }}
         />
-        <div className="w-full max-w-5xl rounded-[32px] border border-slate-200 bg-slate-900 p-4 shadow-sm">
+        <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 p-3 shadow-sm">
           <div className="relative aspect-video overflow-hidden rounded-[24px] bg-black">
             <SceneStage
               scene={scene}
@@ -85,7 +85,7 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, resol
             ) : null}
           </div>
 
-          <div className="mt-4 flex items-center gap-4">
+          <div className="mt-3 flex shrink-0 items-center gap-4">
             <button type="button" onClick={onTogglePlayback} className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">
               {isPlaying ? "Pause" : "Play"}
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent } from "react";
+import { type ChangeEvent, type ReactNode } from "react";
 
 import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
@@ -13,6 +13,23 @@ type SceneInspectorProps = {
   onUpdate: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
 };
+
+function InspectorSection({ title, description, defaultOpen = false, children }: { title: string; description?: string; defaultOpen?: boolean; children: ReactNode }) {
+  return (
+    <details open={defaultOpen} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <summary className="cursor-pointer list-none">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-slate-900">{title}</p>
+            {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+          </div>
+          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">Open</span>
+        </div>
+      </summary>
+      <div className="mt-4">{children}</div>
+    </details>
+  );
+}
 
 export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: SceneInspectorProps) {
   const normalizeColorInput = (value: string) => {
@@ -77,17 +94,15 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
   };
 
   return (
-    <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4 shrink-0">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Inspector</p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-900">{scene.name}</h2>
+        <h2 className="mt-1 text-lg font-semibold text-slate-900">{scene.name}</h2>
         <p className="mt-1 text-sm text-slate-500">{sceneTypeLabels[scene.type]}</p>
       </div>
 
-      <div className="space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-900">Video style</p>
-          <p className="mt-1 text-sm text-slate-500">Shared colors plus a template preset for the whole video.</p>
+      <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
+        <InspectorSection title="Video style" description="Shared colors plus a template preset for the whole video." defaultOpen>
           <div className="mt-4 grid gap-3">
             <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
               {presetOptions.map((preset) => {
@@ -143,36 +158,37 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
               </label>
             </div>
           </div>
-        </div>
+        </InspectorSection>
 
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-600">Scene label</span>
-          <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white" />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-600">Eyebrow</span>
-          <input value={scene.eyebrow} onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white" />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-600">Title</span>
-          <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white" />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-600">Subtitle</span>
-          <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white" />
-        </label>
-
-        {scene.type === "description" ? (
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-600">Description</span>
-            <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white" />
-          </label>
-        ) : null}
+        <InspectorSection title="Text" description="Main copy for the selected scene." defaultOpen>
+          <div className="space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Scene label</span>
+              <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Eyebrow</span>
+              <input value={scene.eyebrow} onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Title</span>
+              <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Subtitle</span>
+              <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+            </label>
+            {scene.type === "description" ? (
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-600">Description</span>
+                <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+              </label>
+            ) : null}
+          </div>
+        </InspectorSection>
 
         {scene.type === "brand-reveal" ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-900">Project logo</p>
-            <p className="mt-1 text-sm text-slate-500">Upload a PNG or SVG logo for the intro scene.</p>
+          <InspectorSection title="Project logo" description="Upload a PNG or SVG logo for the intro scene.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
                 Upload logo
@@ -193,13 +209,11 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                 <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No logo uploaded yet.</div>
               )}
             </div>
-          </div>
+          </InspectorSection>
         ) : null}
 
         {scene.type === "product-showcase" ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-900">Highlight screenshot</p>
-            <p className="mt-1 text-sm text-slate-500">Upload the site or product screen that should appear instead of the decorative mockup.</p>
+          <InspectorSection title="Highlight screenshot" description="Upload the site or product screen that should appear instead of the decorative mockup.">
             <div className="mt-4">
               <p className="mb-2 text-sm text-slate-600">Layout</p>
               <div className="grid grid-cols-2 gap-2">
@@ -237,13 +251,11 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                 <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No screenshot uploaded yet.</div>
               )}
             </div>
-          </div>
+          </InspectorSection>
         ) : null}
 
         {scene.type === "website-scroll" ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-900">Website screenshot</p>
-            <p className="mt-1 text-sm text-slate-500">Upload your own site screenshot. A tall image works best for visible scrolling.</p>
+          <InspectorSection title="Website screenshot" description="Upload your own site screenshot. A tall image works best for visible scrolling.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
                 Upload screenshot
@@ -262,13 +274,11 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                 <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No screenshot uploaded yet.</div>
               )}
             </div>
-          </div>
+          </InspectorSection>
         ) : null}
 
         {scene.type === "quote" ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-900">Author photo</p>
-            <p className="mt-1 text-sm text-slate-500">Upload the portrait that should appear next to the quote.</p>
+          <InspectorSection title="Author photo" description="Upload the portrait that should appear next to the quote.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
                 Upload photo
@@ -289,14 +299,14 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                 <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No author photo uploaded yet.</div>
               )}
             </div>
-          </div>
+          </InspectorSection>
         ) : null}
 
         {scene.type === "feature-grid" || scene.type === "metrics" ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <InspectorSection title="Items" description="Manage card text and markers for this scene.">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-slate-900">Items</p>
+                <p className="text-sm font-medium text-slate-900">Cards</p>
                 <p className="mt-1 text-sm text-slate-500">Each card can have its own text and emoji.</p>
               </div>
               <button
@@ -335,29 +345,31 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                 </div>
               ))}
             </div>
-          </div>
+          </InspectorSection>
         ) : null}
 
         {scene.type === "checklist" ? (
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-600">Items</span>
-            <textarea
-              value={scene.bullets.join("\n")}
-              rows={6}
-              onChange={(event) => onUpdate(scene.id, { bullets: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean) })}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white"
-              placeholder="One item per line"
-            />
-          </label>
+          <InspectorSection title="Items" description="One checklist item per line.">
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Items</span>
+              <textarea
+                value={scene.bullets.join("\n")}
+                rows={6}
+                onChange={(event) => onUpdate(scene.id, { bullets: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean) })}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500"
+                placeholder="One item per line"
+              />
+            </label>
+          </InspectorSection>
         ) : null}
 
-        <div>
+        <InspectorSection title="Timing" description="Keep scenes shorter for a faster export.">
           <label className="block">
             <span className="mb-2 block text-sm text-slate-600">Duration</span>
             <input type="range" min="1.5" max="8" step="0.5" value={scene.durationSeconds} onChange={(event) => onUpdate(scene.id, { durationSeconds: Number(event.target.value) })} className="w-full accent-sky-500" />
             <p className="mt-2 text-xs text-slate-500">{scene.durationSeconds.toFixed(1)}s</p>
           </label>
-        </div>
+        </InspectorSection>
       </div>
     </aside>
   );
