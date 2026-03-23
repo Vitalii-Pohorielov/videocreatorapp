@@ -190,7 +190,23 @@ function QuoteAuthorPhoto({ scene, progress, compact }: { scene: Scene; progress
   );
 }
 
-function WebsiteScrollFrame({ scene, cardClassName, style, compact, progress }: { scene: Scene; cardClassName: string; style: CSSProperties; compact: boolean; progress: number }) {
+function WebsiteScrollFrame({
+  scene,
+  cardClassName,
+  style,
+  compact,
+  progress,
+  editable,
+  onPickImage,
+}: {
+  scene: Scene;
+  cardClassName: string;
+  style: CSSProperties;
+  compact: boolean;
+  progress: number;
+  editable?: boolean;
+  onPickImage?: () => void;
+}) {
   const scrollOffset = `${progress * 45}%`;
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
 
@@ -201,7 +217,12 @@ function WebsiteScrollFrame({ scene, cardClassName, style, compact, progress }: 
         <span className="h-2.5 w-2.5 rounded-full bg-white/40" />
         <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
       </div>
-      <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-black/15" style={{ height: compact ? 132 : 420 }}>
+      <button
+        type="button"
+        onClick={!websiteImageUrl && editable ? onPickImage : undefined}
+        className={`relative block w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/15 text-left ${!websiteImageUrl && editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
+        style={{ height: compact ? 132 : 420 }}
+      >
         {websiteImageUrl ? (
           <img
             src={websiteImageUrl}
@@ -216,15 +237,15 @@ function WebsiteScrollFrame({ scene, cardClassName, style, compact, progress }: 
               <div className="h-28 rounded-[18px] bg-white/10" />
               <div className="h-3 rounded-full bg-white/16" />
               <div className="h-3 w-4/5 rounded-full bg-white/10" />
-              <div className="flex h-20 items-center justify-center rounded-[18px] border border-dashed border-white/15 text-center text-xs text-white/65">
-                Upload a tall website screenshot
+              <div className={`flex h-20 items-center justify-center rounded-[18px] border border-dashed border-white/15 text-center text-xs text-white/65 ${editable ? "bg-white/5" : ""}`}>
+                {editable ? "Click to upload a tall website screenshot" : "Upload a tall website screenshot"}
               </div>
             </div>
           </div>
         )}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
-      </div>
+      </button>
     </div>
   );
 }
@@ -543,7 +564,15 @@ export function SceneStage({ scene, backgroundColor, textColor, preset, progress
 
       {scene.type === "website-scroll" && (
         <div className="flex h-full items-center justify-center">
-          <WebsiteScrollFrame scene={scene} cardClassName={s.card} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.94 + cardIn * 0.06})`, opacity: 0.16 + cardIn * 0.84 }} compact={compact} progress={progress} />
+          <WebsiteScrollFrame
+            scene={scene}
+            cardClassName={s.card}
+            style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.94 + cardIn * 0.06})`, opacity: 0.16 + cardIn * 0.84 }}
+            compact={compact}
+            progress={progress}
+            editable={editable}
+            onPickImage={onRequestHighlightUpload}
+          />
         </div>
       )}
 
