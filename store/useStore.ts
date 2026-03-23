@@ -3,6 +3,8 @@ import { create } from "zustand";
 import {
   createInitialSceneTrack,
   createScene,
+  exportResolutionDimensions,
+  exportResolutionLabels,
   presetDefaults,
   type ExportSettings,
   type Scene,
@@ -10,8 +12,8 @@ import {
   type SceneType,
 } from "@/lib/sceneDefinitions";
 
-export type { ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType } from "@/lib/sceneDefinitions";
-export { presetLabels, sceneDefinitions, sceneTypeLabels } from "@/lib/sceneDefinitions";
+export type { ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType } from "@/lib/sceneDefinitions";
+export { exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels } from "@/lib/sceneDefinitions";
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
@@ -59,6 +61,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     backgroundColor: presetDefaults.clean.backgroundColor,
     textColor: presetDefaults.clean.textColor,
     preset: "clean",
+    resolution: "720p",
   },
   addScene: (type) => {
     const { sceneTrack } = get();
@@ -150,6 +153,7 @@ export const useStore = create<StudioStore>((set, get) => ({
                 : state.exportSettings.textColor
               : updates.textColor,
           preset: nextPreset,
+          resolution: updates.resolution ?? state.exportSettings.resolution,
         },
       };
     });

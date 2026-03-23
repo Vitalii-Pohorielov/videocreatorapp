@@ -4,13 +4,14 @@ import { useRef } from "react";
 
 import { SceneStage } from "@/components/SceneStage";
 import { fileToDataUrl } from "@/lib/imageUpload";
-import type { Scene, TemplatePreset } from "@/store/useStore";
+import { exportResolutionDimensions, exportResolutionLabels, type ExportResolution, type Scene, type TemplatePreset } from "@/store/useStore";
 
 type StudioPreviewProps = {
   scene: Scene;
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
+  resolution: ExportResolution;
   sceneProgress: number;
   isPlaying: boolean;
   currentTime: number;
@@ -19,9 +20,10 @@ type StudioPreviewProps = {
   onUpdateScene: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
 };
 
-export function StudioPreview({ scene, backgroundColor, textColor, preset, sceneProgress, isPlaying, currentTime, totalDuration, onTogglePlayback, onUpdateScene }: StudioPreviewProps) {
+export function StudioPreview({ scene, backgroundColor, textColor, preset, resolution, sceneProgress, isPlaying, currentTime, totalDuration, onTogglePlayback, onUpdateScene }: StudioPreviewProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const highlightInputRef = useRef<HTMLInputElement>(null);
+  const resolutionMeta = exportResolutionDimensions[resolution];
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl", file: File | null) => {
     if (!file) return;
@@ -36,7 +38,7 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, scene
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Preview</p>
           <h2 className="mt-1 text-lg font-semibold text-slate-900">Video preview</h2>
         </div>
-        <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">1280 x 720</div>
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">{resolutionMeta.width} x {resolutionMeta.height} ({exportResolutionLabels[resolution]})</div>
       </div>
 
       <div className="flex flex-1 items-center justify-center px-6 pb-6">

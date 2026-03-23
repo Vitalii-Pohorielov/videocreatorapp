@@ -1,6 +1,7 @@
 import { toCanvas } from "html-to-image";
 
 import { SceneStage } from "@/components/SceneStage";
+import { exportResolutionDimensions } from "@/store/useStore";
 import type { ExportSettings, Scene } from "@/store/useStore";
 
 type FFmpegModule = typeof import("@ffmpeg/ffmpeg");
@@ -16,14 +17,16 @@ let lastFrameCount = 0;
 let lastOutputFileName: string | null = null;
 
 const coreBaseUrl = "/ffmpeg";
-const videoWidth = 1280;
-const videoHeight = 720;
+
+function getVideoSize(settings: ExportSettings) {
+  return exportResolutionDimensions[settings.resolution];
+}
 
 function easeInOut(value: number) {
   return 0.5 - Math.cos(Math.min(1, Math.max(0, value)) * Math.PI) / 2;
 }
 
-function createCanvas() {
+function createCanvas(videoWidth: number, videoHeight: number) {
   const canvas = document.createElement("canvas");
   canvas.width = videoWidth;
   canvas.height = videoHeight;
@@ -49,6 +52,7 @@ function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: 
 }
 
 async function renderSceneDomToCanvas(scene: Scene, settings: ExportSettings, progress: number) {
+  const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const host = document.createElement("div");
   host.style.position = "fixed";
   host.style.left = "-20000px";
@@ -121,7 +125,8 @@ function getFrameProgress(frameIndex: number, frameCount: number) {
 }
 
 async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, nextSceneProgress: number) {
-  const { canvas, ctx } = createCanvas();
+  const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
+  const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
   const eased = easeInOut(progress);
   const [currentCanvas, nextCanvas] = await Promise.all([
     renderSceneDomToCanvas(currentScene, settings, 1),
@@ -199,6 +204,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
   const fps = settings.fps;
+  const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
   const totalFrameCount = Math.max(1, getTotalFrameCount(scenes, fps, transitionFrameCount));
   const frameRenderWeight = 0.88;

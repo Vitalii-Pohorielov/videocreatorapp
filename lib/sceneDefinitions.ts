@@ -1,5 +1,6 @@
 export type TransitionType = "fade" | "slide-left";
 export type TemplatePreset = "clean" | "premium" | "bold" | "editorial" | "sunset" | "mono" | "neon-grid" | "paper-cut" | "arctic-glass";
+export type ExportResolution = "480p" | "540p" | "720p";
 export type SceneType =
   | "brand-reveal"
   | "product-showcase"
@@ -18,6 +19,7 @@ export type ExportSettings = {
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
+  resolution: ExportResolution;
 };
 
 export type Scene = {
@@ -76,6 +78,18 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   "neon-grid": { backgroundColor: "#08111f", textColor: "#86f7ff" },
   "paper-cut": { backgroundColor: "#f3eadf", textColor: "#2d1f18" },
   "arctic-glass": { backgroundColor: "#dff5ff", textColor: "#0d2236" },
+};
+
+export const exportResolutionLabels: Record<ExportResolution, string> = {
+  "480p": "480p",
+  "540p": "540p",
+  "720p": "720p",
+};
+
+export const exportResolutionDimensions: Record<ExportResolution, { width: number; height: number }> = {
+  "480p": { width: 854, height: 480 },
+  "540p": { width: 960, height: 540 },
+  "720p": { width: 1280, height: 720 },
 };
 
 export const sceneDefinitions: SceneDefinition[] = [

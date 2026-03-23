@@ -106,7 +106,7 @@ export default function HomePage() {
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <StudioPreview scene={playbackState.scene} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} sceneProgress={playbackState.progress} isPlaying={isPlaying} currentTime={currentTime} totalDuration={totalDuration} onTogglePlayback={togglePlayback} onUpdateScene={(id, updates) => { resetDownload(); updateScene(id, updates); }} />
+            <StudioPreview scene={playbackState.scene} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} resolution={exportSettings.resolution} sceneProgress={playbackState.progress} isPlaying={isPlaying} currentTime={currentTime} totalDuration={totalDuration} onTogglePlayback={togglePlayback} onUpdateScene={(id, updates) => { resetDownload(); updateScene(id, updates); }} />
             <SceneTimeline track={sceneTrack} selectedSceneId={selectedScene.id} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} onSelect={(id) => { setIsPlaying(false); setCurrentTime(0); selectScene(id); }} onDelete={(id) => { resetDownload(); deleteScene(id); }} onAddScene={() => setIsSceneModalOpen(true)} onReorder={reorderScenes} />
           </div>
 
