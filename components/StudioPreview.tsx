@@ -63,26 +63,28 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, resol
             event.target.value = "";
           }}
         />
-        <div className="flex h-full w-full max-w-6xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 p-2 shadow-sm">
-          <div className="relative flex-1 overflow-hidden rounded-[24px] bg-black">
-            <SceneStage
-              scene={scene}
-              backgroundColor={backgroundColor}
-              textColor={textColor}
-              preset={preset}
-              progress={sceneProgress}
-              editable={!isPlaying}
-              onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
-              onRequestLogoUpload={() => logoInputRef.current?.click()}
-              onRequestHighlightUpload={() => highlightInputRef.current?.click()}
-              uploadResolution={resolution}
-              uploadProfile={profile}
-            />
-            {isPlaying ? (
-              <button type="button" onClick={onTogglePlayback} className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-slate-900 shadow-lg transition hover:scale-105">
-                II
-              </button>
-            ) : null}
+        <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 p-2 shadow-sm">
+          <div className="flex flex-1 items-center justify-center overflow-hidden rounded-[24px] bg-black">
+            <div className="relative aspect-video h-full max-h-full w-auto max-w-[82%] overflow-hidden rounded-[24px] bg-black">
+              <SceneStage
+                scene={scene}
+                backgroundColor={backgroundColor}
+                textColor={textColor}
+                preset={preset}
+                progress={sceneProgress}
+                editable={!isPlaying}
+                onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
+                onRequestLogoUpload={() => logoInputRef.current?.click()}
+                onRequestHighlightUpload={() => highlightInputRef.current?.click()}
+                uploadResolution={resolution}
+                uploadProfile={profile}
+              />
+              {isPlaying ? (
+                <button type="button" onClick={onTogglePlayback} className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-slate-900 shadow-lg transition hover:scale-105">
+                  II
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-2 flex shrink-0 items-center gap-3">
