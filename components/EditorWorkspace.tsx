@@ -44,6 +44,14 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const scenes = sceneTrack.scenes;
   const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0], [scenes, selectedSceneId]);
   const totalDuration = useMemo(() => scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0), [scenes]);
+  const selectedSceneStartTime = useMemo(() => {
+    let elapsed = 0;
+    for (const scene of scenes) {
+      if (scene.id === selectedSceneId) return elapsed;
+      elapsed += scene.durationSeconds;
+    }
+    return 0;
+  }, [scenes, selectedSceneId]);
 
   const playbackState = useMemo(() => {
     if (!isPlaying) return { scene: selectedScene, progress: 1 };
@@ -147,7 +155,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const togglePlayback = () => {
     setIsPlaying((prev) => {
       if (prev) return false;
-      setCurrentTime(0);
+      setCurrentTime(selectedSceneStartTime);
       return true;
     });
   };
@@ -214,8 +222,13 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               preset={exportSettings.preset}
               onSelect={(id) => {
                 setIsPlaying(false);
-                setCurrentTime(0);
                 selectScene(id);
+                let elapsed = 0;
+                for (const scene of sceneTrack.scenes) {
+                  if (scene.id === id) break;
+                  elapsed += scene.durationSeconds;
+                }
+                setCurrentTime(elapsed);
               }}
               onDelete={(id) => {
                 resetDownload();
