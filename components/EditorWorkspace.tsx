@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
@@ -13,6 +13,9 @@ import { useStore } from "@/store/useStore";
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
 };
+
+const PREVIEW_FPS = 24;
+const PREVIEW_FRAME_SECONDS = 1 / PREVIEW_FPS;
 
 export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProps) {
   const {
@@ -44,6 +47,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const [isCloudBusy, setIsCloudBusy] = useState(false);
   const didHydrateProject = useRef<string | null | undefined>(undefined);
+  const currentTimeRef = useRef(0);
 
   const scenes = sceneTrack.scenes;
   const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0], [scenes, selectedSceneId]);
@@ -72,9 +76,14 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   }, [currentTime, isPlaying, scenes, selectedScene]);
 
   useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  useEffect(() => {
     if (!isPlaying) return;
     let frameId = 0;
     let lastTimestamp: number | null = null;
+    let accumulatedSeconds = 0;
 
     const tick = (timestamp: number) => {
       if (lastTimestamp === null) {
@@ -85,15 +94,22 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
       const deltaSeconds = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
+      accumulatedSeconds += deltaSeconds;
 
-      setCurrentTime((prev) => {
-        const next = prev + deltaSeconds;
+      if (accumulatedSeconds >= PREVIEW_FRAME_SECONDS) {
+        const next = Math.min(totalDuration, currentTimeRef.current + accumulatedSeconds);
+        accumulatedSeconds = 0;
+        currentTimeRef.current = next;
+
+        startTransition(() => {
+          setCurrentTime(next);
+        });
+
         if (next >= totalDuration) {
           setIsPlaying(false);
-          return totalDuration;
+          return;
         }
-        return next;
-      });
+      }
 
       frameId = window.requestAnimationFrame(tick);
     };
@@ -128,6 +144,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
     resetProject();
     setIsPlaying(false);
+    currentTimeRef.current = 0;
     setCurrentTime(0);
     setCloudStatus(initialProjectId ? `Loading project ${initialProjectId}...` : null);
     setIsCloudBusy(Boolean(initialProjectId));
@@ -187,6 +204,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       setIsGeneratingFromUrl(true);
       setCloudStatus("Reading website and building scenes...");
       setIsPlaying(false);
+      currentTimeRef.current = 0;
       setCurrentTime(0);
       resetDownload();
 
@@ -226,6 +244,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const togglePlayback = () => {
     setIsPlaying((prev) => {
       if (prev) return false;
+      currentTimeRef.current = selectedSceneStartTime;
       setCurrentTime(selectedSceneStartTime);
       return true;
     });
@@ -301,6 +320,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
                   if (scene.id === id) break;
                   elapsed += scene.durationSeconds;
                 }
+                currentTimeRef.current = elapsed;
                 setCurrentTime(elapsed);
               }}
               onDelete={(id) => {
