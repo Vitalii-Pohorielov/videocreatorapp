@@ -210,7 +210,7 @@ function normalizeSceneProgress(scene: Scene, progress: number) {
   }
 
   if (clamped >= FINAL_FRAME_FREEZE_PROGRESS) {
-    return 1;
+    return FINAL_FRAME_FREEZE_PROGRESS;
   }
 
   return Number(clamped.toFixed(2));
