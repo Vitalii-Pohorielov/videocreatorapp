@@ -942,26 +942,14 @@ export function SceneStage({
         <div className="flex h-full items-center justify-center text-center">
           <div className="relative max-w-5xl overflow-hidden rounded-[40px] border border-white/10 px-8 py-16 shadow-[0_30px_100px_rgba(2,6,23,0.22)] backdrop-blur-[2px] md:px-14">
             <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[40px]">
+              <img
+                src="/lottie/slogan.gif"
+                alt=""
+                className="slogan-gif-background"
+                style={{ opacity: 0.16 + titleIn * 0.3, transform: `scale(${1 + (1 - titleIn) * 0.04})` }}
+              />
+              <span className="slogan-gif-overlay" />
               <span className="slogan-grid" />
-              <span
-                className="slogan-aurora slogan-aurora-primary"
-                style={{ opacity: 0.14 + titleIn * 0.38, transform: `translate3d(-10%, 0, 0) scale(${0.88 + titleIn * 0.14})` }}
-              />
-              <span
-                className="slogan-aurora slogan-aurora-secondary"
-                style={{ opacity: 0.12 + titleIn * 0.32, transform: `translate3d(12%, -8%, 0) scale(${0.82 + titleIn * 0.18})` }}
-              />
-              <span
-                className="slogan-orbit slogan-orbit-left"
-                style={{ opacity: 0.12 + titleIn * 0.22 }}
-              />
-              <span
-                className="slogan-orbit slogan-orbit-right"
-                style={{ opacity: 0.1 + titleIn * 0.18 }}
-              />
-              <span className="slogan-glow-line slogan-glow-line-top" style={{ opacity: 0.2 + titleIn * 0.3 }} />
-              <span className="slogan-glow-line slogan-glow-line-bottom" style={{ opacity: 0.14 + titleIn * 0.24 }} />
-              <span className="slogan-noise-mask" />
             </div>
             <EditableText
               as="h2"

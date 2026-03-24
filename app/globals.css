@@ -39,9 +39,8 @@ body {
 }
 
 .slogan-grid,
-.slogan-aurora,
-.slogan-orbit,
-.slogan-glow-line,
+.slogan-gif-background,
+.slogan-gif-overlay,
 .slogan-noise-mask {
   position: absolute;
   inset: 0;
@@ -58,69 +57,18 @@ body {
   mask-image: radial-gradient(circle at center, black 42%, transparent 88%);
 }
 
-.slogan-aurora {
-  inset: auto;
-  border-radius: 999px;
-  filter: blur(30px);
-  mix-blend-mode: screen;
-  will-change: transform, opacity;
+.slogan-gif-background {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.05) contrast(1.04);
 }
 
-.slogan-aurora-primary {
-  left: -8%;
-  top: 12%;
-  width: 58%;
-  height: 46%;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.38), rgba(59, 130, 246, 0.18), rgba(255, 255, 255, 0.08));
-  animation: sloganAuroraDrift 14s ease-in-out infinite;
-}
-
-.slogan-aurora-secondary {
-  right: -10%;
-  bottom: 4%;
-  width: 52%;
-  height: 42%;
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.22), rgba(244, 114, 182, 0.14), rgba(56, 189, 248, 0.12));
-  animation: sloganAuroraDrift 18s ease-in-out infinite reverse;
-}
-
-.slogan-orbit {
-  inset: auto;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.slogan-orbit-left {
-  left: 6%;
-  top: 18%;
-  width: 160px;
-  height: 160px;
-  animation: sloganOrbitFloat 12s ease-in-out infinite;
-}
-
-.slogan-orbit-right {
-  right: 8%;
-  bottom: 16%;
-  width: 220px;
-  height: 220px;
-  animation: sloganOrbitFloat 16s ease-in-out infinite reverse;
-}
-
-.slogan-glow-line {
-  inset: auto;
-  left: 12%;
-  width: 76%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  filter: blur(0.4px);
-}
-
-.slogan-glow-line-top {
-  top: 22%;
-}
-
-.slogan-glow-line-bottom {
-  bottom: 20%;
+.slogan-gif-overlay {
+  background:
+    radial-gradient(circle at center, rgba(15, 23, 42, 0.02), rgba(15, 23, 42, 0.58) 74%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.34), rgba(2, 6, 23, 0.22));
 }
 
 .slogan-noise-mask {
@@ -128,28 +76,4 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.3) 0.7px, transparent 0.7px);
   background-size: 14px 14px;
   mask-image: radial-gradient(circle at center, black 38%, transparent 94%);
-}
-
-@keyframes sloganAuroraDrift {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate3d(4%, -5%, 0) rotate(8deg);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-}
-
-@keyframes sloganOrbitFloat {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, -10px, 0) scale(1.04);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
 }
