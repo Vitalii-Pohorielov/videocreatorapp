@@ -57,10 +57,13 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                       event.stopPropagation();
                       onDuplicate(scene.id);
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-[11px] font-semibold text-slate-200 transition hover:bg-white/15"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-slate-200 transition hover:bg-white/[0.12]"
                     aria-label="Duplicate scene"
                   >
-                    DUP
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4">
+                      <rect x="5.25" y="2.75" width="7" height="9" rx="1.25" />
+                      <path d="M3.75 5.25V11a1.25 1.25 0 0 0 1.25 1.25h4.25" />
+                    </svg>
                   </button>
                   <button
                     type="button"
@@ -68,10 +71,17 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                       event.stopPropagation();
                       onDelete(scene.id);
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-slate-200 transition hover:bg-rose-400/20 hover:text-rose-200"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-rose-500/25 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500/18 hover:text-rose-300"
                     aria-label="Delete scene"
                   >
-                    X
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3.75 5.25h8.5" />
+                      <path d="M6.25 2.75h3.5" />
+                      <path d="M5.25 5.25v6.25" />
+                      <path d="M8 5.25v6.25" />
+                      <path d="M10.75 5.25v6.25" />
+                      <path d="M4.5 5.25l.35 7.05A1.25 1.25 0 0 0 6.1 13.5h3.8a1.25 1.25 0 0 0 1.25-1.2l.35-7.05" />
+                    </svg>
                   </button>
                 </div>
               </div>
