@@ -21,7 +21,7 @@ export function AuthGate({
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6 text-slate-100">
+      <main className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 text-slate-100">
         <div className="rounded-[28px] border border-white/10 bg-slate-950/70 px-8 py-10 text-center shadow-[0_16px_40px_rgba(2,6,23,0.35)]">
           <p className="text-sm uppercase tracking-[0.28em] text-sky-300">Loading</p>
           <h1 className="mt-3 text-3xl font-semibold text-white">Checking your session</h1>
@@ -32,7 +32,7 @@ export function AuthGate({
 
   if (!user) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6 text-slate-100">
+      <main className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 text-slate-100">
         <div className="w-full max-w-2xl rounded-[32px] border border-white/10 bg-slate-950/75 px-8 py-10 shadow-[0_24px_80px_rgba(2,6,23,0.4)] backdrop-blur">
           <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Protected Access</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-white">{title}</h1>

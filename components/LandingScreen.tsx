@@ -31,8 +31,8 @@ export function LandingScreen() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden px-4 py-4 text-slate-100">
-      <section className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-7xl flex-col overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,15,29,0.95),rgba(15,23,42,0.88)),radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(250,204,21,0.18),transparent_24%)] shadow-[0_30px_120px_rgba(2,6,23,0.45)]">
+    <main className="min-h-[calc(100vh-72px)] overflow-hidden px-4 py-4 text-slate-100">
+      <section className="mx-auto flex min-h-[calc(100vh-104px)] w-full max-w-7xl flex-col overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,15,29,0.95),rgba(15,23,42,0.88)),radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(250,204,21,0.18),transparent_24%)] shadow-[0_30px_120px_rgba(2,6,23,0.45)]">
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5 lg:px-8">
           <div>
             <p className="text-xs uppercase tracking-[0.34em] text-sky-300">Video Creator App</p>
