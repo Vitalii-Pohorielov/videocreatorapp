@@ -5,6 +5,7 @@ import { useRef } from "react";
 
 import { SceneStage } from "@/components/SceneStage";
 import { fileToStoredUrl } from "@/lib/imageUpload";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import {
   exportProfileLabels,
   type ExportProfile,
@@ -79,6 +80,12 @@ export function StudioPreview({
   const authorInputRef = useRef<HTMLInputElement>(null);
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
 
+  const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl" | "authorImageUrl", file: File | null) => {
     if (!file) return;
     const imageUrl = await fileToStoredUrl(file, settings.resolution, profile);
@@ -91,7 +98,7 @@ export function StudioPreview({
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <Link href="/" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 transition hover:bg-white/[0.08]">
+              <Link href="/projects" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 transition hover:bg-white/[0.08]">
                 Projects
               </Link>
               <input
@@ -155,6 +162,14 @@ export function StudioPreview({
                 className="rounded-2xl bg-sky-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
               >
                 {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+              >
+                Sign out
               </button>
             </div>
           </div>

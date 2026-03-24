@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { deleteProject, listProjects } from "@/lib/projectPersistence";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { useAuthSession } from "@/lib/useAuthSession";
 
 type ProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
 
@@ -21,10 +23,17 @@ function formatRelativeDate(value?: string) {
 }
 
 export function ProjectsWorkspace() {
+  const { user } = useAuthSession();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
+
+  const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
 
   useEffect(() => {
     let isActive = true;
@@ -80,12 +89,24 @@ export function ProjectsWorkspace() {
             </div>
 
             <div className="flex flex-wrap gap-3">
+              {user?.email ? (
+                <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
+                  {user.email}
+                </span>
+              ) : null}
               <Link
                 href="/editor"
                 className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
               >
                 New project
               </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+              >
+                Sign out
+              </button>
             </div>
           </div>
         </section>
