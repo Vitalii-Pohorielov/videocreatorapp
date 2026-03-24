@@ -191,14 +191,14 @@ function presetStyles(preset: TemplatePreset, lightweight = false) {
 
 function IntroLogo({
   scene,
-  progress,
+  entryProgress,
   compact,
   editable,
   onPickImage,
   lightweightPreview = false,
 }: {
   scene: Scene;
-  progress: number;
+  entryProgress: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
@@ -207,14 +207,12 @@ function IntroLogo({
   const logoImageUrl = getRenderableImageUrl(scene.logoImageUrl);
   if (!logoImageUrl) return null;
 
-  const logoIn = motion(progress, 0, 0.24);
-
   return (
     <div
       className="mx-auto mb-6 flex items-center justify-center"
       style={{
-        transform: `translateY(${18 * (1 - logoIn)}px) scale(${0.92 + logoIn * 0.08})`,
-        opacity: 0.18 + logoIn * 0.82,
+        transform: `translateY(${18 * (1 - entryProgress)}px) scale(${0.92 + entryProgress * 0.08})`,
+        opacity: entryProgress,
       }}
     >
       <button
@@ -230,31 +228,29 @@ function IntroLogo({
 
 function IntroLogoSlot({
   scene,
-  progress,
+  entryProgress,
   compact,
   editable,
   onPickImage,
   lightweightPreview = false,
 }: {
   scene: Scene;
-  progress: number;
+  entryProgress: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
   lightweightPreview?: boolean;
 }) {
   if (getRenderableImageUrl(scene.logoImageUrl)) {
-    return <IntroLogo scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onPickImage} lightweightPreview={lightweightPreview} />;
+    return <IntroLogo scene={scene} entryProgress={entryProgress} compact={compact} editable={editable} onPickImage={onPickImage} lightweightPreview={lightweightPreview} />;
   }
-
-  const logoIn = motion(progress, 0, 0.24);
 
   return (
     <div
       className="mx-auto mb-6 flex items-center justify-center"
       style={{
-        transform: `translateY(${18 * (1 - logoIn)}px) scale(${0.92 + logoIn * 0.08})`,
-        opacity: 0.18 + logoIn * 0.82,
+        transform: `translateY(${18 * (1 - entryProgress)}px) scale(${0.92 + entryProgress * 0.08})`,
+        opacity: entryProgress,
       }}
     >
       <button
@@ -275,13 +271,13 @@ function IntroLogoSlot({
 
 function QuoteAuthorPhoto({
   scene,
-  progress,
+  entryProgress,
   compact,
   editable,
   onPickImage,
 }: {
   scene: Scene;
-  progress: number;
+  entryProgress: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
@@ -289,14 +285,12 @@ function QuoteAuthorPhoto({
   const authorImageUrl = getRenderableImageUrl(scene.authorImageUrl);
   if (!authorImageUrl) return null;
 
-  const photoIn = motion(progress, 0.08, 0.24);
-
   return (
     <div
       className="mb-5 flex justify-center"
       style={{
-        transform: `translateY(${16 * (1 - photoIn)}px) scale(${0.94 + photoIn * 0.06})`,
-        opacity: 0.2 + photoIn * 0.8,
+        transform: `translateY(${16 * (1 - entryProgress)}px) scale(${0.94 + entryProgress * 0.06})`,
+        opacity: entryProgress,
       }}
     >
       <button
@@ -632,10 +626,11 @@ export function SceneStage({
   const blurMultiplier = lightweightPreview ? 0.35 : 1;
   const showSceneBackground = renderLayer !== "content";
   const showSceneContent = renderLayer !== "background";
-  const intro = motion(progress, 0.02, 0.34);
-  const titleIn = motion(progress, 0.04, 0.28);
-  const subIn = motion(progress, 0.08, 0.26);
-  const cardIn = motion(progress, 0.1, 0.3);
+  const sharedIn = editable ? 1 : motion(progress, 0.06, 0.24);
+  const intro = sharedIn;
+  const titleIn = sharedIn;
+  const subIn = sharedIn;
+  const cardIn = sharedIn;
   const outroFade = editable ? 1 : 1 - motion(progress, 0.8, 0.16);
   const s = presetStyles(preset, lightweightPreview);
   const titleSize = compact ? "text-lg" : "text-5xl";
@@ -833,7 +828,7 @@ export function SceneStage({
         >
       {scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
-          <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} />
+          <IntroLogoSlot scene={scene} entryProgress={sharedIn} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} />
           <EditableText
             as="h2"
             value={scene.title}
@@ -905,7 +900,7 @@ export function SceneStage({
           </div>
           <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
-              const itemIn = motion(progress, 0.1 + index * 0.04, 0.24);
+              const itemIn = sharedIn;
               return (
                 <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: 0.12 + itemIn * 0.88 }}>
                   {editable ? (
@@ -980,7 +975,7 @@ export function SceneStage({
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-3 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
-              const itemIn = motion(progress, 0.08 + index * 0.05, 0.25);
+              const itemIn = sharedIn;
               return (
                 <div key={`${bullet}-${index}`} className={`rounded-[24px] border px-4 py-6 ${s.card}`} style={{ transform: `translateY(${24 * (1 - itemIn)}px)`, opacity: 0.12 + itemIn * 0.88 }}>
                   {editable ? (
@@ -1013,7 +1008,7 @@ export function SceneStage({
       {scene.type === "quote" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: 0.16 + cardIn * 0.84 }}>
-            <QuoteAuthorPhoto scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
+            <QuoteAuthorPhoto scene={scene} entryProgress={sharedIn} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
             <div className="mb-4 text-4xl opacity-50">"</div>
             <EditableText as="h2" value={scene.title} editable={editable} multiline onCommit={(value) => onSceneChange?.({ title: value })} className={`leading-tight ${compact ? "text-base" : "text-4xl"} ${s.title} ${s.italic}`} placeholder="Quote" />
             {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize} opacity-75`} style={revealStyle(subIn, { y: 14, blur: 8, minOpacity: 0.18 })} placeholder="Author" /> : null}
@@ -1027,7 +1022,7 @@ export function SceneStage({
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 text-center leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           <div className="mx-auto mt-8 grid max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
-              const itemIn = motion(progress, 0.08 + index * 0.04, 0.24);
+              const itemIn = sharedIn;
               return <div key={`${bullet}-${index}`} className={`flex items-center gap-3 rounded-[22px] border px-4 py-4 ${s.card}`} style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: 0.14 + itemIn * 0.86 }}><div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20">{index + 1}</div><p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0.22 })}>{bullet}</p></div>;
             })}
           </div>
