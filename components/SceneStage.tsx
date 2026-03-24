@@ -967,14 +967,6 @@ export function SceneStage({
 
       {scene.type === "description" && (
         <div className="relative grid h-full items-center gap-8 overflow-hidden md:grid-cols-[0.9fr_1.1fr]">
-          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <span className="description-particle description-particle-1" />
-            <span className="description-particle description-particle-2" />
-            <span className="description-particle description-particle-3" />
-            <span className="description-particle description-particle-4" />
-            <span className="description-particle description-particle-5" />
-            <span className="description-particle description-particle-6" />
-          </div>
           <div className="text-left">
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           </div>
