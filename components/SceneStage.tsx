@@ -590,7 +590,7 @@ function StageShell({
 }) {
   const showBackground = renderLayer !== "content";
   return (
-    <div className={`relative h-full w-full overflow-hidden rounded-[24px] ${compact ? "px-4 py-4" : "px-8 py-8"}`} style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
+    <div className="relative h-full w-full overflow-hidden rounded-[24px]" style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
       {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
       {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
       {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
@@ -807,6 +807,7 @@ export function SceneStage({
           />
         </>
       ) : null}
+      <div className={compact ? "relative h-full w-full px-4 py-4" : "relative h-full w-full px-8 py-8"}>
       {showSceneContent && scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} />
@@ -1007,6 +1008,7 @@ export function SceneStage({
           </div>
         </div>
       )}
+      </div>
     </StageShell>
   );
 }
