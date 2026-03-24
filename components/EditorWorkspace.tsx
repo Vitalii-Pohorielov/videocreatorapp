@@ -69,17 +69,33 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
   useEffect(() => {
     if (!isPlaying) return;
-    const interval = window.setInterval(() => {
+    let frameId = 0;
+    let lastTimestamp: number | null = null;
+
+    const tick = (timestamp: number) => {
+      if (lastTimestamp === null) {
+        lastTimestamp = timestamp;
+        frameId = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      const deltaSeconds = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
       setCurrentTime((prev) => {
-        const next = prev + 0.1;
+        const next = prev + deltaSeconds;
         if (next >= totalDuration) {
           setIsPlaying(false);
           return totalDuration;
         }
         return next;
       });
-    }, 100);
-    return () => window.clearInterval(interval);
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
   }, [isPlaying, totalDuration]);
 
   useEffect(() => {

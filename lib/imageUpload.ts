@@ -39,12 +39,19 @@ function getImageCompressionConfig(resolution: ExportResolution, profile: Export
   const { width } = exportResolutionDimensions[resolution];
   switch (profile) {
     case "draft":
-      return { maxDimension: Math.round(width * 2.4), quality: 0.9 };
+      return { maxDimension: Math.round(width * 3), quality: 0.92 };
     case "high":
-      return { maxDimension: Math.round(width * 4.2), quality: 0.98 };
+      return { maxDimension: Math.round(width * 5.4), quality: 0.99 };
     default:
-      return { maxDimension: Math.round(width * 3.2), quality: 0.95 };
+      return { maxDimension: Math.round(width * 4.2), quality: 0.97 };
   }
+}
+
+function getEffectiveMaxDimension(image: HTMLImageElement, baseMaxDimension: number) {
+  const aspectRatio = image.naturalHeight / Math.max(1, image.naturalWidth);
+  if (aspectRatio >= 2.2) return Math.round(baseMaxDimension * 2);
+  if (aspectRatio >= 1.6) return Math.round(baseMaxDimension * 1.6);
+  return baseMaxDimension;
 }
 
 export async function fileToOptimizedDataUrl(file: File, resolution: ExportResolution, profile: ExportProfile) {
@@ -55,8 +62,9 @@ export async function fileToOptimizedDataUrl(file: File, resolution: ExportResol
     const image = await loadImage(sourceDataUrl);
     const { maxDimension, quality } = getImageCompressionConfig(resolution, profile);
     const mimeType = getOutputMimeType(file);
+    const effectiveMaxDimension = getEffectiveMaxDimension(image, maxDimension);
     const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
-    const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
+    const scale = longestSide > effectiveMaxDimension ? effectiveMaxDimension / longestSide : 1;
     const targetWidth = Math.max(1, Math.round(image.naturalWidth * scale));
     const targetHeight = Math.max(1, Math.round(image.naturalHeight * scale));
 
@@ -82,8 +90,9 @@ async function optimizeImageFile(file: File, resolution: ExportResolution, profi
   try {
     const image = await loadImage(sourceDataUrl);
     const { maxDimension, quality } = getImageCompressionConfig(resolution, profile);
+    const effectiveMaxDimension = getEffectiveMaxDimension(image, maxDimension);
     const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
-    const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
+    const scale = longestSide > effectiveMaxDimension ? effectiveMaxDimension / longestSide : 1;
     const targetWidth = Math.max(1, Math.round(image.naturalWidth * scale));
     const targetHeight = Math.max(1, Math.round(image.naturalHeight * scale));
     const mimeType = getOutputMimeType(file);

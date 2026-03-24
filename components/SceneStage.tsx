@@ -287,7 +287,8 @@ function WebsiteScrollFrame({
   editable?: boolean;
   onPickImage?: () => void;
 }) {
-  const scrollOffset = `${progress * 45}%`;
+  const easedScroll = easeOutCubic(progress);
+  const scrollOffset = `${easedScroll * 52}%`;
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
   const viewportHeight = compact ? 156 : 540;
 
@@ -309,7 +310,7 @@ function WebsiteScrollFrame({
             src={websiteImageUrl}
             alt="Website screenshot"
             className="block w-full"
-            style={{ transform: `translateY(-${scrollOffset})`, transition: "transform 120ms linear" }}
+            style={{ transform: `translateY(-${scrollOffset}) translateZ(0)`, transition: "transform 80ms linear", willChange: "transform" }}
           />
         ) : (
           <div className="p-5">
