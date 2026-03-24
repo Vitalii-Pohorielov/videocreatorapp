@@ -119,10 +119,6 @@ export function ProjectsWorkspace() {
                       <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">Updated {formatRelativeDate(project.updated_at)}</p>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Project ID</p>
-                    <p className="mt-2 line-clamp-2 break-all text-sm leading-6 text-slate-300">{project.id}</p>
-                  </div>
                   <div className="mt-auto flex gap-3 pt-5">
                     <Link
                       href={`/editor?project=${project.id}`}
