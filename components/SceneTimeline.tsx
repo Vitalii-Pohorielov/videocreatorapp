@@ -52,6 +52,25 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
             <div key={scene.id} className="flex items-stretch gap-3">
               <div
                 aria-hidden={!showInsertSlot}
+                onDragEnter={() => {
+                  const currentDraggedId = draggedIdRef.current;
+                  if (currentDraggedId && currentDraggedId !== scene.id) setDragOverId(scene.id);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  const currentDraggedId = draggedIdRef.current || event.dataTransfer.getData("text/plain");
+                  if (currentDraggedId && currentDraggedId !== scene.id && dragOverId !== scene.id) {
+                    setDragOverId(scene.id);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const currentDraggedId = draggedIdRef.current || event.dataTransfer.getData("text/plain");
+                  if (currentDraggedId) onReorder(currentDraggedId, scene.id);
+                  draggedIdRef.current = null;
+                  setDraggedId(null);
+                  setDragOverId(null);
+                }}
                 className={`flex h-[144px] flex-none items-center justify-center overflow-hidden rounded-[22px] border border-dashed border-sky-400/35 bg-sky-400/8 text-sky-200 transition-all duration-300 ease-out ${showInsertSlot ? "w-[72px] opacity-100" : "w-0 border-transparent opacity-0"}`}
               >
                 <div className="flex h-[104px] w-[54px] items-center justify-center rounded-[18px] border border-sky-300/35 bg-white/5 text-[10px] font-semibold uppercase tracking-[0.22em]">
@@ -65,24 +84,6 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                   setDraggedId(scene.id);
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData("text/plain", scene.id);
-                }}
-                onDragEnter={() => {
-                  const currentDraggedId = draggedIdRef.current;
-                  if (currentDraggedId && currentDraggedId !== scene.id) setDragOverId(scene.id);
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  const currentDraggedId = draggedIdRef.current || event.dataTransfer.getData("text/plain");
-                  if (currentDraggedId && currentDraggedId !== scene.id && dragOverId !== scene.id) {
-                    setDragOverId(scene.id);
-                  }
-                }}
-                onDrop={(event) => {
-                  const currentDraggedId = draggedIdRef.current || event.dataTransfer.getData("text/plain");
-                  if (currentDraggedId) onReorder(currentDraggedId, scene.id);
-                  draggedIdRef.current = null;
-                  setDraggedId(null);
-                  setDragOverId(null);
                 }}
                 onDragEnd={() => {
                   draggedIdRef.current = null;
