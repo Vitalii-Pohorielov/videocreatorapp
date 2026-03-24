@@ -490,7 +490,6 @@ function StageShell({
   backgroundColor,
   textColor,
   children,
-  progress,
   compact,
   renderLayer,
 }: {
@@ -501,16 +500,14 @@ function StageShell({
   compact: boolean;
   renderLayer: "full" | "background" | "content";
 }) {
-  const bg = motion(progress, 0, 1);
-  const drift = 34 * (1 - bg);
   const showBackground = renderLayer !== "content";
   const showContent = renderLayer !== "background";
   return (
     <div className={`relative h-full w-full overflow-hidden rounded-[24px] ${compact ? "px-4 py-4" : "px-8 py-8"}`} style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
-      {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: `scale(${1.06 - bg * 0.06})` }} /> : null}
-      {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: `translate3d(${-drift}px, ${drift * 0.4}px, 0)`, opacity: 0.18 + bg * 0.26 }} /> : null}
-      {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: `translate3d(${drift}px, ${-drift * 0.3}px, 0)`, opacity: 0.14 + bg * 0.2 }} /> : null}
-      {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.08 + bg * 0.12, transform: `translate3d(${drift * 0.2}px, ${-drift * 0.1}px, 0)` }} /> : null}
+      {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
+      {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
+      {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
+      {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.2, transform: "translate3d(0, 0, 0)" }} /> : null}
       {showContent ? <div className="relative h-full w-full">{children}</div> : null}
     </div>
   );
