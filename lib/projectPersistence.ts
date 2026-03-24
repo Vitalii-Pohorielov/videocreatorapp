@@ -10,6 +10,7 @@ type PersistedProjectRow = {
   id: string;
   name: string;
   payload: PersistedProjectPayload;
+  deleted?: boolean;
   created_at?: string;
   updated_at?: string;
 };
@@ -57,6 +58,7 @@ export async function saveProject(input: {
     id: input.projectId ?? crypto.randomUUID(),
     name: input.projectName.trim() || "Untitled project",
     payload,
+    deleted: false,
   };
 
   const { data, error } = await supabase
@@ -78,6 +80,7 @@ export async function loadProject(projectId: string) {
     .from(PROJECTS_TABLE)
     .select("id, name, payload, updated_at")
     .eq("id", projectId)
+    .eq("deleted", false)
     .single<PersistedProjectRow>();
 
   if (error) {
@@ -92,6 +95,7 @@ export async function listProjects(limit = 24) {
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .select("id, name, created_at, updated_at")
+    .eq("deleted", false)
     .order("updated_at", { ascending: false })
     .limit(limit)
     .returns<PersistedProjectRow[]>();
@@ -107,7 +111,7 @@ export async function deleteProject(projectId: string) {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
-    .delete()
+    .update({ deleted: true })
     .eq("id", projectId)
     .select("id")
     .maybeSingle<{ id: string }>();
@@ -117,6 +121,6 @@ export async function deleteProject(projectId: string) {
   }
 
   if (!data?.id) {
-    throw new Error("Project delete did not complete. If you use Supabase, add the delete policy from lib/projectSchema.sql.");
+    throw new Error("Project delete did not complete. Apply the updated schema from lib/projectSchema.sql first.");
   }
 }

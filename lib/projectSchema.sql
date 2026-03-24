@@ -4,9 +4,13 @@ create table if not exists public.video_projects (
   id uuid primary key default gen_random_uuid(),
   name text not null default 'Untitled project',
   payload jsonb not null,
+  deleted boolean not null default false,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.video_projects
+add column if not exists deleted boolean not null default false;
 
 create or replace function public.set_video_projects_updated_at()
 returns trigger
