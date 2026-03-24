@@ -39,11 +39,11 @@ function getImageCompressionConfig(resolution: ExportResolution, profile: Export
   const { width } = exportResolutionDimensions[resolution];
   switch (profile) {
     case "draft":
-      return { maxDimension: Math.round(width * 1.05), quality: 0.72 };
+      return { maxDimension: Math.round(width * 1.5), quality: 0.84 };
     case "high":
-      return { maxDimension: Math.round(width * 1.8), quality: 0.92 };
+      return { maxDimension: Math.round(width * 2.6), quality: 0.96 };
     default:
-      return { maxDimension: Math.round(width * 1.35), quality: 0.82 };
+      return { maxDimension: Math.round(width * 2), quality: 0.9 };
   }
 }
 
@@ -54,6 +54,7 @@ export async function fileToOptimizedDataUrl(file: File, resolution: ExportResol
   try {
     const image = await loadImage(sourceDataUrl);
     const { maxDimension, quality } = getImageCompressionConfig(resolution, profile);
+    const mimeType = getOutputMimeType(file);
     const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
     const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
     const targetWidth = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -66,7 +67,7 @@ export async function fileToOptimizedDataUrl(file: File, resolution: ExportResol
     if (!ctx) return sourceDataUrl;
 
     ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL("image/webp", quality);
+    return mimeType === "image/png" ? canvas.toDataURL("image/png") : canvas.toDataURL(mimeType, quality);
   } catch {
     return sourceDataUrl;
   }

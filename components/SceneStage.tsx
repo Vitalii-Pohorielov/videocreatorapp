@@ -226,6 +226,7 @@ function WebsiteScrollFrame({
 }) {
   const scrollOffset = `${progress * 45}%`;
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
+  const viewportHeight = compact ? 156 : 540;
 
   return (
     <div className={`w-full rounded-[28px] border p-5 ${cardClassName}`} style={style}>
@@ -238,7 +239,7 @@ function WebsiteScrollFrame({
         type="button"
         onClick={!websiteImageUrl && editable ? onPickImage : undefined}
         className={`relative block w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/15 text-left ${!websiteImageUrl && editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
-        style={{ height: compact ? 132 : 420 }}
+        style={{ height: viewportHeight }}
       >
         {websiteImageUrl ? (
           <img
