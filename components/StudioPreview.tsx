@@ -7,7 +7,6 @@ import { SceneStage } from "@/components/SceneStage";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import {
   exportProfileLabels,
-  exportResolutionDimensions,
   exportResolutionLabels,
   type ExportProfile,
   type ExportResolution,
@@ -73,7 +72,6 @@ export function StudioPreview({
 }: StudioPreviewProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const highlightInputRef = useRef<HTMLInputElement>(null);
-  const resolutionMeta = exportResolutionDimensions[resolution];
   const resolutionOptions: ExportResolution[] = ["480p", "540p", "720p"];
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
 
@@ -166,13 +164,6 @@ export function StudioPreview({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>{cloudStatus ?? (projectId ? "Saved project is ready to edit." : "Unsaved draft.")}</span>
-            <span>
-              {resolutionMeta.width} x {resolutionMeta.height} ({exportResolutionLabels[resolution]})
-              {isExporting ? ` • ${Math.round(exportProgress * 100)}%` : ""}
-            </span>
-          </div>
         </div>
       </div>
 
