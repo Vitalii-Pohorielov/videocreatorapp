@@ -940,22 +940,42 @@ export function SceneStage({
 
       {scene.type === "slogan" && (
         <div className="flex h-full items-center justify-center text-center">
-          <div className="relative max-w-4xl">
-            <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center overflow-hidden">
+          <div className="relative max-w-5xl overflow-hidden rounded-[40px] border border-white/10 px-8 py-16 shadow-[0_30px_100px_rgba(2,6,23,0.22)] backdrop-blur-[2px] md:px-14">
+            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[40px]">
+              <span className="slogan-grid" />
               <span
-                className="slogan-sprite slogan-sprite-primary"
-                style={{ opacity: 0.2 + titleIn * 0.45, transform: `translate3d(-18%, 0, 0) scale(${0.8 + titleIn * 0.2})` }}
+                className="slogan-aurora slogan-aurora-primary"
+                style={{ opacity: 0.14 + titleIn * 0.38, transform: `translate3d(-10%, 0, 0) scale(${0.88 + titleIn * 0.14})` }}
               />
               <span
-                className="slogan-sprite slogan-sprite-secondary"
-                style={{ opacity: 0.16 + titleIn * 0.36, transform: `translate3d(22%, -6%, 0) scale(${0.72 + titleIn * 0.24})` }}
+                className="slogan-aurora slogan-aurora-secondary"
+                style={{ opacity: 0.12 + titleIn * 0.32, transform: `translate3d(12%, -8%, 0) scale(${0.82 + titleIn * 0.18})` }}
               />
               <span
-                className="slogan-sprite slogan-sprite-tertiary"
-                style={{ opacity: 0.12 + titleIn * 0.3, transform: `translate3d(4%, 18%, 0) scale(${0.7 + titleIn * 0.22})` }}
+                className="slogan-orbit slogan-orbit-left"
+                style={{ opacity: 0.12 + titleIn * 0.22 }}
               />
+              <span
+                className="slogan-orbit slogan-orbit-right"
+                style={{ opacity: 0.1 + titleIn * 0.18 }}
+              />
+              <span className="slogan-glow-line slogan-glow-line-top" style={{ opacity: 0.2 + titleIn * 0.3 }} />
+              <span className="slogan-glow-line slogan-glow-line-bottom" style={{ opacity: 0.14 + titleIn * 0.24 }} />
+              <span className="slogan-noise-mask" />
             </div>
-            <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title} ${s.italic}`} style={{ transform: `translateY(${54 * (1 - titleIn)}px) scale(${0.86 + titleIn * 0.14})`, opacity: 0.18 + titleIn * 0.82 }} placeholder="Title" />
+            <EditableText
+              as="h2"
+              value={scene.title}
+              editable={editable}
+              onCommit={(value) => onSceneChange?.({ title: value })}
+              className={`relative z-10 mx-auto max-w-4xl leading-[0.92] ${titleSize} ${s.title} ${s.italic}`}
+              style={{
+                transform: `translateY(${42 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`,
+                opacity: 0.22 + titleIn * 0.78,
+                textShadow: "0 10px 40px rgba(15,23,42,0.18)",
+              }}
+              placeholder="Title"
+            />
           </div>
         </div>
       )}
