@@ -257,7 +257,6 @@ function getFrameProgress(frameIndex: number, frameCount: number) {
 async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, nextSceneProgress: number, cache: Map<string, HTMLCanvasElement>) {
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
-  const eased = easeInOut(progress);
   const normalizedCurrentProgress = normalizeSceneProgress(currentScene, 1);
   const normalizedNextProgress = normalizeSceneProgress(nextScene, nextSceneProgress);
   // These renders must stay sequential because all export captures share one
@@ -268,15 +267,13 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   const nextContentCanvas = await renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "content");
 
   ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
-
-  // Keep one continuous background and avoid dimming between scenes by
-  // holding the outgoing content fully visible while the next scene fades in.
-  ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
-
-  ctx.save();
-  ctx.globalAlpha = eased;
-  ctx.drawImage(nextContentCanvas, 0, 0, videoWidth, videoHeight);
-  ctx.restore();
+  // Keep one continuous background, but avoid overlaying two scenes at once.
+  // We switch the content layer halfway through the transition window.
+  if (progress < 0.5) {
+    ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
+  } else {
+    ctx.drawImage(nextContentCanvas, 0, 0, videoWidth, videoHeight);
+  }
 
   return canvas;
 }
