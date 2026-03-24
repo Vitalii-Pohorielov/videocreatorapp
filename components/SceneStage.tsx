@@ -434,44 +434,86 @@ function ShowcaseImageSlot({
   compact,
   editable,
   onPickImage,
+  onChangeMediaPosition,
 }: {
   scene: Scene;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
+  onChangeMediaPosition?: (value: "left" | "right" | "bottom") => void;
 }) {
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
+  const mediaButtons: Array<{ value: "left" | "right" | "bottom"; label: string }> = [
+    { value: "left", label: "←" },
+    { value: "right", label: "→" },
+    { value: "bottom", label: "↓" },
+  ];
+
+  const mediaPositionControls =
+    editable && onChangeMediaPosition ? (
+      <div className="pointer-events-none absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition group-hover:opacity-100">
+        {mediaButtons.map((button) => {
+          const active = scene.mediaPosition === button.value;
+          return (
+            <button
+              key={button.value}
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onChangeMediaPosition(button.value);
+              }}
+              className={`pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold backdrop-blur-sm transition ${
+                active
+                  ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
+                  : "border-white/20 bg-black/45 text-white hover:bg-black/65"
+              }`}
+              aria-label={`Move image ${button.value}`}
+            >
+              {button.label}
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
+
   if (websiteImageUrl) {
     return (
-      <button type="button" onClick={editable ? onPickImage : undefined} className={`block w-full ${editable ? "cursor-pointer transition hover:opacity-95" : "cursor-default"}`}>
-        <img
-          src={websiteImageUrl}
-          alt="Product screenshot"
-          className="block h-full w-full object-cover object-top"
-          style={{ height: compact ? 150 : 320 }}
-        />
-      </button>
+      <div className="group relative">
+        {mediaPositionControls}
+        <button type="button" onClick={editable ? onPickImage : undefined} className={`block w-full ${editable ? "cursor-pointer transition hover:opacity-95" : "cursor-default"}`}>
+          <img
+            src={websiteImageUrl}
+            alt="Product screenshot"
+            className="block h-full w-full object-cover object-top"
+            style={{ height: compact ? 150 : 320 }}
+          />
+        </button>
+      </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={editable ? onPickImage : undefined}
-      className={`flex w-full items-center justify-center ${editable ? "cursor-pointer transition hover:bg-white/5" : "cursor-default"}`}
-      style={{ height: compact ? 150 : 320 }}
-    >
-      <div className="w-full px-6">
-        <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-4 rounded-[20px] border border-dashed border-white/15 bg-white/5 px-6 py-8 text-center text-white/65">
-          <div className="h-10 w-16 rounded-[14px] border border-white/15 bg-white/8" />
-          <div className="space-y-2">
-            <div className="h-2 w-28 rounded-full bg-white/20" />
-            <div className="h-2 w-20 rounded-full bg-white/10" />
+    <div className="group relative">
+      {mediaPositionControls}
+      <button
+        type="button"
+        onClick={editable ? onPickImage : undefined}
+        className={`flex w-full items-center justify-center ${editable ? "cursor-pointer transition hover:bg-white/5" : "cursor-default"}`}
+        style={{ height: compact ? 150 : 320 }}
+      >
+        <div className="w-full px-6">
+          <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-4 rounded-[20px] border border-dashed border-white/15 bg-white/5 px-6 py-8 text-center text-white/65">
+            <div className="h-10 w-16 rounded-[14px] border border-white/15 bg-white/8" />
+            <div className="space-y-2">
+              <div className="h-2 w-28 rounded-full bg-white/20" />
+              <div className="h-2 w-20 rounded-full bg-white/10" />
+            </div>
+            <span className={compact ? "text-[9px]" : "text-xs"}>Click to upload screenshot</span>
           </div>
-          <span className={compact ? "text-[9px]" : "text-xs"}>Click to upload screenshot</span>
         </div>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -782,7 +824,13 @@ export function SceneStage({
               <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
               <div className={`overflow-hidden rounded-[22px] border border-white/10 bg-black/10 ${compact ? "h-[170px]" : "h-[430px]"}`}>
                 <div className={compact ? "translate-y-2" : "translate-y-8"}>
-                  <ShowcaseImageSlot scene={scene} compact={compact} editable={editable} onPickImage={onRequestHighlightUpload} />
+                  <ShowcaseImageSlot
+                    scene={scene}
+                    compact={compact}
+                    editable={editable}
+                    onPickImage={onRequestHighlightUpload}
+                    onChangeMediaPosition={(value) => onSceneChange?.({ mediaPosition: value })}
+                  />
                 </div>
               </div>
             </div>
@@ -797,7 +845,13 @@ export function SceneStage({
             <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
               <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
               <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/10">
-                <ShowcaseImageSlot scene={scene} compact={compact} editable={editable} onPickImage={onRequestHighlightUpload} />
+                <ShowcaseImageSlot
+                  scene={scene}
+                  compact={compact}
+                  editable={editable}
+                  onPickImage={onRequestHighlightUpload}
+                  onChangeMediaPosition={(value) => onSceneChange?.({ mediaPosition: value })}
+                />
               </div>
             </div>
           </div>
