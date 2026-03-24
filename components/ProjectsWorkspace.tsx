@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { listProjects } from "@/lib/projectPersistence";
+import { deleteProject, listProjects } from "@/lib/projectPersistence";
 
 type ProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
 
@@ -24,6 +24,7 @@ export function ProjectsWorkspace() {
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -47,6 +48,23 @@ export function ProjectsWorkspace() {
       isActive = false;
     };
   }, []);
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    const confirmed = window.confirm(`Delete "${projectName}"?`);
+    if (!confirmed) return;
+
+    try {
+      setBusyProjectId(projectId);
+      setError(null);
+      await deleteProject(projectId);
+      setProjects((current) => current.filter((project) => project.id !== projectId));
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : "Could not delete project.";
+      setError(message);
+    } finally {
+      setBusyProjectId(null);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#eef6ff,transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-4 py-6 text-slate-900">
@@ -92,29 +110,34 @@ export function ProjectsWorkspace() {
           ) : null}
 
           {!isLoading && !error && projects.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {projects.map((project) => (
-                <article key={project.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:border-slate-300 hover:bg-white">
+                <article key={project.id} className="flex min-h-[220px] flex-col rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:border-slate-300 hover:bg-white">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="truncate text-lg font-semibold text-slate-950">{project.name}</h3>
                       <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">Updated {formatRelativeDate(project.updated_at)}</p>
                     </div>
                   </div>
-                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-500">{project.id}</p>
-                  <div className="mt-5 flex gap-3">
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Project ID</p>
+                    <p className="mt-2 line-clamp-2 break-all text-sm leading-6 text-slate-500">{project.id}</p>
+                  </div>
+                  <div className="mt-auto flex gap-3 pt-5">
                     <Link
                       href={`/editor?project=${project.id}`}
-                      className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-                    >
-                      Open
-                    </Link>
-                    <Link
-                      href={`/editor?project=${project.id}`}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      className="flex-1 rounded-2xl bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-slate-800"
                     >
                       Edit
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProject(project.id, project.name)}
+                      disabled={busyProjectId === project.id}
+                      className="flex-1 rounded-2xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {busyProjectId === project.id ? "Deleting..." : "Delete"}
+                    </button>
                   </div>
                 </article>
               ))}
