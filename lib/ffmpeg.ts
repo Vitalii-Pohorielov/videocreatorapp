@@ -260,11 +260,12 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   const eased = easeInOut(progress);
   const normalizedCurrentProgress = normalizeSceneProgress(currentScene, 1);
   const normalizedNextProgress = normalizeSceneProgress(nextScene, nextSceneProgress);
-  const [backgroundCanvas, currentContentCanvas, nextContentCanvas] = await Promise.all([
-    renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "background"),
-    renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "content"),
-    renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "content"),
-  ]);
+  // These renders must stay sequential because all export captures share one
+  // offscreen React root. Parallel rendering causes layers to overwrite each
+  // other and can produce empty/black transition frames.
+  const backgroundCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "background");
+  const currentContentCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "content");
+  const nextContentCanvas = await renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "content");
 
   ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
 
