@@ -10,6 +10,7 @@ type PersistedProjectRow = {
   id: string;
   name: string;
   payload: PersistedProjectPayload;
+  user_id?: string | null;
   deleted?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -21,11 +22,29 @@ export type PersistedProjectPayload = {
   exportSettings: ExportSettings;
 };
 
-export async function uploadProjectImage(file: File) {
+async function getAuthenticatedSupabase() {
   const supabase = getSupabaseBrowserClient();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    throw new Error(`Authentication failed: ${error.message}`);
+  }
+
+  if (!session?.user) {
+    throw new Error("Sign in with Google to access cloud projects.");
+  }
+
+  return { supabase, user: session.user };
+}
+
+export async function uploadProjectImage(file: File) {
+  const { supabase, user } = await getAuthenticatedSupabase();
   const extension = file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() ?? "webp" : "webp";
   const safeExtension = extension.replace(/[^a-z0-9]/g, "") || "webp";
-  const path = `uploads/${crypto.randomUUID()}.${safeExtension}`;
+  const path = `${user.id}/uploads/${crypto.randomUUID()}.${safeExtension}`;
 
   const { error } = await supabase.storage.from(IMAGES_BUCKET).upload(path, file, {
     cacheControl: "3600",
@@ -47,7 +66,7 @@ export async function saveProject(input: {
   sceneTrack: SceneTrack;
   exportSettings: ExportSettings;
 }) {
-  const supabase = getSupabaseBrowserClient();
+  const { supabase, user } = await getAuthenticatedSupabase();
   const payload: PersistedProjectPayload = {
     version: 1,
     sceneTrack: input.sceneTrack,
@@ -56,6 +75,7 @@ export async function saveProject(input: {
 
   const row = {
     id: input.projectId ?? crypto.randomUUID(),
+    user_id: user.id,
     name: input.projectName.trim() || "Untitled project",
     payload,
     deleted: false,
@@ -75,7 +95,7 @@ export async function saveProject(input: {
 }
 
 export async function loadProject(projectId: string) {
-  const supabase = getSupabaseBrowserClient();
+  const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .select("id, name, payload, updated_at")
@@ -91,7 +111,7 @@ export async function loadProject(projectId: string) {
 }
 
 export async function listProjects(limit = 24) {
-  const supabase = getSupabaseBrowserClient();
+  const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .select("id, name, created_at, updated_at")
@@ -108,7 +128,7 @@ export async function listProjects(limit = 24) {
 }
 
 export async function deleteProject(projectId: string) {
-  const supabase = getSupabaseBrowserClient();
+  const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .update({ deleted: true })
