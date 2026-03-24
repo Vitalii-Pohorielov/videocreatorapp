@@ -288,13 +288,10 @@ function WebsiteScrollFrame({
   onPickImage?: () => void;
 }) {
   const scrollDelaySeconds = 2;
-  const scrollStartProgress = Math.min(1, scrollDelaySeconds / Math.max(scene.durationSeconds, 0.001));
-  const normalizedScrollProgress =
-    progress <= scrollStartProgress
-      ? 0
-      : Math.min(1, (progress - scrollStartProgress) / Math.max(1 - scrollStartProgress, 0.0001));
-  const easedScroll = easeOutCubic(normalizedScrollProgress);
-  const scrollOffset = `${easedScroll * 52}%`;
+  const elapsedSceneSeconds = progress * scene.durationSeconds;
+  const activeScrollSeconds = Math.max(0, elapsedSceneSeconds - scrollDelaySeconds);
+  const scrollSpeedPerSecond = 12;
+  const scrollOffset = `${activeScrollSeconds * scrollSpeedPerSecond}%`;
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
   const viewportHeight = compact ? 156 : 540;
 
