@@ -54,8 +54,12 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
         }
       }}
       className={`group relative flex h-[144px] w-[180px] flex-none cursor-grab flex-col rounded-[22px] border p-4 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 active:cursor-grabbing ${
-        active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"
-      } ${dragging ? "pointer-events-none opacity-0 shadow-none" : "shadow-[0_12px_24px_rgba(2,6,23,0.18)]"}`}
+        dragging
+          ? "pointer-events-none border-dashed border-sky-400/30 bg-sky-400/6 opacity-35 shadow-none"
+          : active
+            ? "border-sky-400 bg-sky-400/10 shadow-[0_12px_24px_rgba(2,6,23,0.18)]"
+            : "border-white/10 bg-white/[0.04] shadow-[0_12px_24px_rgba(2,6,23,0.18)] hover:border-white/20 hover:bg-white/[0.07]"
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
