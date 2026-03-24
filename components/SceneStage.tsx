@@ -890,10 +890,14 @@ export function SceneStage({
                       onImageChange={(file) => updateBulletImage(index, file)}
                     />
                   ) : (
-                    <>
-                      <BulletMarker emoji={scene.bulletEmojis[index]} imageUrl={scene.bulletImageUrls[index]} accentClassName={s.accent} compact={compact} />
-                      <p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { y: 12, blur: 6, minOpacity: 0.22 })}>{bullet}</p>
-                    </>
+                    <div className="flex items-center gap-4">
+                      <div className="mb-0 shrink-0">
+                        <BulletMarker emoji={scene.bulletEmojis[index]} imageUrl={scene.bulletImageUrls[index]} accentClassName={s.accent} compact={compact} />
+                      </div>
+                      <p className={compact ? "text-sm font-medium" : "text-xl font-semibold leading-tight"} style={revealStyle(itemIn, { x: -8, y: 0, blur: 6, minOpacity: 0.22 })}>
+                        {bullet}
+                      </p>
+                    </div>
                   )}
                 </div>
               );
