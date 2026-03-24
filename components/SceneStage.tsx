@@ -3,6 +3,7 @@
 import { useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
+import { SloganThreeBackground } from "@/components/SloganThreeBackground";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import type { ExportProfile, ExportResolution, Scene, TemplatePreset } from "@/store/useStore";
 
@@ -941,12 +942,7 @@ export function SceneStage({
       {scene.type === "slogan" && (
         <div className="absolute inset-0 overflow-hidden text-center">
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <img
-              src="/lottie/slogan.gif"
-              alt=""
-              className="slogan-gif-background"
-              style={{ opacity: 1, transform: `scale(${1 + (1 - titleIn) * 0.02})` }}
-            />
+            <SloganThreeBackground className="h-full w-full" />
           </div>
           <div className="relative z-10 flex h-full items-center justify-center px-6">
             <EditableText
