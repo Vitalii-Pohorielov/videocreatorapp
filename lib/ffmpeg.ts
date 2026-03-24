@@ -268,10 +268,9 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
 
   ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
 
-  ctx.save();
-  ctx.globalAlpha = 1 - eased;
+  // Keep one continuous background and avoid dimming between scenes by
+  // holding the outgoing content fully visible while the next scene fades in.
   ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
-  ctx.restore();
 
   ctx.save();
   ctx.globalAlpha = eased;
