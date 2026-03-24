@@ -11,6 +11,8 @@ type SceneTypeModalProps = {
 export function SceneTypeModal({ isOpen, onClose, onSelect }: SceneTypeModalProps) {
   if (!isOpen) return null;
 
+  const availableSceneDefinitions = sceneDefinitions.filter((definition) => definition.type !== "slogan");
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
       <div className="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
@@ -24,7 +26,7 @@ export function SceneTypeModal({ isOpen, onClose, onSelect }: SceneTypeModalProp
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {sceneDefinitions.map((definition) => (
+          {availableSceneDefinitions.map((definition) => (
             <button key={definition.type} type="button" onClick={() => onSelect(definition.type)} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:border-slate-300 hover:bg-white">
               <h3 className="text-lg font-semibold text-slate-900">{definition.label}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-500">{definition.catalogDescription}</p>
