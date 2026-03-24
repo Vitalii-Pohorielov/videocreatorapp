@@ -636,7 +636,7 @@ export function SceneStage({
   const titleIn = motion(progress, 0.04, 0.28);
   const subIn = motion(progress, 0.08, 0.26);
   const cardIn = motion(progress, 0.1, 0.3);
-  const outroFade = 1 - motion(progress, 0.8, 0.16);
+  const outroFade = editable ? 1 : 1 - motion(progress, 0.8, 0.16);
   const s = presetStyles(preset, lightweightPreview);
   const titleSize = compact ? "text-lg" : "text-5xl";
   const midSize = compact ? "text-xs" : "text-lg";
