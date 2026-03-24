@@ -30,10 +30,14 @@ type StudioPreviewProps = {
   exportProgress: number;
   downloadUrl: string | null;
   downloadFileName: string;
+  sourceUrl: string;
+  isGeneratingFromUrl: boolean;
   cloudStatus: string | null;
   isCloudBusy: boolean;
   onProjectNameChange: (value: string) => void;
+  onSourceUrlChange: (value: string) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
+  onGenerateFromUrl: () => void;
   onSaveProject: () => void;
   onExport: () => void;
   onTogglePlayback: () => void;
@@ -57,10 +61,14 @@ export function StudioPreview({
   exportProgress,
   downloadUrl,
   downloadFileName,
+  sourceUrl,
+  isGeneratingFromUrl,
   cloudStatus,
   isCloudBusy,
   onProjectNameChange,
+  onSourceUrlChange,
   onUpdateSettings,
+  onGenerateFromUrl,
   onSaveProject,
   onExport,
   onTogglePlayback,
@@ -95,6 +103,22 @@ export function StudioPreview({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={sourceUrl}
+                onChange={(event) => onSourceUrlChange(event.target.value)}
+                className="min-w-[220px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-500"
+                placeholder="Paste website URL"
+              />
+
+              <button
+                type="button"
+                onClick={onGenerateFromUrl}
+                disabled={isGeneratingFromUrl}
+                className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition hover:bg-sky-100 disabled:opacity-60"
+              >
+                {isGeneratingFromUrl ? "Generating..." : "Generate"}
+              </button>
+
               <label className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <select
                   value={settings.profile}

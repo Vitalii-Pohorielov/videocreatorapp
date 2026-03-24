@@ -38,6 +38,8 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [isGeneratingFromUrl, setIsGeneratingFromUrl] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const [isCloudBusy, setIsCloudBusy] = useState(false);
   const didHydrateProject = useRef<string | null | undefined>(undefined);
@@ -170,6 +172,56 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     }
   };
 
+  const handleGenerateFromUrl = async () => {
+    const trimmedUrl = sourceUrl.trim();
+    if (!trimmedUrl) {
+      setCloudStatus("Add a website URL first.");
+      return;
+    }
+
+    const shouldReplace = window.confirm("Generate a new scene draft from this website? Unsaved editor changes will be replaced.");
+    if (!shouldReplace) return;
+
+    try {
+      setIsGeneratingFromUrl(true);
+      setCloudStatus("Reading website and building scenes...");
+      setIsPlaying(false);
+      setCurrentTime(0);
+      resetDownload();
+
+      const response = await fetch("/api/generate-from-url", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: trimmedUrl }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        projectName?: string;
+        sceneTrack?: typeof sceneTrack;
+        exportSettings?: typeof exportSettings;
+      };
+
+      if (!response.ok || !payload.projectName || !payload.sceneTrack || !payload.exportSettings) {
+        throw new Error(payload.error || "Could not generate scenes from that URL.");
+      }
+
+      hydrateProject({
+        id: null,
+        name: payload.projectName,
+        sceneTrack: payload.sceneTrack,
+        exportSettings: payload.exportSettings,
+      });
+      window.history.replaceState({}, "", "/editor");
+      setCloudStatus(`Generated draft from ${trimmedUrl}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not generate scenes from that URL.";
+      setCloudStatus(message);
+    } finally {
+      setIsGeneratingFromUrl(false);
+    }
+  };
+
   const togglePlayback = () => {
     setIsPlaying((prev) => {
       if (prev) return false;
@@ -221,10 +273,14 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               exportProgress={exportProgress}
               downloadUrl={downloadUrl}
               downloadFileName={downloadFileName}
+              sourceUrl={sourceUrl}
+              isGeneratingFromUrl={isGeneratingFromUrl}
               cloudStatus={cloudStatus}
               isCloudBusy={isCloudBusy}
               onProjectNameChange={(value) => updateProjectMeta({ name: value })}
+              onSourceUrlChange={setSourceUrl}
               onUpdateSettings={updateExportSettings}
+              onGenerateFromUrl={handleGenerateFromUrl}
               onSaveProject={handleSaveProject}
               onExport={handleExport}
               onTogglePlayback={togglePlayback}
