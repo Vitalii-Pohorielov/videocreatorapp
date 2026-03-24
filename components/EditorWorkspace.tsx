@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { EditorHeader } from "@/components/EditorHeader";
 import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
 import { SceneTypeModal } from "@/components/SceneTypeModal";
@@ -183,26 +182,13 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
   return (
     <main className="h-screen overflow-hidden bg-[#f4f6f8] px-4 py-4 text-slate-900">
-      <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-        <EditorHeader
-          projectId={projectId}
-          projectName={projectName}
-          settings={exportSettings}
-          isExporting={isExporting}
-          exportProgress={exportProgress}
-          downloadUrl={downloadUrl}
-          cloudStatus={cloudStatus}
-          isCloudBusy={isCloudBusy}
-          onProjectNameChange={(value) => updateProjectMeta({ name: value })}
-          onUpdateSettings={updateExportSettings}
-          onSaveProject={handleSaveProject}
-          onCopyProjectLink={handleCopyProjectLink}
-          onExport={handleExport}
-        />
-
+      <div className="mx-auto flex h-full max-w-[1600px] flex-col">
         <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <StudioPreview
+              projectId={projectId}
+              projectName={projectName}
+              settings={exportSettings}
               scene={playbackState.scene}
               backgroundColor={exportSettings.backgroundColor}
               textColor={exportSettings.textColor}
@@ -213,6 +199,16 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               isPlaying={isPlaying}
               currentTime={currentTime}
               totalDuration={totalDuration}
+              isExporting={isExporting}
+              exportProgress={exportProgress}
+              downloadUrl={downloadUrl}
+              cloudStatus={cloudStatus}
+              isCloudBusy={isCloudBusy}
+              onProjectNameChange={(value) => updateProjectMeta({ name: value })}
+              onUpdateSettings={updateExportSettings}
+              onSaveProject={handleSaveProject}
+              onCopyProjectLink={handleCopyProjectLink}
+              onExport={handleExport}
               onTogglePlayback={togglePlayback}
               onUpdateScene={(id, updates) => {
                 resetDownload();
