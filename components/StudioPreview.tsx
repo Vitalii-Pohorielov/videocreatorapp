@@ -29,6 +29,7 @@ type StudioPreviewProps = {
   isExporting: boolean;
   exportProgress: number;
   downloadUrl: string | null;
+  downloadFileName: string;
   cloudStatus: string | null;
   isCloudBusy: boolean;
   onProjectNameChange: (value: string) => void;
@@ -55,6 +56,7 @@ export function StudioPreview({
   isExporting,
   exportProgress,
   downloadUrl,
+  downloadFileName,
   cloudStatus,
   isCloudBusy,
   onProjectNameChange,
@@ -117,7 +119,7 @@ export function StudioPreview({
               </button>
 
               {downloadUrl ? (
-                <a href={downloadUrl} download="output.mp4" className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
+                <a href={downloadUrl} download={downloadFileName} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
                   Download
                 </a>
               ) : null}

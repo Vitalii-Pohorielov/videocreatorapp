@@ -315,7 +315,18 @@ export async function ensureFFmpegLoaded() {
   await ffmpegLoadPromise;
 }
 
-export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSettings, onProgress?: (value: number) => void) {
+function toSafeVideoFileName(projectName?: string) {
+  const baseName = (projectName ?? "")
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\.+$/g, "")
+    .trim();
+
+  return `${baseName || "video-project"}.mp4`;
+}
+
+export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSettings, onProgress?: (value: number) => void, projectName?: string) {
   if (scenes.length === 0) throw new Error("Add at least one scene before exporting.");
   onProgress?.(0.02);
   await ensureFFmpegLoaded();
@@ -401,7 +412,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
     return {
       blob: videoBlob,
       url: downloadUrl,
-      fileName: "output.mp4",
+      fileName: toSafeVideoFileName(projectName),
       meta: { width: videoWidth, height: videoHeight, fps, transitionSeconds: settings.transitionSeconds },
     };
   } finally {

@@ -34,6 +34,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadFileName, setDownloadFileName] = useState("video-project.mp4");
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -161,8 +162,9 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       setIsExporting(true);
       setExportProgress(0);
       resetDownload();
-      const result = await exportSlidesToVideo(scenes, exportSettings, setExportProgress);
+      const result = await exportSlidesToVideo(scenes, exportSettings, setExportProgress, projectName);
       setDownloadUrl(result.url);
+      setDownloadFileName(result.fileName);
     } finally {
       setIsExporting(false);
     }
@@ -218,6 +220,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               isExporting={isExporting}
               exportProgress={exportProgress}
               downloadUrl={downloadUrl}
+              downloadFileName={downloadFileName}
               cloudStatus={cloudStatus}
               isCloudBusy={isCloudBusy}
               onProjectNameChange={(value) => updateProjectMeta({ name: value })}
