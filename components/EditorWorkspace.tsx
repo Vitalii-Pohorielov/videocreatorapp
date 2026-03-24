@@ -25,6 +25,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     hydrateProject,
     updateProjectMeta,
     addScene,
+    duplicateScene,
     updateScene,
     deleteScene,
     selectScene,
@@ -292,9 +293,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
             <SceneTimeline
               track={sceneTrack}
               selectedSceneId={selectedScene.id}
-              backgroundColor={exportSettings.backgroundColor}
-              textColor={exportSettings.textColor}
-              preset={exportSettings.preset}
               onSelect={(id) => {
                 setIsPlaying(false);
                 selectScene(id);
@@ -308,6 +306,10 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               onDelete={(id) => {
                 resetDownload();
                 deleteScene(id);
+              }}
+              onDuplicate={(id) => {
+                resetDownload();
+                duplicateScene(id);
               }}
               onAddScene={() => setIsSceneModalOpen(true)}
               onReorder={reorderScenes}

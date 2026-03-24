@@ -34,6 +34,7 @@ type StudioStore = {
   }) => void;
   updateProjectMeta: (updates: { id?: string | null; name?: string }) => void;
   addScene: (type: SceneType) => void;
+  duplicateScene: (id: string) => void;
   updateScene: (id: string, updates: SceneUpdates) => void;
   deleteScene: (id: string) => void;
   selectScene: (id: string) => void;
@@ -133,6 +134,31 @@ export const useStore = create<StudioStore>((set, get) => ({
     set({
       sceneTrack: { ...sceneTrack, scenes: [...sceneTrack.scenes, nextScene] },
       selectedSceneId: nextScene.id,
+    });
+  },
+  duplicateScene: (id) => {
+    const { sceneTrack } = get();
+    if (sceneTrack.scenes.length >= 10) return;
+
+    const sceneIndex = sceneTrack.scenes.findIndex((scene) => scene.id === id);
+    if (sceneIndex < 0) return;
+
+    const sourceScene = sceneTrack.scenes[sceneIndex];
+    const duplicatedScene: Scene = {
+      ...sourceScene,
+      id: crypto.randomUUID(),
+      name: `${sourceScene.name} Copy`,
+      bullets: [...sourceScene.bullets],
+      bulletEmojis: [...sourceScene.bulletEmojis],
+      bulletImageUrls: [...sourceScene.bulletImageUrls],
+    };
+
+    const nextScenes = [...sceneTrack.scenes];
+    nextScenes.splice(sceneIndex + 1, 0, duplicatedScene);
+
+    set({
+      sceneTrack: { ...sceneTrack, scenes: nextScenes },
+      selectedSceneId: duplicatedScene.id,
     });
   },
   updateScene: (id, updates) => {
