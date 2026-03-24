@@ -825,7 +825,7 @@ export function SceneStage({
               <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
             </div>
             <div
-              className={`pointer-events-auto absolute left-1/2 top-[48%] w-[88%] -translate-x-1/2 rounded-[28px] border p-5 ${s.card}`}
+              className={`pointer-events-auto absolute left-1/2 top-[44%] w-[88%] -translate-x-1/2 rounded-[28px] border p-5 ${s.card}`}
               style={{ transform: `translate(-50%, ${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}
             >
               <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
