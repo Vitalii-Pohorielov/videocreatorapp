@@ -139,7 +139,7 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Background color</span>
+              <span className="mb-2 block text-sm text-slate-600">Background</span>
               <div className="space-y-2">
                 <input
                   type="color"
@@ -157,7 +157,7 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
               </div>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Text color</span>
+              <span className="mb-2 block text-sm text-slate-600">Text</span>
               <div className="space-y-2">
                 <input
                   type="color"

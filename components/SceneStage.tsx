@@ -542,7 +542,39 @@ export function SceneStage({
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
   const shellOverlay =
-    preset === "neon-grid"
+    preset === "clean"
+      ? {
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.04) 42%, rgba(255,255,255,0)), radial-gradient(circle at 14% 18%, rgba(15,23,42,0.05), transparent 18%), radial-gradient(circle at 84% 22%, rgba(15,23,42,0.04), transparent 18%)",
+        }
+      : preset === "premium"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 48%), radial-gradient(circle at 20% 18%, rgba(215,185,138,0.16), transparent 20%), radial-gradient(circle at 82% 22%, rgba(215,185,138,0.09), transparent 18%)",
+          }
+      : preset === "bold"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 50%), linear-gradient(135deg, rgba(255,209,102,0.1) 0 18%, transparent 18% 100%), radial-gradient(circle at 88% 20%, rgba(255,209,102,0.14), transparent 20%)",
+          }
+      : preset === "editorial"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0) 50%), radial-gradient(circle at 18% 16%, rgba(154,123,79,0.12), transparent 18%), linear-gradient(90deg, rgba(24,20,17,0.05) 1px, transparent 1px)",
+            backgroundSize: "100% 100%, 100% 100%, 28px 28px",
+          }
+      : preset === "sunset"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,217,179,0.08), rgba(255,217,179,0) 48%), radial-gradient(circle at 18% 18%, rgba(251,146,60,0.22), transparent 18%), radial-gradient(circle at 82% 24%, rgba(255,112,67,0.18), transparent 22%)",
+          }
+      : preset === "mono"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 46%), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)",
+            backgroundSize: "100% 100%, 32px 32px, 32px 32px",
+          }
+      : preset === "neon-grid"
       ? {
           background:
             "linear-gradient(180deg, rgba(8,19,33,0.18), rgba(8,19,33,0.02) 45%, rgba(8,19,33,0.22)), linear-gradient(rgba(57,243,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(57,243,255,0.08) 1px, transparent 1px)",
@@ -582,7 +614,19 @@ export function SceneStage({
               }
             : null;
   const shellDeco =
-    preset === "neon-grid"
+    preset === "clean"
+      ? "border-black/10"
+      : preset === "premium"
+        ? "border-[#d7b98a]/22"
+      : preset === "bold"
+        ? "border-[#ffd166]/24"
+      : preset === "editorial"
+        ? "border-[#9a7b4f]/22"
+      : preset === "sunset"
+        ? "border-[#fb923c]/24"
+      : preset === "mono"
+        ? "border-white/16"
+      : preset === "neon-grid"
       ? "border-[#39f3ff]/22"
       : preset === "terminal"
         ? "border-[#2dff72]/24"
@@ -619,10 +663,24 @@ export function SceneStage({
   return (
     <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer}>
       {renderLayer !== "content" && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
-      {renderLayer !== "content" && (preset === "paper-cut" || preset === "arctic-glass" || preset === "neon-grid") ? (
+      {renderLayer !== "content" ? (
         <>
-          <div className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`} style={{ transform: preset === "paper-cut" ? "rotate(-8deg)" : "rotate(14deg)", opacity: preset === "neon-grid" ? 0.4 : 0.22 }} />
-          <div className={`pointer-events-none absolute left-[10%] bottom-[14%] rounded-full border ${shellDeco} ${compact ? "h-14 w-14" : "h-24 w-24"}`} style={{ opacity: preset === "arctic-glass" ? 0.34 : 0.18 }} />
+          <div
+            className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`}
+            style={{
+              transform:
+                preset === "paper-cut" || preset === "brutalist"
+                  ? "rotate(-8deg)"
+                  : preset === "terminal"
+                    ? "rotate(0deg)"
+                    : "rotate(14deg)",
+              opacity: preset === "neon-grid" || preset === "terminal" ? 0.4 : preset === "clean" ? 0.14 : 0.24,
+            }}
+          />
+          <div
+            className={`pointer-events-none absolute left-[10%] bottom-[14%] rounded-full border ${shellDeco} ${compact ? "h-14 w-14" : "h-24 w-24"}`}
+            style={{ opacity: preset === "arctic-glass" || preset === "mint-pop" ? 0.34 : preset === "mono" ? 0.12 : 0.2 }}
+          />
         </>
       ) : null}
       {scene.type === "brand-reveal" && (
