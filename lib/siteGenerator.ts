@@ -1,17 +1,6 @@
 "use server";
 
-import OpenAI from "openai";
-
-import {
-  createScene,
-  normalizeTemplatePreset,
-  presetDefaults,
-  type ExportSettings,
-  type Scene,
-  type SceneTrack,
-  type SceneType,
-  type TemplatePreset,
-} from "@/lib/sceneDefinitions";
+import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack } from "@/lib/sceneDefinitions";
 
 type ScrapedSiteData = {
   sourceUrl: string;
@@ -31,27 +20,8 @@ type GeneratedProjectPayload = {
   exportSettings: ExportSettings;
 };
 
-type GeneratedSceneDraft = {
-  type: SceneType;
-  eyebrow?: string;
-  title?: string;
-  subtitle?: string;
-  description?: string;
-  bullets?: string[];
-  websiteImageUrl?: string;
-  mediaPosition?: "left" | "right";
-};
-
-type GeneratedAiDraft = {
-  projectName?: string;
-  preset?: TemplatePreset | string;
-  scenes?: GeneratedSceneDraft[];
-};
-
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.2";
-let openaiClient: OpenAI | null | undefined;
 
 function decodeHtml(value: string) {
   return value
@@ -206,15 +176,18 @@ function takeBullets(values: string[], maxItems = 3) {
   return uniqueNonEmpty(values.filter((item) => item.length <= 90), maxItems).slice(0, maxItems);
 }
 
-function getOpenAIClient() {
-  if (openaiClient !== undefined) return openaiClient;
-  const apiKey = process.env.OPENAI_API_KEY;
-  openaiClient = apiKey ? new OpenAI({ apiKey }) : null;
-  return openaiClient;
-}
+export async function generateProjectFromUrl(inputUrl: string): Promise<GeneratedProjectPayload> {
+  const url = inputUrl.trim();
+  if (!url) throw new Error("Add a website URL first.");
 
-function buildRuleBasedProject(scraped: ScrapedSiteData): GeneratedProjectPayload {
-  const normalizedUrl = scraped.sourceUrl;
+  let normalizedUrl: string;
+  try {
+    normalizedUrl = new URL(url.startsWith("http") ? url : `https://${url}`).toString();
+  } catch {
+    throw new Error("Enter a valid website URL.");
+  }
+
+  const scraped = await scrapeSite(normalizedUrl);
   const projectName = scraped.title || getDomainLabel(normalizedUrl);
   const heroTitle = scraped.headings[0] || scraped.title || projectName;
   const heroSubtitle = scraped.description || scraped.headings[1] || `Explore ${projectName}.`;
@@ -309,114 +282,4 @@ function buildRuleBasedProject(scraped: ScrapedSiteData): GeneratedProjectPayloa
       profile: "standard",
     },
   };
-}
-
-function normalizeAiDraftScene(sceneDraft: GeneratedSceneDraft, index: number, scraped: ScrapedSiteData) {
-  const scene = createScene(sceneDraft.type, index);
-  const bullets = takeBullets(sceneDraft.bullets ?? [], 3);
-
-  return applyScene(scene, {
-    eyebrow: sceneDraft.eyebrow?.slice(0, 40) || scene.eyebrow,
-    title: sceneDraft.title?.slice(0, 110) || scene.title,
-    subtitle: sceneDraft.subtitle?.slice(0, 140) || scene.subtitle,
-    description: sceneDraft.description?.slice(0, 240) || scene.description,
-    bullets: bullets.length > 0 ? bullets : scene.bullets,
-    bulletEmojis: bullets.length > 0 ? bullets.map(() => "") : scene.bulletEmojis,
-    bulletImageUrls: bullets.length > 0 ? bullets.map(() => "") : scene.bulletImageUrls,
-    websiteImageUrl: sceneDraft.websiteImageUrl || scraped.ogImageUrl || scene.websiteImageUrl,
-    mediaPosition: sceneDraft.mediaPosition || scene.mediaPosition,
-  });
-}
-
-function extractJsonObject(value: string) {
-  const direct = value.trim();
-  if (direct.startsWith("{") && direct.endsWith("}")) return direct;
-
-  const start = value.indexOf("{");
-  const end = value.lastIndexOf("}");
-  if (start >= 0 && end > start) return value.slice(start, end + 1);
-  return "";
-}
-
-async function generateProjectWithAi(scraped: ScrapedSiteData): Promise<GeneratedProjectPayload | null> {
-  const client = getOpenAIClient();
-  if (!client) return null;
-
-  const prompt = [
-    "You convert website scrape data into a short promo video storyboard.",
-    "Return only valid JSON with this exact shape:",
-    '{"projectName":"string","preset":"white|black|premium|bold|editorial|sunset|mono|neon-grid|paper-cut|arctic-glass|brutalist|velvet-noir|mint-pop|terminal|blueprint|acid-pop|retro-print|ember-glow","scenes":[{"type":"brand-reveal|product-showcase|feature-grid|slogan|description|website-scroll|metrics|quote|checklist|cta","eyebrow":"string","title":"string","subtitle":"string","description":"string","bullets":["string"],"mediaPosition":"left|right"}]}',
-    "Rules:",
-    "- Use 4 to 6 scenes.",
-    "- Keep text concise and marketing-ready.",
-    "- Prefer scenes: brand-reveal, product-showcase, feature-grid or description, metrics when numbers exist, and cta.",
-    "- Only use website-scroll if an image or product-page angle makes sense.",
-    "- No markdown, no explanations, JSON only.",
-    `Website data: ${JSON.stringify(
-      {
-        sourceUrl: scraped.sourceUrl,
-        title: scraped.title,
-        description: scraped.description,
-        headings: scraped.headings.slice(0, 6),
-        paragraphs: scraped.paragraphs.slice(0, 4),
-        bullets: scraped.bullets.slice(0, 8),
-        cta: scraped.cta.slice(0, 4),
-        metrics: scraped.metrics.slice(0, 4),
-        ogImageUrl: scraped.ogImageUrl,
-      },
-      null,
-      2,
-    )}`,
-  ].join("\n");
-
-  const response = await client.responses.create({
-    model: OPENAI_MODEL,
-    input: prompt,
-  });
-
-  const raw = response.output_text ?? "";
-  const json = extractJsonObject(raw);
-  if (!json) return null;
-
-  const draft = JSON.parse(json) as GeneratedAiDraft;
-  const sceneDrafts = (draft.scenes ?? []).filter((scene): scene is GeneratedSceneDraft => Boolean(scene?.type));
-  if (sceneDrafts.length === 0) return null;
-
-  const scenes = sceneDrafts.slice(0, 6).map((sceneDraft, index) => normalizeAiDraftScene(sceneDraft, index, scraped));
-  const preset = normalizeTemplatePreset(draft.preset);
-
-  return {
-    projectName: (draft.projectName || scraped.title || getDomainLabel(scraped.sourceUrl)).slice(0, 80),
-    sceneTrack: {
-      id: "main-track",
-      name: "Scene Track",
-      scenes,
-    },
-    exportSettings: {
-      fps: 30,
-      transitionSeconds: 0.8,
-      backgroundColor: presetDefaults[preset].backgroundColor,
-      textColor: presetDefaults[preset].textColor,
-      preset,
-      resolution: "720p",
-      profile: "standard",
-    },
-  };
-}
-
-export async function generateProjectFromUrl(inputUrl: string): Promise<GeneratedProjectPayload> {
-  const url = inputUrl.trim();
-  if (!url) throw new Error("Add a website URL first.");
-
-  let normalizedUrl: string;
-  try {
-    normalizedUrl = new URL(url.startsWith("http") ? url : `https://${url}`).toString();
-  } catch {
-    throw new Error("Enter a valid website URL.");
-  }
-
-  const scraped = await scrapeSite(normalizedUrl);
-  const aiProject = await generateProjectWithAi(scraped).catch(() => null);
-  if (aiProject) return aiProject;
-  return buildRuleBasedProject(scraped);
 }
