@@ -162,7 +162,7 @@ export function StudioPreview({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-2">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <input
           ref={logoInputRef}
           type="file"
@@ -193,9 +193,9 @@ export function StudioPreview({
             event.target.value = "";
           }}
         />
-        <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 p-2 shadow-sm">
+        <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 shadow-sm">
           <div className="flex flex-1 items-center justify-center overflow-hidden rounded-[24px] bg-black">
-            <div className="relative aspect-video h-full max-h-full w-auto max-w-[82%] overflow-hidden rounded-[24px] bg-black">
+            <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden rounded-[24px] bg-black">
               <div className="absolute inset-0">
                 <SceneStage
                   scene={scene}
