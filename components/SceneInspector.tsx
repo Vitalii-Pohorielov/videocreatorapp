@@ -26,6 +26,81 @@ const presetOptions: TemplatePreset[] = [
   "ember-glow",
 ];
 
+const presetChipStyles: Record<TemplatePreset, { idle: string; active: string }> = {
+  black: {
+    idle: "border-slate-800 bg-slate-950 text-white hover:bg-slate-900",
+    active: "border-slate-950 bg-slate-950 text-white ring-2 ring-slate-300",
+  },
+  white: {
+    idle: "border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
+    active: "border-slate-900 bg-slate-50 text-slate-950 ring-2 ring-slate-300",
+  },
+  premium: {
+    idle: "border-[#d7b98a]/45 bg-[#10233a] text-[#f8f3ea] hover:bg-[#16314f]",
+    active: "border-[#e7cc9a] bg-[#16314f] text-[#fff7ec] ring-2 ring-[#d7b98a]/35",
+  },
+  bold: {
+    idle: "border-[#ffd166]/50 bg-[#13111c] text-[#ffd166] hover:bg-[#1c1827]",
+    active: "border-[#ffd166] bg-[#1c1827] text-[#ffe08f] ring-2 ring-[#ffd166]/30",
+  },
+  editorial: {
+    idle: "border-[#c9b59b] bg-[#efe8de] text-[#181411] hover:bg-[#e8dfd2]",
+    active: "border-[#9a7b4f] bg-[#e8dfd2] text-[#181411] ring-2 ring-[#9a7b4f]/20",
+  },
+  sunset: {
+    idle: "border-[#fb923c]/40 bg-[#2a120d] text-[#ffd9b3] hover:bg-[#341710]",
+    active: "border-[#fb923c] bg-[#341710] text-[#ffe6cc] ring-2 ring-[#fb923c]/25",
+  },
+  mono: {
+    idle: "border-slate-500 bg-[#111111] text-[#f1f1f1] hover:bg-[#1a1a1a]",
+    active: "border-slate-200 bg-[#1a1a1a] text-white ring-2 ring-slate-400/25",
+  },
+  "neon-grid": {
+    idle: "border-[#39f3ff]/45 bg-[#08111f] text-[#86f7ff] hover:bg-[#0c1930]",
+    active: "border-[#39f3ff] bg-[#0c1930] text-[#b6fcff] ring-2 ring-[#39f3ff]/30",
+  },
+  "paper-cut": {
+    idle: "border-[#d95734]/30 bg-[#f3eadf] text-[#2d1f18] hover:bg-[#eee2d3]",
+    active: "border-[#d95734] bg-[#eee2d3] text-[#2d1f18] ring-2 ring-[#d95734]/18",
+  },
+  "arctic-glass": {
+    idle: "border-[#7cdcff]/40 bg-[#dff5ff] text-[#0d2236] hover:bg-[#d3f0ff]",
+    active: "border-[#1479ff]/45 bg-[#d3f0ff] text-[#0d2236] ring-2 ring-[#7cdcff]/28",
+  },
+  brutalist: {
+    idle: "border-black bg-[#f4f000] text-black hover:bg-[#fff200]",
+    active: "border-black bg-[#fff200] text-black ring-2 ring-black/20",
+  },
+  "velvet-noir": {
+    idle: "border-[#ff77aa]/35 bg-[#16070f] text-[#f7d6e6] hover:bg-[#220b16]",
+    active: "border-[#ff77aa] bg-[#220b16] text-[#ffe6f0] ring-2 ring-[#ff77aa]/22",
+  },
+  "mint-pop": {
+    idle: "border-[#19c6a3]/35 bg-[#d9fff2] text-[#053b34] hover:bg-[#cbfbea]",
+    active: "border-[#19c6a3] bg-[#cbfbea] text-[#053b34] ring-2 ring-[#19c6a3]/22",
+  },
+  terminal: {
+    idle: "border-[#2dff72]/35 bg-[#07130c] text-[#7dff9b] hover:bg-[#0b1c11]",
+    active: "border-[#2dff72] bg-[#0b1c11] text-[#a8ffba] ring-2 ring-[#2dff72]/24",
+  },
+  blueprint: {
+    idle: "border-[#7cd4ff]/35 bg-[#0f2747] text-[#d8eeff] hover:bg-[#15345d]",
+    active: "border-[#7cd4ff] bg-[#15345d] text-white ring-2 ring-[#7cd4ff]/24",
+  },
+  "acid-pop": {
+    idle: "border-[#ff4fd8]/35 bg-[#d6ff3f] text-[#161616] hover:bg-[#ddff63]",
+    active: "border-[#ff4fd8] bg-[#ddff63] text-[#161616] ring-2 ring-[#ff4fd8]/20",
+  },
+  "retro-print": {
+    idle: "border-[#c96b3b]/35 bg-[#f6dfc8] text-[#3e2418] hover:bg-[#f0d5ba]",
+    active: "border-[#c96b3b] bg-[#f0d5ba] text-[#3e2418] ring-2 ring-[#c96b3b]/20",
+  },
+  "ember-glow": {
+    idle: "border-[#ff8a4c]/35 bg-[#1b0a07] text-[#ffd9bf] hover:bg-[#27100b]",
+    active: "border-[#ff8a4c] bg-[#27100b] text-[#ffe7d4] ring-2 ring-[#ff8a4c]/22",
+  },
+};
+
 type SceneInspectorProps = {
   scene: Scene;
   settings: ExportSettings;
@@ -126,12 +201,13 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
             <div className="grid grid-cols-2 gap-2">
               {presetOptions.map((preset) => {
                 const active = settings.preset === preset;
+                const tone = presetChipStyles[preset];
                 return (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => onUpdateSettings({ preset })}
-                    className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                    className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? tone.active : tone.idle}`}
                   >
                     <span className="block font-medium">{presetLabels[preset]}</span>
                   </button>
