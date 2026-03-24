@@ -2,10 +2,6 @@
 
 import Link from "next/link";
 
-import { GoogleSignInButton } from "@/components/GoogleSignInButton";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { useAuthSession } from "@/lib/useAuthSession";
-
 const featureCards = [
   {
     title: "Generate from website",
@@ -22,14 +18,6 @@ const featureCards = [
 ];
 
 export function LandingScreen() {
-  const { isLoading, user, error } = useAuthSession();
-
-  const handleSignOut = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  };
-
   return (
     <main className="min-h-screen overflow-hidden px-4 py-4 text-slate-100">
       <section className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-7xl flex-col overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,15,29,0.95),rgba(15,23,42,0.88)),radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(250,204,21,0.18),transparent_24%)] shadow-[0_30px_120px_rgba(2,6,23,0.45)]">
@@ -40,20 +28,12 @@ export function LandingScreen() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {user ? (
-              <>
-                <span className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm text-slate-200">
-                  {user.email ?? "Signed in"}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08]"
-                >
-                  Sign out
-                </button>
-              </>
-            ) : null}
+            <Link
+              href="/projects"
+              className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+            >
+              Projects
+            </Link>
           </div>
         </div>
 
@@ -73,31 +53,19 @@ export function LandingScreen() {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {user ? (
-                <>
-                  <Link
-                    href="/editor"
-                    className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
-                  >
-                    Open editor
-                  </Link>
-                  <Link
-                    href="/projects"
-                    className="rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.1]"
-                  >
-                    Manage projects
-                  </Link>
-                </>
-              ) : (
-                <GoogleSignInButton
-                  redirectPath="/projects"
-                  className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
-                />
-              )}
+              <Link
+                href="/editor"
+                className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+              >
+                Open editor
+              </Link>
+              <Link
+                href="/projects"
+                className="rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.1]"
+              >
+                Manage projects
+              </Link>
             </div>
-
-            {isLoading ? <p className="mt-4 text-sm text-slate-400">Checking sign-in status...</p> : null}
-            {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               {featureCards.map((item) => (
@@ -119,7 +87,7 @@ export function LandingScreen() {
                 <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
                   <p className="text-xs uppercase tracking-[0.22em] text-sky-300">Flow</p>
                   <div className="mt-4 grid gap-3">
-                    {["1. Sign in with Google", "2. Open editor", "3. Generate or build scenes", "4. Save projects and export video"].map((step) => (
+                    {["1. Open editor", "2. Generate or build scenes", "3. Save projects", "4. Export video"].map((step) => (
                       <div key={step} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">
                         {step}
                       </div>
@@ -134,7 +102,7 @@ export function LandingScreen() {
                   </div>
                   <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-emerald-200">Security</p>
-                    <p className="mt-3 text-2xl font-semibold text-white">Google auth gates access to editor and project management</p>
+                    <p className="mt-3 text-2xl font-semibold text-white">Direct access to the editor without an authorization step</p>
                   </div>
                 </div>
 

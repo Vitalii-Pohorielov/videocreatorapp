@@ -1,5 +1,4 @@
 import { EditorWorkspace } from "@/components/EditorWorkspace";
-import { AuthGate } from "@/components/AuthGate";
 
 export default async function EditorPage({
   searchParams,
@@ -8,9 +7,5 @@ export default async function EditorPage({
 }) {
   const params = await searchParams;
 
-  return (
-    <AuthGate title="Sign in to use the editor" description="Google authentication is required before you can create videos or open saved drafts.">
-      <EditorWorkspace initialProjectId={params.project ?? null} />
-    </AuthGate>
-  );
+  return <EditorWorkspace initialProjectId={params.project ?? null} />;
 }
