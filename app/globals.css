@@ -52,3 +52,82 @@ body {
   object-position: center;
   filter: saturate(1.05) contrast(1.04);
 }
+
+.description-particle {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(125, 211, 252, 0.35) 42%, rgba(125, 211, 252, 0) 72%);
+  filter: blur(1px);
+  opacity: 0.22;
+  animation: descriptionParticleFloat 14s linear infinite;
+  will-change: transform, opacity;
+}
+
+.description-particle-1 {
+  left: 8%;
+  top: 18%;
+  width: 110px;
+  height: 110px;
+  animation-duration: 13s;
+}
+
+.description-particle-2 {
+  left: 24%;
+  bottom: 14%;
+  width: 54px;
+  height: 54px;
+  animation-duration: 10s;
+  animation-delay: -2s;
+}
+
+.description-particle-3 {
+  left: 48%;
+  top: 10%;
+  width: 72px;
+  height: 72px;
+  animation-duration: 16s;
+  animation-delay: -4s;
+}
+
+.description-particle-4 {
+  right: 18%;
+  top: 22%;
+  width: 128px;
+  height: 128px;
+  animation-duration: 18s;
+  animation-delay: -6s;
+}
+
+.description-particle-5 {
+  right: 10%;
+  bottom: 16%;
+  width: 80px;
+  height: 80px;
+  animation-duration: 12s;
+  animation-delay: -3s;
+}
+
+.description-particle-6 {
+  left: 58%;
+  bottom: 6%;
+  width: 44px;
+  height: 44px;
+  animation-duration: 9s;
+  animation-delay: -1s;
+}
+
+@keyframes descriptionParticleFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.94);
+    opacity: 0.14;
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.08);
+    opacity: 0.28;
+  }
+  100% {
+    transform: translate3d(0, -36px, 0) scale(0.96);
+    opacity: 0.08;
+  }
+}
