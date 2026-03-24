@@ -5,7 +5,21 @@ import { type ChangeEvent, type ReactNode } from "react";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
-const presetOptions: TemplatePreset[] = ["clean", "premium", "bold", "editorial", "sunset", "mono", "neon-grid", "paper-cut", "arctic-glass"];
+const presetOptions: TemplatePreset[] = [
+  "clean",
+  "premium",
+  "bold",
+  "editorial",
+  "sunset",
+  "mono",
+  "neon-grid",
+  "paper-cut",
+  "arctic-glass",
+  "brutalist",
+  "velvet-noir",
+  "mint-pop",
+  "terminal",
+];
 
 type SceneInspectorProps = {
   scene: Scene;
@@ -102,9 +116,9 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
       </div>
 
       <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
-        <InspectorSection title="Video style" description="Shared colors plus a template preset for the whole video." defaultOpen>
+        <InspectorSection title="Style preset" description="Choose the visual direction for the whole video." defaultOpen>
           <div className="mt-4 grid gap-3">
-            <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2">
               {presetOptions.map((preset) => {
                 const active = settings.preset === preset;
                 return (
@@ -112,51 +126,54 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                     key={preset}
                     type="button"
                     onClick={() => onUpdateSettings({ preset })}
-                    className={`rounded-2xl border px-3 py-3 text-sm transition ${active ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                    className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
                   >
-                    {presetLabels[preset]}
+                    <span className="block font-medium">{presetLabels[preset]}</span>
                   </button>
                 );
               })}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-sm text-slate-600">Background color</span>
-                <div className="space-y-2">
-                  <input
-                    type="color"
-                    value={settings.backgroundColor}
-                    onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
-                  />
-                  <input
-                    type="text"
-                    value={settings.backgroundColor}
-                    onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
-                    placeholder="#F7F4EE"
-                  />
-                </div>
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm text-slate-600">Text color</span>
-                <div className="space-y-2">
-                  <input
-                    type="color"
-                    value={settings.textColor}
-                    onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
-                  />
-                  <input
-                    type="text"
-                    value={settings.textColor}
-                    onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
-                    placeholder="#1B1F23"
-                  />
-                </div>
-              </label>
-            </div>
+          </div>
+        </InspectorSection>
+
+        <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Background color</span>
+              <div className="space-y-2">
+                <input
+                  type="color"
+                  value={settings.backgroundColor}
+                  onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
+                />
+                <input
+                  type="text"
+                  value={settings.backgroundColor}
+                  onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
+                  placeholder="#F7F4EE"
+                />
+              </div>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-600">Text color</span>
+              <div className="space-y-2">
+                <input
+                  type="color"
+                  value={settings.textColor}
+                  onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
+                />
+                <input
+                  type="text"
+                  value={settings.textColor}
+                  onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
+                  placeholder="#1B1F23"
+                />
+              </div>
+            </label>
           </div>
         </InspectorSection>
 

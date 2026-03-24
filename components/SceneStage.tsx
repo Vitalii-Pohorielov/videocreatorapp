@@ -122,6 +122,34 @@ function presetStyles(preset: TemplatePreset) {
         title: "font-semibold tracking-[-0.05em]",
         italic: "",
       };
+    case "brutalist":
+      return {
+        card: "bg-[#fffef2] border-black shadow-[12px_12px_0_rgba(0,0,0,0.88)]",
+        accent: "bg-black",
+        title: "font-black uppercase tracking-[-0.05em]",
+        italic: "",
+      };
+    case "velvet-noir":
+      return {
+        card: "bg-[#2a1020]/82 border-[#ff77aa]/25 backdrop-blur-md shadow-[0_24px_90px_rgba(255,34,118,0.18)]",
+        accent: "bg-[#ff77aa]",
+        title: "font-serif tracking-[-0.04em]",
+        italic: "italic",
+      };
+    case "mint-pop":
+      return {
+        card: "bg-white/72 border-[#19c6a3]/28 shadow-[0_22px_65px_rgba(25,198,163,0.14)]",
+        accent: "bg-[#19c6a3]",
+        title: "font-black tracking-[-0.05em]",
+        italic: "",
+      };
+    case "terminal":
+      return {
+        card: "bg-[#07130c]/88 border-[#2dff72]/24 shadow-[0_0_0_1px_rgba(45,255,114,0.08),0_28px_80px_rgba(0,0,0,0.55)]",
+        accent: "bg-[#2dff72]",
+        title: "font-mono uppercase tracking-[0.08em]",
+        italic: "",
+      };
   }
 }
 
@@ -520,22 +548,52 @@ export function SceneStage({
             "linear-gradient(180deg, rgba(8,19,33,0.18), rgba(8,19,33,0.02) 45%, rgba(8,19,33,0.22)), linear-gradient(rgba(57,243,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(57,243,255,0.08) 1px, transparent 1px)",
           backgroundSize: "100% 100%, 44px 44px, 44px 44px",
         }
+      : preset === "terminal"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(7,19,12,0.14), rgba(7,19,12,0.02) 55%, rgba(45,255,114,0.06)), linear-gradient(rgba(125,255,155,0.07) 1px, transparent 1px)",
+            backgroundSize: "100% 100%, 100% 26px",
+          }
       : preset === "paper-cut"
         ? {
             background:
               "radial-gradient(circle at 12% 16%, rgba(217,87,52,0.14), transparent 18%), radial-gradient(circle at 86% 20%, rgba(255,196,90,0.18), transparent 16%), linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0))",
           }
-        : preset === "arctic-glass"
+        : preset === "velvet-noir"
           ? {
               background:
-                "radial-gradient(circle at 20% 18%, rgba(255,255,255,0.8), transparent 18%), radial-gradient(circle at 80% 22%, rgba(124,220,255,0.34), transparent 20%), linear-gradient(180deg, rgba(255,255,255,0.42), rgba(223,245,255,0.05) 46%, rgba(20,121,255,0.06))",
+                "radial-gradient(circle at 18% 18%, rgba(255,119,170,0.18), transparent 18%), radial-gradient(circle at 82% 24%, rgba(129,79,255,0.16), transparent 20%), linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0))",
             }
-          : null;
+          : preset === "mint-pop"
+            ? {
+                background:
+                  "radial-gradient(circle at 16% 18%, rgba(25,198,163,0.16), transparent 18%), radial-gradient(circle at 82% 22%, rgba(255,222,89,0.22), transparent 20%), linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0.04))",
+              }
+            : preset === "brutalist"
+              ? {
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0) 40%), linear-gradient(135deg, rgba(0,0,0,0.08) 25%, transparent 25%), linear-gradient(315deg, rgba(0,0,0,0.05) 25%, transparent 25%)",
+                  backgroundSize: "100% 100%, 36px 36px, 36px 36px",
+                }
+          : preset === "arctic-glass"
+            ? {
+                background:
+                  "radial-gradient(circle at 20% 18%, rgba(255,255,255,0.8), transparent 18%), radial-gradient(circle at 80% 22%, rgba(124,220,255,0.34), transparent 20%), linear-gradient(180deg, rgba(255,255,255,0.42), rgba(223,245,255,0.05) 46%, rgba(20,121,255,0.06))",
+              }
+            : null;
   const shellDeco =
     preset === "neon-grid"
       ? "border-[#39f3ff]/22"
+      : preset === "terminal"
+        ? "border-[#2dff72]/24"
       : preset === "paper-cut"
         ? "border-[#d95734]/16"
+        : preset === "velvet-noir"
+          ? "border-[#ff77aa]/20"
+          : preset === "mint-pop"
+            ? "border-[#19c6a3]/24"
+            : preset === "brutalist"
+              ? "border-black/20"
         : preset === "arctic-glass"
           ? "border-[#7cdcff]/30"
           : "border-white/10";

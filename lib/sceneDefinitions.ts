@@ -1,5 +1,18 @@
 export type TransitionType = "fade";
-export type TemplatePreset = "clean" | "premium" | "bold" | "editorial" | "sunset" | "mono" | "neon-grid" | "paper-cut" | "arctic-glass";
+export type TemplatePreset =
+  | "clean"
+  | "premium"
+  | "bold"
+  | "editorial"
+  | "sunset"
+  | "mono"
+  | "neon-grid"
+  | "paper-cut"
+  | "arctic-glass"
+  | "brutalist"
+  | "velvet-noir"
+  | "mint-pop"
+  | "terminal";
 export type ExportResolution = "480p" | "540p" | "720p";
 export type ExportProfile = "draft" | "standard" | "high";
 export type SceneType =
@@ -68,6 +81,10 @@ export const presetLabels: Record<TemplatePreset, string> = {
   "neon-grid": "Neon Grid",
   "paper-cut": "Paper Cut",
   "arctic-glass": "Arctic Glass",
+  brutalist: "Brutalist",
+  "velvet-noir": "Velvet Noir",
+  "mint-pop": "Mint Pop",
+  terminal: "Terminal",
 };
 
 export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor">> = {
@@ -80,6 +97,10 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   "neon-grid": { backgroundColor: "#08111f", textColor: "#86f7ff" },
   "paper-cut": { backgroundColor: "#f3eadf", textColor: "#2d1f18" },
   "arctic-glass": { backgroundColor: "#dff5ff", textColor: "#0d2236" },
+  brutalist: { backgroundColor: "#f4f000", textColor: "#121212" },
+  "velvet-noir": { backgroundColor: "#16070f", textColor: "#f7d6e6" },
+  "mint-pop": { backgroundColor: "#d9fff2", textColor: "#053b34" },
+  terminal: { backgroundColor: "#07130c", textColor: "#7dff9b" },
 };
 
 export const exportResolutionLabels: Record<ExportResolution, string> = {
