@@ -11,6 +11,7 @@ type SceneStageProps = {
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
+  renderLayer?: "full" | "background" | "content";
   progress?: number;
   compact?: boolean;
   editable?: boolean;
@@ -419,16 +420,32 @@ function EditableText({
   );
 }
 
-function StageShell({ backgroundColor, textColor, children, progress, compact }: { backgroundColor: string; textColor: string; children: ReactNode; progress: number; compact: boolean }) {
+function StageShell({
+  backgroundColor,
+  textColor,
+  children,
+  progress,
+  compact,
+  renderLayer,
+}: {
+  backgroundColor: string;
+  textColor: string;
+  children: ReactNode;
+  progress: number;
+  compact: boolean;
+  renderLayer: "full" | "background" | "content";
+}) {
   const bg = motion(progress, 0, 1);
   const drift = 34 * (1 - bg);
+  const showBackground = renderLayer !== "content";
+  const showContent = renderLayer !== "background";
   return (
-    <div className={`relative h-full w-full overflow-hidden rounded-[24px] ${compact ? "px-4 py-4" : "px-8 py-8"}`} style={{ backgroundColor, color: textColor }}>
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: `scale(${1.06 - bg * 0.06})` }} />
-      <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: `translate3d(${-drift}px, ${drift * 0.4}px, 0)`, opacity: 0.18 + bg * 0.26 }} />
-      <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: `translate3d(${drift}px, ${-drift * 0.3}px, 0)`, opacity: 0.14 + bg * 0.2 }} />
-      <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.08 + bg * 0.12, transform: `translate3d(${drift * 0.2}px, ${-drift * 0.1}px, 0)` }} />
-      <div className="relative h-full w-full">{children}</div>
+    <div className={`relative h-full w-full overflow-hidden rounded-[24px] ${compact ? "px-4 py-4" : "px-8 py-8"}`} style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
+      {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: `scale(${1.06 - bg * 0.06})` }} /> : null}
+      {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: `translate3d(${-drift}px, ${drift * 0.4}px, 0)`, opacity: 0.18 + bg * 0.26 }} /> : null}
+      {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: `translate3d(${drift}px, ${-drift * 0.3}px, 0)`, opacity: 0.14 + bg * 0.2 }} /> : null}
+      {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.08 + bg * 0.12, transform: `translate3d(${drift * 0.2}px, ${-drift * 0.1}px, 0)` }} /> : null}
+      {showContent ? <div className="relative h-full w-full">{children}</div> : null}
     </div>
   );
 }
@@ -438,6 +455,7 @@ export function SceneStage({
   backgroundColor,
   textColor,
   preset,
+  renderLayer = "full",
   progress = 1,
   compact = false,
   editable = false,
@@ -502,9 +520,9 @@ export function SceneStage({
   };
 
   return (
-    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact}>
-      {shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
-      {(preset === "paper-cut" || preset === "arctic-glass" || preset === "neon-grid") ? (
+    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer}>
+      {renderLayer !== "content" && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
+      {renderLayer !== "content" && (preset === "paper-cut" || preset === "arctic-glass" || preset === "neon-grid") ? (
         <>
           <div className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`} style={{ transform: preset === "paper-cut" ? "rotate(-8deg)" : "rotate(14deg)", opacity: preset === "neon-grid" ? 0.4 : 0.22 }} />
           <div className={`pointer-events-none absolute left-[10%] bottom-[14%] rounded-full border ${shellDeco} ${compact ? "h-14 w-14" : "h-24 w-24"}`} style={{ opacity: preset === "arctic-glass" ? 0.34 : 0.18 }} />

@@ -149,6 +149,10 @@ async function ensureRenderSurface(videoWidth: number, videoHeight: number) {
 }
 
 async function renderSceneDomToCanvas(scene: Scene, settings: ExportSettings, progress: number) {
+  return renderSceneLayerToCanvas(scene, settings, progress, "full");
+}
+
+async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, progress: number, renderLayer: "full" | "background" | "content") {
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { host, root } = await ensureRenderSurface(videoWidth, videoHeight);
   const { flushSync, React } = await getReactRenderer();
@@ -168,6 +172,7 @@ async function renderSceneDomToCanvas(scene: Scene, settings: ExportSettings, pr
           backgroundColor: settings.backgroundColor,
           textColor: settings.textColor,
           preset: settings.preset,
+          renderLayer,
           progress,
         }),
       ),
@@ -253,19 +258,24 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
   const eased = easeInOut(progress);
-  const [currentCanvas, nextCanvas] = await Promise.all([
-    renderSceneCanvasCached(currentScene, settings, normalizeSceneProgress(currentScene, 1), cache, true),
-    renderSceneCanvasCached(nextScene, settings, normalizeSceneProgress(nextScene, nextSceneProgress), cache, true),
+  const normalizedCurrentProgress = normalizeSceneProgress(currentScene, 1);
+  const normalizedNextProgress = normalizeSceneProgress(nextScene, nextSceneProgress);
+  const [backgroundCanvas, currentContentCanvas, nextContentCanvas] = await Promise.all([
+    renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "background"),
+    renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "content"),
+    renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "content"),
   ]);
+
+  ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
 
   ctx.save();
   ctx.globalAlpha = 1 - eased;
-  ctx.drawImage(currentCanvas, 0, 0, videoWidth, videoHeight);
+  ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
   ctx.restore();
 
   ctx.save();
   ctx.globalAlpha = eased;
-  ctx.drawImage(nextCanvas, 0, 0, videoWidth, videoHeight);
+  ctx.drawImage(nextContentCanvas, 0, 0, videoWidth, videoHeight);
   ctx.restore();
 
   return canvas;
