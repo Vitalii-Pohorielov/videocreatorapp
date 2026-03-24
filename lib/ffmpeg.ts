@@ -267,12 +267,23 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   const nextContentCanvas = await renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "content");
 
   ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
-  // Keep one continuous background, but avoid overlaying two scenes at once.
-  // We switch the content layer halfway through the transition window.
-  if (progress < 0.5) {
+  // Keep one continuous background while easing content out and in smoothly.
+  // This avoids the hard midpoint switch that made text disappear abruptly.
+  const currentOpacity = 1 - easeInOut(Math.min(1, progress / 0.58));
+  const nextOpacity = easeInOut(Math.max(0, (progress - 0.42) / 0.58));
+
+  if (currentOpacity > 0.001) {
+    ctx.save();
+    ctx.globalAlpha = currentOpacity;
     ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
-  } else {
+    ctx.restore();
+  }
+
+  if (nextOpacity > 0.001) {
+    ctx.save();
+    ctx.globalAlpha = nextOpacity;
     ctx.drawImage(nextContentCanvas, 0, 0, videoWidth, videoHeight);
+    ctx.restore();
   }
 
   return canvas;
