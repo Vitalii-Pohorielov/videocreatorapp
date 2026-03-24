@@ -16,6 +16,12 @@ import {
 
 export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType } from "@/lib/sceneDefinitions";
 export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels } from "@/lib/sceneDefinitions";
+export type PreviewQuality = "low" | "medium" | "high";
+export const previewQualityLabels: Record<PreviewQuality, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
@@ -25,6 +31,7 @@ type StudioStore = {
   sceneTrack: SceneTrack;
   selectedSceneId: string;
   exportSettings: ExportSettings;
+  previewQuality: PreviewQuality;
   resetProject: () => void;
   hydrateProject: (project: {
     id: string | null;
@@ -39,6 +46,7 @@ type StudioStore = {
   selectScene: (id: string) => void;
   reorderScenes: (fromId: string, toId: string) => void;
   updateExportSettings: (updates: Partial<ExportSettings>) => void;
+  updatePreviewQuality: (quality: PreviewQuality) => void;
 };
 
 const clampDuration = (value: number) => Math.min(8, Math.max(1.5, value));
@@ -69,6 +77,7 @@ export const useStore = create<StudioStore>((set, get) => ({
   projectName: "Untitled project",
   sceneTrack: initialSceneTrack,
   selectedSceneId: initialSceneTrack.scenes[0].id,
+  previewQuality: "medium",
   exportSettings: {
     fps: DEFAULT_FPS,
     transitionSeconds: DEFAULT_TRANSITION_SECONDS,
@@ -85,6 +94,7 @@ export const useStore = create<StudioStore>((set, get) => ({
       projectName: "Untitled project",
       sceneTrack: nextTrack,
       selectedSceneId: nextTrack.scenes[0].id,
+      previewQuality: "medium",
       exportSettings: {
         fps: DEFAULT_FPS,
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
@@ -223,4 +233,5 @@ export const useStore = create<StudioStore>((set, get) => ({
       };
     });
   },
+  updatePreviewQuality: (previewQuality) => set({ previewQuality }),
 }));
