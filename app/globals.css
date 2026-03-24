@@ -38,23 +38,11 @@ body {
   }
 }
 
-.slogan-grid,
-.slogan-gif-background,
-.slogan-gif-overlay,
-.slogan-noise-mask {
+.slogan-gif-background {
   position: absolute;
   inset: 0;
   display: block;
   pointer-events: none;
-}
-
-.slogan-grid {
-  opacity: 0.16;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(circle at center, black 42%, transparent 88%);
 }
 
 .slogan-gif-background {
@@ -63,17 +51,4 @@ body {
   object-fit: cover;
   object-position: center;
   filter: saturate(1.05) contrast(1.04);
-}
-
-.slogan-gif-overlay {
-  background:
-    radial-gradient(circle at center, rgba(15, 23, 42, 0.02), rgba(15, 23, 42, 0.58) 74%),
-    linear-gradient(180deg, rgba(2, 6, 23, 0.34), rgba(2, 6, 23, 0.22));
-}
-
-.slogan-noise-mask {
-  opacity: 0.08;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.3) 0.7px, transparent 0.7px);
-  background-size: 14px 14px;
-  mask-image: radial-gradient(circle at center, black 38%, transparent 94%);
 }

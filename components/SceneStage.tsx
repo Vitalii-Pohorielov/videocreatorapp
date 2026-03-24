@@ -940,30 +940,29 @@ export function SceneStage({
 
       {scene.type === "slogan" && (
         <div className="flex h-full items-center justify-center text-center">
-          <div className="relative max-w-5xl overflow-hidden rounded-[40px] border border-white/10 px-8 py-16 shadow-[0_30px_100px_rgba(2,6,23,0.22)] backdrop-blur-[2px] md:px-14">
-            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[40px]">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
               <img
                 src="/lottie/slogan.gif"
                 alt=""
                 className="slogan-gif-background"
-                style={{ opacity: 0.16 + titleIn * 0.3, transform: `scale(${1 + (1 - titleIn) * 0.04})` }}
+                style={{ opacity: 0.78 + titleIn * 0.22, transform: `scale(${1 + (1 - titleIn) * 0.02})` }}
               />
-              <span className="slogan-gif-overlay" />
-              <span className="slogan-grid" />
             </div>
-            <EditableText
-              as="h2"
-              value={scene.title}
-              editable={editable}
-              onCommit={(value) => onSceneChange?.({ title: value })}
-              className={`relative z-10 mx-auto max-w-4xl leading-[0.92] ${titleSize} ${s.title} ${s.italic}`}
-              style={{
-                transform: `translateY(${42 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`,
-                opacity: 0.22 + titleIn * 0.78,
-                textShadow: "0 10px 40px rgba(15,23,42,0.18)",
-              }}
-              placeholder="Title"
-            />
+            <div className="relative z-10 flex h-full items-center justify-center px-8 md:px-14">
+              <EditableText
+                as="h2"
+                value={scene.title}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ title: value })}
+                className={`mx-auto max-w-4xl leading-[0.92] ${titleSize} ${s.title} ${s.italic}`}
+                style={{
+                  transform: `translateY(${42 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`,
+                  opacity: 0.22 + titleIn * 0.78,
+                }}
+                placeholder="Title"
+              />
+            </div>
           </div>
         </div>
       )}
