@@ -939,30 +939,28 @@ export function SceneStage({
       )}
 
       {scene.type === "slogan" && (
-        <div className="flex h-full items-center justify-center text-center">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-              <img
-                src="/lottie/slogan.gif"
-                alt=""
-                className="slogan-gif-background"
-                style={{ opacity: 0.78 + titleIn * 0.22, transform: `scale(${1 + (1 - titleIn) * 0.02})` }}
-              />
-            </div>
-            <div className="relative z-10 flex h-full items-center justify-center px-8 md:px-14">
-              <EditableText
-                as="h2"
-                value={scene.title}
-                editable={editable}
-                onCommit={(value) => onSceneChange?.({ title: value })}
-                className={`mx-auto max-w-4xl leading-[0.92] ${titleSize} ${s.title} ${s.italic}`}
-                style={{
-                  transform: `translateY(${42 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`,
-                  opacity: 0.22 + titleIn * 0.78,
-                }}
-                placeholder="Title"
-              />
-            </div>
+        <div className="absolute inset-0 overflow-hidden text-center">
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <img
+              src="/lottie/slogan.gif"
+              alt=""
+              className="slogan-gif-background"
+              style={{ opacity: 1, transform: `scale(${1 + (1 - titleIn) * 0.02})` }}
+            />
+          </div>
+          <div className="relative z-10 flex h-full items-center justify-center px-6">
+            <EditableText
+              as="h2"
+              value={scene.title}
+              editable={editable}
+              onCommit={(value) => onSceneChange?.({ title: value })}
+              className={`${compact ? "text-3xl" : "text-6xl md:text-7xl"} mx-auto max-w-4xl font-semibold leading-[0.92] tracking-[-0.06em] text-white`}
+              style={{
+                transform: `translateY(${42 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`,
+                opacity: 0.22 + titleIn * 0.78,
+              }}
+              placeholder="Title"
+            />
           </div>
         </div>
       )}
