@@ -505,14 +505,13 @@ function StageShell({
   renderLayer: "full" | "background" | "content";
 }) {
   const showBackground = renderLayer !== "content";
-  const showContent = renderLayer !== "background";
   return (
     <div className={`relative h-full w-full overflow-hidden rounded-[24px] ${compact ? "px-4 py-4" : "px-8 py-8"}`} style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
       {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
       {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
       {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
       {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.2, transform: "translate3d(0, 0, 0)" }} /> : null}
-      {showContent ? <div className="relative h-full w-full">{children}</div> : null}
+      <div className="relative h-full w-full">{children}</div>
     </div>
   );
 }
@@ -533,6 +532,8 @@ export function SceneStage({
   uploadResolution = "540p",
   uploadProfile = "standard",
 }: SceneStageProps) {
+  const showSceneBackground = renderLayer !== "content";
+  const showSceneContent = renderLayer !== "background";
   const intro = motion(progress, 0.02, 0.34);
   const titleIn = motion(progress, 0.04, 0.28);
   const subIn = motion(progress, 0.08, 0.26);
@@ -663,8 +664,8 @@ export function SceneStage({
 
   return (
     <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer}>
-      {renderLayer !== "content" && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
-      {renderLayer !== "content" ? (
+      {showSceneBackground && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
+      {showSceneBackground ? (
         <>
           <div
             className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`}
@@ -684,7 +685,7 @@ export function SceneStage({
           />
         </>
       ) : null}
-      {scene.type === "brand-reveal" && (
+      {showSceneContent && scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} />
           <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} style={{ transform: `translateY(${18 * (1 - intro)}px)`, opacity: 0.2 + intro * 0.7 }} placeholder="Eyebrow" />
@@ -693,7 +694,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "product-showcase" && (
+      {showSceneContent && scene.type === "product-showcase" && (
         <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
           <div className={`text-left ${showcaseMediaFirst ? "md:order-2" : ""}`}>
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
@@ -709,7 +710,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "feature-grid" && (
+      {showSceneContent && scene.type === "feature-grid" && (
         <div className="flex h-full flex-col justify-center">
           <div className="text-center">
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.28em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
@@ -745,7 +746,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "slogan" && (
+      {showSceneContent && scene.type === "slogan" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className="max-w-4xl">
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
@@ -755,7 +756,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "description" && (
+      {showSceneContent && scene.type === "description" && (
         <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
           <div className="text-left">
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
@@ -767,7 +768,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "website-scroll" && (
+      {showSceneContent && scene.type === "website-scroll" && (
         <div className="flex h-full items-center justify-center">
           <WebsiteScrollFrame
             scene={scene}
@@ -781,7 +782,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "metrics" && (
+      {showSceneContent && scene.type === "metrics" && (
         <div className="flex h-full flex-col justify-center text-center">
           <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.28em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-3 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
@@ -817,7 +818,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "quote" && (
+      {showSceneContent && scene.type === "quote" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: 0.16 + cardIn * 0.84 }}>
             <QuoteAuthorPhoto scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
@@ -828,7 +829,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "checklist" && (
+      {showSceneContent && scene.type === "checklist" && (
         <div className="flex h-full flex-col justify-center">
           <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`text-center uppercase tracking-[0.28em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 text-center leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
@@ -841,7 +842,7 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "cta" && (
+      {showSceneContent && scene.type === "cta" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className="max-w-4xl">
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
