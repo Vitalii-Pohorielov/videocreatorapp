@@ -940,9 +940,22 @@ export function SceneStage({
 
       {scene.type === "slogan" && (
         <div className="flex h-full items-center justify-center text-center">
-          <div className="max-w-4xl">
+          <div className="relative max-w-4xl">
+            <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center overflow-hidden">
+              <span
+                className="slogan-sprite slogan-sprite-primary"
+                style={{ opacity: 0.2 + titleIn * 0.45, transform: `translate3d(-18%, 0, 0) scale(${0.8 + titleIn * 0.2})` }}
+              />
+              <span
+                className="slogan-sprite slogan-sprite-secondary"
+                style={{ opacity: 0.16 + titleIn * 0.36, transform: `translate3d(22%, -6%, 0) scale(${0.72 + titleIn * 0.24})` }}
+              />
+              <span
+                className="slogan-sprite slogan-sprite-tertiary"
+                style={{ opacity: 0.12 + titleIn * 0.3, transform: `translate3d(4%, 18%, 0) scale(${0.7 + titleIn * 0.22})` }}
+              />
+            </div>
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title} ${s.italic}`} style={{ transform: `translateY(${54 * (1 - titleIn)}px) scale(${0.86 + titleIn * 0.14})`, opacity: 0.18 + titleIn * 0.82 }} placeholder="Title" />
-            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize}`} style={{ transform: `translateY(${24 * (1 - subIn)}px)`, opacity: 0.16 + subIn * 0.7 }} placeholder="Subtitle" /> : null}
           </div>
         </div>
       )}

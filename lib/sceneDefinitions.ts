@@ -236,7 +236,7 @@ export const sceneDefinitions: SceneDefinition[] = [
       transition: "fade",
       eyebrow: "Message",
       title: "Built to move fast.",
-      subtitle: "Short, bold, memorable",
+      subtitle: "",
       description: "",
       bullets: [],
       bulletEmojis: [],

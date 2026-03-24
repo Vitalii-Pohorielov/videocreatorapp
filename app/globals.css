@@ -37,3 +37,48 @@ body {
     transform: translateY(-35%);
   }
 }
+
+.slogan-sprite {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  filter: blur(24px);
+  animation: sloganSpriteFloat 11s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.slogan-sprite-primary {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.34) 0%, rgba(56, 189, 248, 0.08) 48%, transparent 72%);
+}
+
+.slogan-sprite-secondary {
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 42%, transparent 72%);
+  animation-duration: 13s;
+  animation-direction: reverse;
+}
+
+.slogan-sprite-tertiary {
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.18) 0%, rgba(250, 204, 21, 0.06) 45%, transparent 72%);
+  animation-duration: 15s;
+}
+
+@keyframes sloganSpriteFloat {
+  0% {
+    margin-top: -12px;
+    margin-left: -10px;
+  }
+  50% {
+    margin-top: 12px;
+    margin-left: 14px;
+  }
+  100% {
+    margin-top: -12px;
+    margin-left: -10px;
+  }
+}
