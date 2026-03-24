@@ -144,7 +144,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 6,
+        distance: 4,
       },
     }),
   );
