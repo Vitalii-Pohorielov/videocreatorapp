@@ -105,9 +105,18 @@ export async function listProjects(limit = 24) {
 
 export async function deleteProject(projectId: string) {
   const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase.from(PROJECTS_TABLE).delete().eq("id", projectId);
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .delete()
+    .eq("id", projectId)
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
   if (error) {
     throw new Error(`Project delete failed: ${error.message}`);
+  }
+
+  if (!data?.id) {
+    throw new Error("Project delete did not complete. If you use Supabase, add the delete policy from lib/projectSchema.sql.");
   }
 }

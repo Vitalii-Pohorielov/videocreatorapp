@@ -46,6 +46,12 @@ to anon, authenticated
 using (true)
 with check (true);
 
+create policy "Public can delete projects"
+on public.video_projects
+for delete
+to anon, authenticated
+using (true);
+
 insert into storage.buckets (id, name, public)
 values ('project-images', 'project-images', true)
 on conflict (id) do nothing;
