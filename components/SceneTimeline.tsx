@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { sceneTypeLabels, type SceneTrack } from "@/store/useStore";
 
@@ -17,28 +17,8 @@ type SceneTimelineProps = {
 export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDuplicate, onAddScene, onReorder }: SceneTimelineProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const [freshSceneIds, setFreshSceneIds] = useState<string[]>([]);
   const { scenes } = track;
-  const previousSceneIdsRef = useRef<string[]>(scenes.map((scene) => scene.id));
   const draggedIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const previousIds = previousSceneIdsRef.current;
-    const nextIds = scenes.map((scene) => scene.id);
-    const addedIds = nextIds.filter((id) => !previousIds.includes(id));
-
-    if (addedIds.length > 0) {
-      setFreshSceneIds((current) => Array.from(new Set([...current, ...addedIds])));
-      const timeout = window.setTimeout(() => {
-        setFreshSceneIds((current) => current.filter((id) => !addedIds.includes(id)));
-      }, 520);
-
-      previousSceneIdsRef.current = nextIds;
-      return () => window.clearTimeout(timeout);
-    }
-
-    previousSceneIdsRef.current = nextIds;
-  }, [scenes]);
 
   return (
     <section className="shrink-0 px-4 py-3">
@@ -46,7 +26,6 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
         {scenes.map((scene, index) => {
           const active = scene.id === selectedSceneId;
           const isDragged = draggedId === scene.id;
-          const isFresh = freshSceneIds.includes(scene.id);
           const showInsertSlot = Boolean(draggedId && dragOverId === scene.id && draggedId !== scene.id);
           return (
             <div key={scene.id} className="flex items-stretch gap-3">
@@ -71,7 +50,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                   setDraggedId(null);
                   setDragOverId(null);
                 }}
-                className={`flex h-[144px] flex-none items-center justify-center overflow-hidden rounded-[22px] border border-dashed border-sky-400/35 bg-sky-400/8 text-sky-200 transition-all duration-300 ease-out ${showInsertSlot ? "w-[72px] opacity-100" : "w-0 border-transparent opacity-0"}`}
+                className={`flex h-[144px] flex-none items-center justify-center overflow-hidden rounded-[22px] border border-dashed border-sky-400/35 bg-sky-400/8 text-sky-200 transition-[width,opacity] duration-150 ease-out ${showInsertSlot ? "w-[72px] opacity-100" : "w-0 border-transparent opacity-0"}`}
               >
                 <div className="flex h-[104px] w-[54px] items-center justify-center rounded-[18px] border border-sky-300/35 bg-white/5 text-[10px] font-semibold uppercase tracking-[0.22em]">
                   Drop
@@ -99,7 +78,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                     onSelect(scene.id);
                   }
                 }}
-                className={`group relative flex h-[144px] w-[180px] flex-none cursor-grab flex-col rounded-[22px] border p-4 text-left transition-all duration-300 ease-out active:cursor-grabbing ${active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"} ${isDragged ? "scale-[0.98] opacity-55 shadow-none" : "shadow-[0_12px_24px_rgba(2,6,23,0.18)]"} ${isFresh ? "animate-scene-card-enter" : ""}`}
+                className={`group relative flex h-[144px] w-[180px] flex-none cursor-grab flex-col rounded-[22px] border p-4 text-left transition-colors duration-150 active:cursor-grabbing ${active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"} ${isDragged ? "opacity-55" : ""}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -158,7 +137,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
         <button
           type="button"
           onClick={onAddScene}
-          className="flex h-[144px] w-[180px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-all duration-300 hover:scale-[1.02] hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
+          className="flex h-[144px] w-[180px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-colors duration-150 hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
         >
           +
         </button>
