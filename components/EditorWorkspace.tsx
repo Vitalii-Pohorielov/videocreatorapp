@@ -173,13 +173,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     }
   };
 
-  const handleCopyProjectLink = async () => {
-    if (!projectId) return;
-    const shareUrl = `${window.location.origin}/editor?project=${projectId}`;
-    await navigator.clipboard.writeText(shareUrl);
-    setCloudStatus("Share link copied to clipboard.");
-  };
-
   return (
     <main className="h-screen overflow-hidden bg-[#f4f6f8] px-4 py-4 text-slate-900">
       <div className="mx-auto flex h-full max-w-[1600px] flex-col">
@@ -193,7 +186,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               backgroundColor={exportSettings.backgroundColor}
               textColor={exportSettings.textColor}
               preset={exportSettings.preset}
-              resolution={exportSettings.resolution}
               profile={exportSettings.profile}
               sceneProgress={playbackState.progress}
               isPlaying={isPlaying}
@@ -207,7 +199,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               onProjectNameChange={(value) => updateProjectMeta({ name: value })}
               onUpdateSettings={updateExportSettings}
               onSaveProject={handleSaveProject}
-              onCopyProjectLink={handleCopyProjectLink}
               onExport={handleExport}
               onTogglePlayback={togglePlayback}
               onUpdateScene={(id, updates) => {

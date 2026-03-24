@@ -7,9 +7,7 @@ import { SceneStage } from "@/components/SceneStage";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import {
   exportProfileLabels,
-  exportResolutionLabels,
   type ExportProfile,
-  type ExportResolution,
   type ExportSettings,
   type Scene,
   type TemplatePreset,
@@ -23,7 +21,6 @@ type StudioPreviewProps = {
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
-  resolution: ExportResolution;
   profile: ExportProfile;
   sceneProgress: number;
   isPlaying: boolean;
@@ -37,7 +34,6 @@ type StudioPreviewProps = {
   onProjectNameChange: (value: string) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
   onSaveProject: () => void;
-  onCopyProjectLink: () => void;
   onExport: () => void;
   onTogglePlayback: () => void;
   onUpdateScene: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
@@ -51,7 +47,6 @@ export function StudioPreview({
   backgroundColor,
   textColor,
   preset,
-  resolution,
   profile,
   sceneProgress,
   isPlaying,
@@ -65,19 +60,17 @@ export function StudioPreview({
   onProjectNameChange,
   onUpdateSettings,
   onSaveProject,
-  onCopyProjectLink,
   onExport,
   onTogglePlayback,
   onUpdateScene,
 }: StudioPreviewProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const highlightInputRef = useRef<HTMLInputElement>(null);
-  const resolutionOptions: ExportResolution[] = ["480p", "540p", "720p"];
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl", file: File | null) => {
     if (!file) return;
-    const imageUrl = await fileToStoredUrl(file, resolution, profile);
+    const imageUrl = await fileToStoredUrl(file, settings.resolution, profile);
     onUpdateScene(scene.id, { [field]: imageUrl });
   };
 
@@ -112,31 +105,6 @@ export function StudioPreview({
                   ))}
                 </select>
               </label>
-
-              <label className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                <select
-                  value={settings.resolution}
-                  onChange={(event) => onUpdateSettings({ resolution: event.target.value as ExportResolution })}
-                  className="bg-transparent outline-none"
-                >
-                  {resolutionOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {exportResolutionLabels[option]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {projectId ? (
-                <button
-                  type="button"
-                  onClick={onCopyProjectLink}
-                  disabled={isCloudBusy}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50 disabled:opacity-60"
-                >
-                  Share
-                </button>
-              ) : null}
 
               <button
                 type="button"
@@ -201,7 +169,7 @@ export function StudioPreview({
                 onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
                 onRequestLogoUpload={() => logoInputRef.current?.click()}
                 onRequestHighlightUpload={() => highlightInputRef.current?.click()}
-                uploadResolution={resolution}
+                uploadResolution={settings.resolution}
                 uploadProfile={profile}
               />
               {isPlaying ? (
