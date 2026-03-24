@@ -78,7 +78,7 @@ export type Scene = {
   websiteImageUrl: string;
   logoImageUrl: string;
   authorImageUrl: string;
-  mediaPosition: "left" | "right";
+  mediaPosition: "left" | "right" | "bottom";
 };
 
 export type SceneTrack = {

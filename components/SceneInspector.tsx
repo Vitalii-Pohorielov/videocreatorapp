@@ -314,7 +314,7 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
           <InspectorSection title="Highlight screenshot" description="Upload the site or product screen that should appear instead of the decorative mockup.">
             <div className="mt-4">
               <p className="mb-2 text-sm text-slate-600">Layout</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => onUpdate(scene.id, { mediaPosition: "left" })}
@@ -328,6 +328,13 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                   className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "right" ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
                 >
                   Image right
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onUpdate(scene.id, { mediaPosition: "bottom" })}
+                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "bottom" ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                >
+                  Image bottom
                 </button>
               </div>
             </div>

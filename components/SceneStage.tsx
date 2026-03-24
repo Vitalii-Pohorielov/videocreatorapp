@@ -578,6 +578,7 @@ export function SceneStage({
   const midSize = compact ? "text-xs" : "text-lg";
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
+  const showcaseImageBottom = scene.mediaPosition === "bottom";
   const shellOverlay =
     preset === "white"
       ? {
@@ -767,19 +768,40 @@ export function SceneStage({
       )}
 
       {showSceneContent && scene.type === "product-showcase" && (
-        <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
-          <div className={`text-left ${showcaseMediaFirst ? "md:order-2" : ""}`}>
-            <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
-            <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
-            <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
-          </div>
-          <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
-            <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
-            <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/10">
-              <ShowcaseImageSlot scene={scene} compact={compact} editable={editable} onPickImage={onRequestHighlightUpload} />
+        showcaseImageBottom ? (
+          <div className="relative flex h-full flex-col overflow-hidden">
+            <div className="relative z-10 max-w-2xl text-left">
+              <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
+              <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
+              <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
+            </div>
+            <div
+              className={`pointer-events-auto absolute left-1/2 top-[48%] w-[88%] -translate-x-1/2 rounded-[28px] border p-5 ${s.card}`}
+              style={{ transform: `translate(-50%, ${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}
+            >
+              <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
+              <div className={`overflow-hidden rounded-[22px] border border-white/10 bg-black/10 ${compact ? "h-[170px]" : "h-[430px]"}`}>
+                <div className={compact ? "translate-y-2" : "translate-y-8"}>
+                  <ShowcaseImageSlot scene={scene} compact={compact} editable={editable} onPickImage={onRequestHighlightUpload} />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
+            <div className={`text-left ${showcaseMediaFirst ? "md:order-2" : ""}`}>
+              <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
+              <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
+              <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
+            </div>
+            <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
+              <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
+              <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/10">
+                <ShowcaseImageSlot scene={scene} compact={compact} editable={editable} onPickImage={onRequestHighlightUpload} />
+              </div>
+            </div>
+          </div>
+        )
       )}
 
       {showSceneContent && scene.type === "feature-grid" && (
