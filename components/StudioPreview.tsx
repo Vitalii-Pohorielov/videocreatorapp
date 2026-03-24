@@ -66,9 +66,10 @@ export function StudioPreview({
 }: StudioPreviewProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const highlightInputRef = useRef<HTMLInputElement>(null);
+  const authorInputRef = useRef<HTMLInputElement>(null);
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
 
-  const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl", file: File | null) => {
+  const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl" | "authorImageUrl", file: File | null) => {
     if (!file) return;
     const imageUrl = await fileToStoredUrl(file, settings.resolution, profile);
     onUpdateScene(scene.id, { [field]: imageUrl });
@@ -156,6 +157,16 @@ export function StudioPreview({
             event.target.value = "";
           }}
         />
+        <input
+          ref={authorInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={async (event) => {
+            await applyImageUpload("authorImageUrl", event.target.files?.[0] ?? null);
+            event.target.value = "";
+          }}
+        />
         <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 p-2 shadow-sm">
           <div className="flex flex-1 items-center justify-center overflow-hidden rounded-[24px] bg-black">
             <div className="relative aspect-video h-full max-h-full w-auto max-w-[82%] overflow-hidden rounded-[24px] bg-black">
@@ -169,6 +180,7 @@ export function StudioPreview({
                 onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
                 onRequestLogoUpload={() => logoInputRef.current?.click()}
                 onRequestHighlightUpload={() => highlightInputRef.current?.click()}
+                onRequestAuthorUpload={() => authorInputRef.current?.click()}
                 uploadResolution={settings.resolution}
                 uploadProfile={profile}
               />

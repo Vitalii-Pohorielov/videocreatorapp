@@ -18,6 +18,7 @@ type SceneStageProps = {
   onSceneChange?: (updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onRequestLogoUpload?: () => void;
   onRequestHighlightUpload?: () => void;
+  onRequestAuthorUpload?: () => void;
   uploadResolution?: ExportResolution;
   uploadProfile?: ExportProfile;
 };
@@ -124,7 +125,19 @@ function presetStyles(preset: TemplatePreset) {
   }
 }
 
-function IntroLogo({ scene, progress, compact }: { scene: Scene; progress: number; compact: boolean }) {
+function IntroLogo({
+  scene,
+  progress,
+  compact,
+  editable,
+  onPickImage,
+}: {
+  scene: Scene;
+  progress: number;
+  compact: boolean;
+  editable: boolean;
+  onPickImage?: () => void;
+}) {
   const logoImageUrl = getRenderableImageUrl(scene.logoImageUrl);
   if (!logoImageUrl) return null;
 
@@ -138,9 +151,13 @@ function IntroLogo({ scene, progress, compact }: { scene: Scene; progress: numbe
         opacity: 0.18 + logoIn * 0.82,
       }}
     >
-      <div className="flex items-center justify-center rounded-[24px] border border-white/10 bg-white/8 px-6 py-4 backdrop-blur-sm">
+      <button
+        type="button"
+        onClick={editable ? onPickImage : undefined}
+        className={`flex items-center justify-center rounded-[24px] border border-white/10 bg-white/8 px-6 py-4 backdrop-blur-sm ${editable ? "cursor-pointer transition hover:scale-105 hover:bg-white/12" : "cursor-default"}`}
+      >
         <img src={logoImageUrl} alt="Project logo" className={compact ? "max-h-12 max-w-[120px] object-contain" : "max-h-20 max-w-[220px] object-contain"} />
-      </div>
+      </button>
     </div>
   );
 }
@@ -159,7 +176,7 @@ function IntroLogoSlot({
   onPickImage?: () => void;
 }) {
   if (getRenderableImageUrl(scene.logoImageUrl)) {
-    return <IntroLogo scene={scene} progress={progress} compact={compact} />;
+    return <IntroLogo scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onPickImage} />;
   }
 
   const logoIn = motion(progress, 0, 0.24);
@@ -188,7 +205,19 @@ function IntroLogoSlot({
   );
 }
 
-function QuoteAuthorPhoto({ scene, progress, compact }: { scene: Scene; progress: number; compact: boolean }) {
+function QuoteAuthorPhoto({
+  scene,
+  progress,
+  compact,
+  editable,
+  onPickImage,
+}: {
+  scene: Scene;
+  progress: number;
+  compact: boolean;
+  editable: boolean;
+  onPickImage?: () => void;
+}) {
   const authorImageUrl = getRenderableImageUrl(scene.authorImageUrl);
   if (!authorImageUrl) return null;
 
@@ -202,7 +231,13 @@ function QuoteAuthorPhoto({ scene, progress, compact }: { scene: Scene; progress
         opacity: 0.2 + photoIn * 0.8,
       }}
     >
-      <img src={authorImageUrl} alt="Author portrait" className={compact ? "h-12 w-12 rounded-full object-cover ring-2 ring-white/15" : "h-20 w-20 rounded-full object-cover ring-4 ring-white/10"} />
+      <button
+        type="button"
+        onClick={editable ? onPickImage : undefined}
+        className={`${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"} rounded-full`}
+      >
+        <img src={authorImageUrl} alt="Author portrait" className={compact ? "h-12 w-12 rounded-full object-cover ring-2 ring-white/15" : "h-20 w-20 rounded-full object-cover ring-4 ring-white/10"} />
+      </button>
     </div>
   );
 }
@@ -237,8 +272,8 @@ function WebsiteScrollFrame({
       </div>
       <button
         type="button"
-        onClick={!websiteImageUrl && editable ? onPickImage : undefined}
-        className={`relative block w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/15 text-left ${!websiteImageUrl && editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
+        onClick={editable ? onPickImage : undefined}
+        className={`relative block w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/15 text-left ${editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
         style={{ height: viewportHeight }}
       >
         {websiteImageUrl ? (
@@ -341,12 +376,14 @@ function ShowcaseImageSlot({
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
   if (websiteImageUrl) {
     return (
-      <img
-        src={websiteImageUrl}
-        alt="Product screenshot"
-        className="block h-full w-full object-cover object-top"
-        style={{ height: compact ? 150 : 320 }}
-      />
+      <button type="button" onClick={editable ? onPickImage : undefined} className={`block w-full ${editable ? "cursor-pointer transition hover:opacity-95" : "cursor-default"}`}>
+        <img
+          src={websiteImageUrl}
+          alt="Product screenshot"
+          className="block h-full w-full object-cover object-top"
+          style={{ height: compact ? 150 : 320 }}
+        />
+      </button>
     );
   }
 
@@ -463,6 +500,7 @@ export function SceneStage({
   onSceneChange,
   onRequestLogoUpload,
   onRequestHighlightUpload,
+  onRequestAuthorUpload,
   uploadResolution = "540p",
   uploadProfile = "standard",
 }: SceneStageProps) {
@@ -665,7 +703,7 @@ export function SceneStage({
       {scene.type === "quote" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: 0.16 + cardIn * 0.84 }}>
-            <QuoteAuthorPhoto scene={scene} progress={progress} compact={compact} />
+            <QuoteAuthorPhoto scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
             <div className="mb-4 text-4xl opacity-50">"</div>
             <EditableText as="h2" value={scene.title} editable={editable} multiline onCommit={(value) => onSceneChange?.({ title: value })} className={`leading-tight ${compact ? "text-base" : "text-4xl"} ${s.title} ${s.italic}`} placeholder="Quote" />
             {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize} opacity-75`} style={revealStyle(subIn, { y: 14, blur: 8, minOpacity: 0.18 })} placeholder="Author" /> : null}
