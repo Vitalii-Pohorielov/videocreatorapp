@@ -11,6 +11,7 @@ type SceneStageProps = {
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
+  performanceMode?: "full" | "light";
   renderLayer?: "full" | "background" | "content";
   progress?: number;
   compact?: boolean;
@@ -57,7 +58,7 @@ function revealStyle(progress: number, options?: { y?: number; x?: number; scale
   };
 }
 
-function presetStyles(preset: TemplatePreset) {
+function presetStyles(preset: TemplatePreset, lightweight = false) {
   switch (preset) {
     case "white":
       return {
@@ -75,7 +76,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "premium":
       return {
-        card: "bg-white/8 border-[#d7b98a]/35 backdrop-blur-md shadow-[0_24px_70px_rgba(5,10,20,0.35)]",
+        card: lightweight ? "bg-white/8 border-[#d7b98a]/35 shadow-[0_12px_30px_rgba(5,10,20,0.22)]" : "bg-white/8 border-[#d7b98a]/35 backdrop-blur-md shadow-[0_24px_70px_rgba(5,10,20,0.35)]",
         accent: "bg-[#d7b98a]",
         title: "font-semibold tracking-[-0.04em]",
         italic: "",
@@ -89,7 +90,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "editorial":
       return {
-        card: "bg-white/55 border-black/10 backdrop-blur-sm shadow-[0_22px_55px_rgba(60,35,15,0.1)]",
+        card: lightweight ? "bg-white/55 border-black/10 shadow-[0_12px_28px_rgba(60,35,15,0.08)]" : "bg-white/55 border-black/10 backdrop-blur-sm shadow-[0_22px_55px_rgba(60,35,15,0.1)]",
         accent: "bg-[#9a7b4f]",
         title: "font-serif italic tracking-[-0.02em]",
         italic: "italic",
@@ -110,7 +111,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "neon-grid":
       return {
-        card: "bg-[#08192d]/72 border-[#39f3ff]/28 backdrop-blur-md shadow-[0_0_0_1px_rgba(57,243,255,0.08),0_28px_80px_rgba(0,0,0,0.45)]",
+        card: lightweight ? "bg-[#08192d]/72 border-[#39f3ff]/28 shadow-[0_0_0_1px_rgba(57,243,255,0.08),0_14px_34px_rgba(0,0,0,0.28)]" : "bg-[#08192d]/72 border-[#39f3ff]/28 backdrop-blur-md shadow-[0_0_0_1px_rgba(57,243,255,0.08),0_28px_80px_rgba(0,0,0,0.45)]",
         accent: "bg-[#39f3ff]",
         title: "font-black uppercase tracking-[0.12em]",
         italic: "",
@@ -124,7 +125,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "arctic-glass":
       return {
-        card: "bg-white/28 border-[#7cdcff]/34 backdrop-blur-xl shadow-[0_20px_70px_rgba(83,150,200,0.16)]",
+        card: lightweight ? "bg-white/24 border-[#7cdcff]/30 shadow-[0_12px_34px_rgba(83,150,200,0.1)]" : "bg-white/28 border-[#7cdcff]/34 backdrop-blur-xl shadow-[0_20px_70px_rgba(83,150,200,0.16)]",
         accent: "bg-[#1479ff]",
         title: "font-semibold tracking-[-0.05em]",
         italic: "",
@@ -138,7 +139,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "velvet-noir":
       return {
-        card: "bg-[#2a1020]/82 border-[#ff77aa]/25 backdrop-blur-md shadow-[0_24px_90px_rgba(255,34,118,0.18)]",
+        card: lightweight ? "bg-[#2a1020]/82 border-[#ff77aa]/25 shadow-[0_14px_38px_rgba(255,34,118,0.12)]" : "bg-[#2a1020]/82 border-[#ff77aa]/25 backdrop-blur-md shadow-[0_24px_90px_rgba(255,34,118,0.18)]",
         accent: "bg-[#ff77aa]",
         title: "font-serif tracking-[-0.04em]",
         italic: "italic",
@@ -159,7 +160,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "blueprint":
       return {
-        card: "bg-[#12345d]/78 border-[#7cd4ff]/26 backdrop-blur-sm shadow-[0_24px_80px_rgba(4,14,34,0.42)]",
+        card: lightweight ? "bg-[#12345d]/78 border-[#7cd4ff]/26 shadow-[0_14px_38px_rgba(4,14,34,0.28)]" : "bg-[#12345d]/78 border-[#7cd4ff]/26 backdrop-blur-sm shadow-[0_24px_80px_rgba(4,14,34,0.42)]",
         accent: "bg-[#7cd4ff]",
         title: "font-semibold uppercase tracking-[0.12em]",
         italic: "",
@@ -180,7 +181,7 @@ function presetStyles(preset: TemplatePreset) {
       };
     case "ember-glow":
       return {
-        card: "bg-[#2a120d]/82 border-[#ff8a4c]/22 backdrop-blur-md shadow-[0_24px_90px_rgba(255,102,51,0.2)]",
+        card: lightweight ? "bg-[#2a120d]/82 border-[#ff8a4c]/22 shadow-[0_14px_38px_rgba(255,102,51,0.14)]" : "bg-[#2a120d]/82 border-[#ff8a4c]/22 backdrop-blur-md shadow-[0_24px_90px_rgba(255,102,51,0.2)]",
         accent: "bg-[#ff8a4c]",
         title: "font-semibold tracking-[-0.05em]",
         italic: "",
@@ -194,12 +195,14 @@ function IntroLogo({
   compact,
   editable,
   onPickImage,
+  lightweightPreview = false,
 }: {
   scene: Scene;
   progress: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
+  lightweightPreview?: boolean;
 }) {
   const logoImageUrl = getRenderableImageUrl(scene.logoImageUrl);
   if (!logoImageUrl) return null;
@@ -217,7 +220,7 @@ function IntroLogo({
       <button
         type="button"
         onClick={editable ? onPickImage : undefined}
-        className={`flex items-center justify-center rounded-[24px] border border-white/10 bg-white/8 px-6 py-4 backdrop-blur-sm ${editable ? "cursor-pointer transition hover:scale-105 hover:bg-white/12" : "cursor-default"}`}
+        className={`flex items-center justify-center rounded-[24px] border border-white/10 bg-white/8 px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105 hover:bg-white/12" : "cursor-default"}`}
       >
         <img src={logoImageUrl} alt="Project logo" className={compact ? "max-h-12 max-w-[120px] object-contain" : "max-h-20 max-w-[220px] object-contain"} />
       </button>
@@ -231,15 +234,17 @@ function IntroLogoSlot({
   compact,
   editable,
   onPickImage,
+  lightweightPreview = false,
 }: {
   scene: Scene;
   progress: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
+  lightweightPreview?: boolean;
 }) {
   if (getRenderableImageUrl(scene.logoImageUrl)) {
-    return <IntroLogo scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onPickImage} />;
+    return <IntroLogo scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onPickImage} lightweightPreview={lightweightPreview} />;
   }
 
   const logoIn = motion(progress, 0, 0.24);
@@ -255,7 +260,7 @@ function IntroLogoSlot({
       <button
         type="button"
         onClick={editable ? onPickImage : undefined}
-        className={`flex items-center justify-center rounded-[24px] border border-white/10 bg-white/8 px-6 py-4 text-white/70 backdrop-blur-sm ${editable ? "cursor-pointer transition hover:scale-105 hover:bg-white/12" : "cursor-default"}`}
+        className={`flex items-center justify-center rounded-[24px] border border-white/10 bg-white/8 px-6 py-4 text-white/70 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105 hover:bg-white/12" : "cursor-default"}`}
       >
         <div className="flex flex-col items-center gap-3">
           <div className={`flex items-center justify-center rounded-[22px] border border-dashed border-white/20 ${compact ? "h-12 w-12 text-lg" : "h-20 w-20 text-3xl"}`}>
@@ -313,6 +318,7 @@ function WebsiteScrollFrame({
   progress,
   editable,
   onPickImage,
+  lightweightPreview = false,
 }: {
   scene: Scene;
   cardClassName: string;
@@ -321,6 +327,7 @@ function WebsiteScrollFrame({
   progress: number;
   editable?: boolean;
   onPickImage?: () => void;
+  lightweightPreview?: boolean;
 }) {
   const scrollDelaySeconds = 1;
   const elapsedSceneSeconds = progress * scene.durationSeconds;
@@ -348,7 +355,7 @@ function WebsiteScrollFrame({
             src={websiteImageUrl}
             alt="Website screenshot"
             className="block w-full"
-            style={{ transform: `translateY(-${scrollOffset}) translateZ(0)`, transition: "transform 80ms linear", willChange: "transform" }}
+            style={{ transform: `translateY(-${scrollOffset}) translateZ(0)`, transition: lightweightPreview ? "none" : "transform 80ms linear", willChange: lightweightPreview ? "auto" : "transform" }}
           />
         ) : (
           <div className="p-5">
@@ -363,8 +370,8 @@ function WebsiteScrollFrame({
             </div>
           </div>
         )}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
+        {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent" /> : null}
+        {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" /> : null}
       </button>
     </div>
   );
@@ -435,12 +442,14 @@ function ShowcaseImageSlot({
   editable,
   onPickImage,
   onChangeMediaPosition,
+  lightweightPreview = false,
 }: {
   scene: Scene;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
   onChangeMediaPosition?: (value: "left" | "right" | "bottom") => void;
+  lightweightPreview?: boolean;
 }) {
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
   const mediaButtons: Array<{ value: "left" | "right" | "bottom"; label: string }> = [
@@ -470,7 +479,7 @@ function ShowcaseImageSlot({
                 event.stopPropagation();
                 onChangeMediaPosition(button.value);
               }}
-              className={`absolute z-10 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold backdrop-blur-sm transition opacity-0 group-hover:opacity-100 ${placementClassName} ${
+              className={`absolute z-10 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${placementClassName} ${
                 active
                   ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
                   : "border-white/20 bg-black/45 text-white hover:bg-black/65"
@@ -580,6 +589,7 @@ function StageShell({
   children,
   compact,
   renderLayer,
+  lightweightPreview = false,
 }: {
   backgroundColor: string;
   textColor: string;
@@ -587,13 +597,14 @@ function StageShell({
   progress: number;
   compact: boolean;
   renderLayer: "full" | "background" | "content";
+  lightweightPreview?: boolean;
 }) {
   const showBackground = renderLayer !== "content";
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[24px]" style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
-      {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
-      {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
-      {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
+      {showBackground ? <div className="absolute inset-0" style={{ background: lightweightPreview ? "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 52%)" : "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
+      {showBackground && !lightweightPreview ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
+      {showBackground && !lightweightPreview ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
       {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.2, transform: "translate3d(0, 0, 0)" }} /> : null}
       <div className="relative h-full w-full">{children}</div>
     </div>
@@ -605,6 +616,7 @@ export function SceneStage({
   backgroundColor,
   textColor,
   preset,
+  performanceMode = "full",
   renderLayer = "full",
   progress = 1,
   compact = false,
@@ -616,13 +628,15 @@ export function SceneStage({
   uploadResolution = "540p",
   uploadProfile = "standard",
 }: SceneStageProps) {
+  const lightweightPreview = performanceMode === "light";
+  const blurMultiplier = lightweightPreview ? 0.35 : 1;
   const showSceneBackground = renderLayer !== "content";
   const showSceneContent = renderLayer !== "background";
   const intro = motion(progress, 0.02, 0.34);
   const titleIn = motion(progress, 0.04, 0.28);
   const subIn = motion(progress, 0.08, 0.26);
   const cardIn = motion(progress, 0.1, 0.3);
-  const s = presetStyles(preset);
+  const s = presetStyles(preset, lightweightPreview);
   const titleSize = compact ? "text-lg" : "text-5xl";
   const midSize = compact ? "text-xs" : "text-lg";
   const smallSize = compact ? "text-[9px]" : "text-xs";
@@ -785,7 +799,7 @@ export function SceneStage({
   };
 
   return (
-    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer}>
+    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer} lightweightPreview={lightweightPreview}>
       {showSceneBackground && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
       {showSceneBackground ? (
         <>
@@ -810,9 +824,9 @@ export function SceneStage({
       <div className={compact ? "relative h-full w-full px-4 py-4" : "relative h-full w-full px-8 py-8"}>
       {showSceneContent && scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
-          <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} />
+          <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} />
           <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} style={{ transform: `translateY(${18 * (1 - intro)}px)`, opacity: 0.2 + intro * 0.7 }} placeholder="Eyebrow" />
-          <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${40 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`, opacity: 0.2 + titleIn * 0.8, filter: `blur(${16 * (1 - titleIn)}px)` }} placeholder="Scene title" />
+          <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${40 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`, opacity: 0.2 + titleIn * 0.8, filter: `blur(${16 * blurMultiplier * (1 - titleIn)}px)` }} placeholder="Scene title" />
           {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-2xl ${midSize}`} style={{ transform: `translateY(${24 * (1 - subIn)}px)`, opacity: 0.18 + subIn * 0.72 }} placeholder="Subtitle" /> : null}
         </div>
       )}
@@ -838,6 +852,7 @@ export function SceneStage({
                     editable={editable}
                     onPickImage={onRequestHighlightUpload}
                     onChangeMediaPosition={(value) => onSceneChange?.({ mediaPosition: value })}
+                    lightweightPreview={lightweightPreview}
                   />
                 </div>
               </div>
@@ -859,6 +874,7 @@ export function SceneStage({
                   editable={editable}
                   onPickImage={onRequestHighlightUpload}
                   onChangeMediaPosition={(value) => onSceneChange?.({ mediaPosition: value })}
+                  lightweightPreview={lightweightPreview}
                 />
               </div>
             </div>
@@ -938,6 +954,7 @@ export function SceneStage({
             progress={progress}
             editable={editable}
             onPickImage={onRequestHighlightUpload}
+            lightweightPreview={lightweightPreview}
           />
         </div>
       )}

@@ -202,6 +202,7 @@ export function StudioPreview({
                   backgroundColor={backgroundColor}
                   textColor={textColor}
                   preset={preset}
+                  performanceMode="light"
                   renderLayer="background"
                   progress={1}
                   uploadResolution={settings.resolution}
@@ -214,6 +215,7 @@ export function StudioPreview({
                   backgroundColor={backgroundColor}
                   textColor={textColor}
                   preset={preset}
+                  performanceMode="light"
                   renderLayer="content"
                   progress={sceneProgress}
                   editable={!isPlaying}
