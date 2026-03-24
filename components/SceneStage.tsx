@@ -631,7 +631,7 @@ export function SceneStage({
   const titleIn = sharedIn;
   const subIn = sharedIn;
   const cardIn = sharedIn;
-  const outroFade = editable ? 1 : 1 - motion(progress, 0.8, 0.16);
+  const outroFade = editable ? 1 : 1 - motion(progress, 0.72, 0.28);
   const s = presetStyles(preset, lightweightPreview);
   const titleSize = compact ? "text-lg" : "text-5xl";
   const midSize = compact ? "text-xs" : "text-lg";
@@ -823,7 +823,7 @@ export function SceneStage({
           className="relative h-full w-full"
           style={{
             opacity: outroFade,
-            transform: `translateY(${-18 * (1 - outroFade)}px)`,
+            transform: `translateY(${-10 * (1 - outroFade)}px)`,
           }}
         >
       {scene.type === "brand-reveal" && (
