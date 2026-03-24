@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <rect width="96" height="96" rx="24" fill="#082f49"/>
+  <path d="M48 16c10 8 18 10 26 11 0 28-7 42-26 53C29 69 22 55 22 27c8-1 16-3 26-11z" fill="#38bdf8" opacity="0.18">
+    <animate attributeName="opacity" values="0.12;0.28;0.12" dur="2.2s" repeatCount="indefinite"/>
+  </path>
+  <text x="48" y="58" font-size="38" text-anchor="middle">🛡️</text>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <rect width="96" height="96" rx="24" fill="#111827"/>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" values="-8 48 48;8 48 48;-8 48 48" dur="2.4s" repeatCount="indefinite"/>
+    <text x="48" y="58" font-size="38" text-anchor="middle">🧲</text>
+  </g>
+</svg>
