@@ -126,6 +126,15 @@ function InspectorSection({ title, description, defaultOpen = false, children }:
 }
 
 export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: SceneInspectorProps) {
+  const fieldClassName =
+    "w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400";
+  const textareaClassName =
+    "w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400";
+  const ghostButtonClassName =
+    "rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-slate-200 transition hover:bg-white/[0.1]";
+  const panelClassName = "mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70";
+  const labelClassName = "mb-2 block text-sm text-slate-400";
+
   const normalizeColorInput = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return trimmed;
@@ -220,37 +229,37 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Background</span>
+              <span className={labelClassName}>Background</span>
               <div className="space-y-2">
                 <input
                   type="color"
                   value={settings.backgroundColor}
                   onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
                 />
                 <input
                   type="text"
                   value={settings.backgroundColor}
                   onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
+                  className={`${fieldClassName} uppercase`}
                   placeholder="#F7F4EE"
                 />
               </div>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Text</span>
+              <span className={labelClassName}>Text</span>
               <div className="space-y-2">
                 <input
                   type="color"
                   value={settings.textColor}
                   onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white p-2"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
                 />
                 <input
                   type="text"
                   value={settings.textColor}
                   onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm uppercase outline-none focus:border-sky-500"
+                  className={`${fieldClassName} uppercase`}
                   placeholder="#1B1F23"
                 />
               </div>
@@ -261,25 +270,25 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         <InspectorSection title="Text" description="Main copy for the selected scene." defaultOpen>
           <div className="space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Scene label</span>
-              <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+              <span className={labelClassName}>Scene label</span>
+              <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Eyebrow</span>
-              <input value={scene.eyebrow} onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+              <span className={labelClassName}>Eyebrow</span>
+              <input value={scene.eyebrow} onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })} className={fieldClassName} />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Title</span>
-              <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+              <span className={labelClassName}>Title</span>
+              <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Subtitle</span>
-              <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+              <span className={labelClassName}>Subtitle</span>
+              <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
             </label>
             {scene.type === "description" ? (
               <label className="block">
-                <span className="mb-2 block text-sm text-slate-600">Description</span>
-                <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500" />
+                <span className={labelClassName}>Description</span>
+                <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className={textareaClassName} />
               </label>
             ) : null}
           </div>
@@ -288,23 +297,23 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         {scene.type === "brand-reveal" ? (
           <InspectorSection title="Project logo" description="Upload a PNG or SVG logo for the intro scene.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
+              <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
                 Upload logo
                 <input type="file" accept="image/*" onChange={handleLogoImageChange} className="sr-only" />
               </label>
               {logoImageUrl ? (
-                <button type="button" onClick={() => onUpdate(scene.id, { logoImageUrl: "" })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50">
+                <button type="button" onClick={() => onUpdate(scene.id, { logoImageUrl: "" })} className={ghostButtonClassName}>
                   Remove logo
                 </button>
               ) : null}
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className={panelClassName}>
               {logoImageUrl ? (
                 <div className="flex h-40 items-center justify-center p-6">
                   <img src={logoImageUrl} alt="Project logo" className="max-h-full max-w-full object-contain" />
                 </div>
               ) : (
-                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No logo uploaded yet.</div>
+                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No logo uploaded yet.</div>
               )}
             </div>
           </InspectorSection>
@@ -313,47 +322,47 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         {scene.type === "product-showcase" ? (
           <InspectorSection title="Highlight screenshot" description="Upload the site or product screen that should appear instead of the decorative mockup.">
             <div className="mt-4">
-              <p className="mb-2 text-sm text-slate-600">Layout</p>
+              <p className="mb-2 text-sm text-slate-400">Layout</p>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => onUpdate(scene.id, { mediaPosition: "left" })}
-                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "left" ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "left" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"}`}
                 >
                   Image left
                 </button>
                 <button
                   type="button"
                   onClick={() => onUpdate(scene.id, { mediaPosition: "right" })}
-                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "right" ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "right" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"}`}
                 >
                   Image right
                 </button>
                 <button
                   type="button"
                   onClick={() => onUpdate(scene.id, { mediaPosition: "bottom" })}
-                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "bottom" ? "border-sky-500 bg-sky-50 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  className={`rounded-2xl border px-3 py-3 text-sm transition ${scene.mediaPosition === "bottom" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"}`}
                 >
                   Image bottom
                 </button>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
+              <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
                 Upload screenshot
                 <input type="file" accept="image/*" onChange={handleWebsiteImageChange} className="sr-only" />
               </label>
               {websiteImageUrl ? (
-                <button type="button" onClick={() => onUpdate(scene.id, { websiteImageUrl: "" })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50">
+                <button type="button" onClick={() => onUpdate(scene.id, { websiteImageUrl: "" })} className={ghostButtonClassName}>
                   Remove image
                 </button>
               ) : null}
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className={panelClassName}>
               {websiteImageUrl ? (
                 <img src={websiteImageUrl} alt="Highlight screenshot" className="max-h-56 w-full object-cover object-top" />
               ) : (
-                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No screenshot uploaded yet.</div>
+                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No screenshot uploaded yet.</div>
               )}
             </div>
           </InspectorSection>
@@ -362,21 +371,21 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         {scene.type === "website-scroll" ? (
           <InspectorSection title="Website screenshot" description="Upload your own site screenshot. A tall image works best for visible scrolling.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
+              <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
                 Upload screenshot
                 <input type="file" accept="image/*" onChange={handleWebsiteImageChange} className="sr-only" />
               </label>
               {websiteImageUrl ? (
-                <button type="button" onClick={() => onUpdate(scene.id, { websiteImageUrl: "" })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50">
+                <button type="button" onClick={() => onUpdate(scene.id, { websiteImageUrl: "" })} className={ghostButtonClassName}>
                   Remove image
                 </button>
               ) : null}
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className={panelClassName}>
               {websiteImageUrl ? (
                 <img src={websiteImageUrl} alt="Website screenshot" className="max-h-56 w-full object-cover object-top" />
               ) : (
-                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No screenshot uploaded yet.</div>
+                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No screenshot uploaded yet.</div>
               )}
             </div>
           </InspectorSection>
@@ -385,23 +394,23 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         {scene.type === "quote" ? (
           <InspectorSection title="Author photo" description="Upload the portrait that should appear next to the quote.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
+              <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
                 Upload photo
                 <input type="file" accept="image/*" onChange={handleAuthorImageChange} className="sr-only" />
               </label>
               {authorImageUrl ? (
-                <button type="button" onClick={() => onUpdate(scene.id, { authorImageUrl: "" })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50">
+                <button type="button" onClick={() => onUpdate(scene.id, { authorImageUrl: "" })} className={ghostButtonClassName}>
                   Remove photo
                 </button>
               ) : null}
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className={panelClassName}>
               {authorImageUrl ? (
                 <div className="flex h-40 items-center justify-center p-6">
                   <img src={authorImageUrl} alt="Author portrait" className="h-28 w-28 rounded-full object-cover" />
                 </div>
               ) : (
-                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-500">No author photo uploaded yet.</div>
+                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No author photo uploaded yet.</div>
               )}
             </div>
           </InspectorSection>
@@ -411,28 +420,28 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
           <InspectorSection title="Items" description="Manage card text and markers for this scene.">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-slate-900">Cards</p>
-                <p className="mt-1 text-sm text-slate-500">Each card can have its own text and emoji.</p>
+                <p className="text-sm font-medium text-white">Cards</p>
+                <p className="mt-1 text-sm text-slate-400">Each card can have its own text and emoji.</p>
               </div>
               <button
                 type="button"
                 onClick={addBulletItem}
                 disabled={scene.bullets.length >= 6}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`${ghostButtonClassName} disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 Add item
               </button>
             </div>
             <div className="mt-4 space-y-3">
               {scene.bullets.map((bullet, index) => (
-                <div key={`${scene.id}-item-${index}`} className="rounded-2xl border border-slate-200 bg-white p-3">
+                <div key={`${scene.id}-item-${index}`} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                     <label className="block">
-                      <span className="mb-2 block text-sm text-slate-600">Text</span>
+                      <span className={labelClassName}>Text</span>
                       <input
                         value={bullet}
                         onChange={(event) => updateBullet(index, event.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-sky-500 focus:bg-white"
+                        className={fieldClassName}
                         placeholder="Card text"
                       />
                       <p className="mt-2 text-xs text-slate-500">Change the emoji or animated icon by clicking the marker directly in preview.</p>
@@ -441,7 +450,7 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
                       <button
                         type="button"
                         onClick={() => removeBulletItem(index)}
-                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+                        className={ghostButtonClassName}
                       >
                         Remove
                       </button>
@@ -456,12 +465,12 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         {scene.type === "checklist" ? (
           <InspectorSection title="Items" description="One checklist item per line.">
             <label className="block">
-              <span className="mb-2 block text-sm text-slate-600">Items</span>
+              <span className={labelClassName}>Items</span>
               <textarea
                 value={scene.bullets.join("\n")}
                 rows={6}
                 onChange={(event) => onUpdate(scene.id, { bullets: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean) })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-sky-500"
+                className={textareaClassName}
                 placeholder="One item per line"
               />
             </label>
@@ -470,7 +479,7 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
 
         <InspectorSection title="Timing" description="Keep scenes shorter for a faster export.">
           <label className="block">
-            <span className="mb-2 block text-sm text-slate-600">Duration</span>
+            <span className={labelClassName}>Duration</span>
             <input type="range" min="1.5" max="8" step="0.5" value={scene.durationSeconds} onChange={(event) => onUpdate(scene.id, { durationSeconds: Number(event.target.value) })} className="w-full accent-sky-500" />
             <p className="mt-2 text-xs text-slate-500">{scene.durationSeconds.toFixed(1)}s</p>
           </label>
