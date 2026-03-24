@@ -827,7 +827,7 @@ export function SceneStage({
         <div
           className="relative h-full w-full"
           style={{
-            opacity: 0.12 + outroFade * 0.88,
+            opacity: outroFade,
             transform: `translateY(${-18 * (1 - outroFade)}px)`,
           }}
         >
