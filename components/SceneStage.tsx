@@ -834,9 +834,15 @@ export function SceneStage({
       {scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <IntroLogoSlot scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} />
-          <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} style={{ transform: `translateY(${18 * (1 - intro)}px)`, opacity: 0.2 + intro * 0.7 }} placeholder="Eyebrow" />
-          <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${40 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`, opacity: 0.2 + titleIn * 0.8, filter: `blur(${16 * blurMultiplier * (1 - titleIn)}px)` }} placeholder="Scene title" />
-          {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-2xl ${midSize}`} style={{ transform: `translateY(${24 * (1 - subIn)}px)`, opacity: 0.18 + subIn * 0.72 }} placeholder="Subtitle" /> : null}
+          <EditableText
+            as="h2"
+            value={scene.title}
+            editable={editable}
+            onCommit={(value) => onSceneChange?.({ title: value })}
+            className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title}`}
+            style={{ transform: `translateY(${40 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`, opacity: 0.2 + titleIn * 0.8, filter: `blur(${16 * blurMultiplier * (1 - titleIn)}px)` }}
+            placeholder="Scene title"
+          />
         </div>
       )}
 
