@@ -20,6 +20,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
   const [freshSceneIds, setFreshSceneIds] = useState<string[]>([]);
   const { scenes } = track;
   const previousSceneIdsRef = useRef<string[]>(scenes.map((scene) => scene.id));
+  const draggedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const previousIds = previousSceneIdsRef.current;
@@ -51,22 +52,32 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
             <div
               key={scene.id}
               draggable
-              onDragStart={() => setDraggedId(scene.id)}
+              onDragStart={(event) => {
+                draggedIdRef.current = scene.id;
+                setDraggedId(scene.id);
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", scene.id);
+              }}
               onDragEnter={() => {
-                if (draggedId && draggedId !== scene.id) setDragOverId(scene.id);
+                const currentDraggedId = draggedIdRef.current;
+                if (currentDraggedId && currentDraggedId !== scene.id) setDragOverId(scene.id);
               }}
               onDragOver={(event) => {
                 event.preventDefault();
-                if (draggedId && draggedId !== scene.id && dragOverId !== scene.id) {
+                const currentDraggedId = draggedIdRef.current || event.dataTransfer.getData("text/plain");
+                if (currentDraggedId && currentDraggedId !== scene.id && dragOverId !== scene.id) {
                   setDragOverId(scene.id);
                 }
               }}
-              onDrop={() => {
-                if (draggedId) onReorder(draggedId, scene.id);
+              onDrop={(event) => {
+                const currentDraggedId = draggedIdRef.current || event.dataTransfer.getData("text/plain");
+                if (currentDraggedId) onReorder(currentDraggedId, scene.id);
+                draggedIdRef.current = null;
                 setDraggedId(null);
                 setDragOverId(null);
               }}
               onDragEnd={() => {
+                draggedIdRef.current = null;
                 setDraggedId(null);
                 setDragOverId(null);
               }}
@@ -79,7 +90,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                   onSelect(scene.id);
                 }
               }}
-              className={`group relative flex h-[144px] w-[180px] flex-none flex-col rounded-[22px] border p-4 text-left transition-all duration-300 ease-out ${active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"} ${isDragged ? "scale-[0.98] opacity-55 shadow-none" : "shadow-[0_12px_24px_rgba(2,6,23,0.18)]"} ${isGapTarget ? "ml-8" : "ml-0"} ${isFresh ? "animate-scene-card-enter" : ""}`}
+              className={`group relative flex h-[144px] w-[180px] flex-none cursor-grab flex-col rounded-[22px] border p-4 text-left transition-all duration-300 ease-out active:cursor-grabbing ${active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"} ${isDragged ? "scale-[0.98] opacity-55 shadow-none" : "shadow-[0_12px_24px_rgba(2,6,23,0.18)]"} ${isGapTarget ? "ml-8" : "ml-0"} ${isFresh ? "animate-scene-card-enter" : ""}`}
             >
               <div className={`pointer-events-none absolute inset-0 rounded-[22px] transition-all duration-300 ${isGapTarget ? "ring-1 ring-sky-400/50 ring-offset-4 ring-offset-[#08101d]" : "ring-0 ring-transparent"}`} />
               <div className="flex items-start justify-between gap-2">
