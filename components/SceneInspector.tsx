@@ -19,6 +19,10 @@ const presetOptions: TemplatePreset[] = [
   "velvet-noir",
   "mint-pop",
   "terminal",
+  "blueprint",
+  "acid-pop",
+  "retro-print",
+  "ember-glow",
 ];
 
 type SceneInspectorProps = {

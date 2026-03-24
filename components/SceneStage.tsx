@@ -150,6 +150,34 @@ function presetStyles(preset: TemplatePreset) {
         title: "font-mono uppercase tracking-[0.08em]",
         italic: "",
       };
+    case "blueprint":
+      return {
+        card: "bg-[#12345d]/78 border-[#7cd4ff]/26 backdrop-blur-sm shadow-[0_24px_80px_rgba(4,14,34,0.42)]",
+        accent: "bg-[#7cd4ff]",
+        title: "font-semibold uppercase tracking-[0.12em]",
+        italic: "",
+      };
+    case "acid-pop":
+      return {
+        card: "bg-[#fff8d6]/76 border-black/18 shadow-[10px_10px_0_rgba(0,0,0,0.18)]",
+        accent: "bg-[#ff4fd8]",
+        title: "font-black uppercase tracking-[-0.04em]",
+        italic: "",
+      };
+    case "retro-print":
+      return {
+        card: "bg-[#fff6ea]/74 border-[#8c4f33]/20 shadow-[0_18px_48px_rgba(108,63,39,0.12)]",
+        accent: "bg-[#c96b3b]",
+        title: "font-serif tracking-[-0.03em]",
+        italic: "italic",
+      };
+    case "ember-glow":
+      return {
+        card: "bg-[#2a120d]/82 border-[#ff8a4c]/22 backdrop-blur-md shadow-[0_24px_90px_rgba(255,102,51,0.2)]",
+        accent: "bg-[#ff8a4c]",
+        title: "font-semibold tracking-[-0.05em]",
+        italic: "",
+      };
   }
 }
 
@@ -588,6 +616,28 @@ export function SceneStage({
               "linear-gradient(180deg, rgba(7,19,12,0.14), rgba(7,19,12,0.02) 55%, rgba(45,255,114,0.06)), linear-gradient(rgba(125,255,155,0.07) 1px, transparent 1px)",
             backgroundSize: "100% 100%, 100% 26px",
           }
+      : preset === "blueprint"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 48%), linear-gradient(rgba(124,212,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(124,212,255,0.12) 1px, transparent 1px), radial-gradient(circle at 18% 20%, rgba(255,255,255,0.12), transparent 18%)",
+            backgroundSize: "100% 100%, 28px 28px, 28px 28px, 100% 100%",
+          }
+      : preset === "acid-pop"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0) 42%), radial-gradient(circle at 16% 18%, rgba(255,79,216,0.28), transparent 16%), radial-gradient(circle at 84% 22%, rgba(42,16,255,0.18), transparent 18%), linear-gradient(135deg, rgba(0,0,0,0.08) 0 14%, transparent 14% 100%)",
+          }
+      : preset === "retro-print"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.04) 48%, rgba(255,255,255,0)), radial-gradient(circle at 18% 16%, rgba(201,107,59,0.16), transparent 18%), linear-gradient(90deg, rgba(62,36,24,0.06) 1px, transparent 1px)",
+            backgroundSize: "100% 100%, 100% 100%, 24px 24px",
+          }
+      : preset === "ember-glow"
+        ? {
+            background:
+              "radial-gradient(circle at 20% 18%, rgba(255,138,76,0.22), transparent 20%), radial-gradient(circle at 82% 22%, rgba(255,217,191,0.12), transparent 18%), linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 46%), linear-gradient(135deg, rgba(255,90,31,0.08) 0 14%, transparent 14% 100%)",
+          }
       : preset === "paper-cut"
         ? {
             background:
@@ -632,6 +682,14 @@ export function SceneStage({
       ? "border-[#39f3ff]/22"
       : preset === "terminal"
         ? "border-[#2dff72]/24"
+      : preset === "blueprint"
+        ? "border-[#7cd4ff]/28"
+      : preset === "acid-pop"
+        ? "border-black/18"
+      : preset === "retro-print"
+        ? "border-[#c96b3b]/20"
+      : preset === "ember-glow"
+        ? "border-[#ff8a4c]/22"
       : preset === "paper-cut"
         ? "border-[#d95734]/16"
         : preset === "velvet-noir"
@@ -671,17 +729,17 @@ export function SceneStage({
             className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`}
             style={{
               transform:
-                preset === "paper-cut" || preset === "brutalist"
+                preset === "paper-cut" || preset === "brutalist" || preset === "acid-pop"
                   ? "rotate(-8deg)"
-                  : preset === "terminal"
+                  : preset === "terminal" || preset === "blueprint"
                     ? "rotate(0deg)"
                     : "rotate(14deg)",
-              opacity: preset === "neon-grid" || preset === "terminal" ? 0.4 : preset === "clean" ? 0.14 : 0.24,
+              opacity: preset === "neon-grid" || preset === "terminal" || preset === "blueprint" ? 0.4 : preset === "clean" ? 0.14 : 0.24,
             }}
           />
           <div
             className={`pointer-events-none absolute left-[10%] bottom-[14%] rounded-full border ${shellDeco} ${compact ? "h-14 w-14" : "h-24 w-24"}`}
-            style={{ opacity: preset === "arctic-glass" || preset === "mint-pop" ? 0.34 : preset === "mono" ? 0.12 : 0.2 }}
+            style={{ opacity: preset === "arctic-glass" || preset === "mint-pop" || preset === "ember-glow" ? 0.34 : preset === "mono" ? 0.12 : 0.2 }}
           />
         </>
       ) : null}

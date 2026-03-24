@@ -12,7 +12,11 @@ export type TemplatePreset =
   | "brutalist"
   | "velvet-noir"
   | "mint-pop"
-  | "terminal";
+  | "terminal"
+  | "blueprint"
+  | "acid-pop"
+  | "retro-print"
+  | "ember-glow";
 export type ExportResolution = "480p" | "540p" | "720p";
 export type ExportProfile = "draft" | "standard" | "high";
 export type SceneType =
@@ -85,6 +89,10 @@ export const presetLabels: Record<TemplatePreset, string> = {
   "velvet-noir": "Velvet Noir",
   "mint-pop": "Mint Pop",
   terminal: "Terminal",
+  blueprint: "Blueprint",
+  "acid-pop": "Acid Pop",
+  "retro-print": "Retro Print",
+  "ember-glow": "Ember Glow",
 };
 
 export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor">> = {
@@ -101,6 +109,10 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   "velvet-noir": { backgroundColor: "#16070f", textColor: "#f7d6e6" },
   "mint-pop": { backgroundColor: "#d9fff2", textColor: "#053b34" },
   terminal: { backgroundColor: "#07130c", textColor: "#7dff9b" },
+  blueprint: { backgroundColor: "#0f2747", textColor: "#d8eeff" },
+  "acid-pop": { backgroundColor: "#d6ff3f", textColor: "#161616" },
+  "retro-print": { backgroundColor: "#f6dfc8", textColor: "#3e2418" },
+  "ember-glow": { backgroundColor: "#1b0a07", textColor: "#ffd9bf" },
 };
 
 export const exportResolutionLabels: Record<ExportResolution, string> = {
