@@ -909,7 +909,7 @@ export function SceneStage({
           </div>
           <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
-              const itemIn = sharedIn;
+              const itemIn = editable ? 1 : motion(progress, 0.1 + index * 0.05, 0.24);
               return (
                 <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: 0.12 + itemIn * 0.88 }}>
                   {editable ? (
