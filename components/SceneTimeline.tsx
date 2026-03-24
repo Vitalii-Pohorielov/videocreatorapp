@@ -23,18 +23,6 @@ export function SceneTimeline({ track, selectedSceneId, backgroundColor, textCol
 
   return (
     <section className="shrink-0 px-4 py-3">
-      <div className="mb-2 flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Single track</p>
-          <h2 className="mt-1 text-sm font-semibold text-slate-900">{track.name}</h2>
-        </div>
-        <button type="button" onClick={onAddScene} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-900 transition hover:bg-slate-100">
-          + Add scene
-        </button>
-      </div>
-
-      <div className="mb-2 text-[11px] text-slate-400">One linear scene track. Drag blocks to reorder.</div>
-
       <div className="flex gap-3 overflow-x-auto pb-2">
         {scenes.map((scene, index) => {
           const active = scene.id === selectedSceneId;
@@ -78,6 +66,14 @@ export function SceneTimeline({ track, selectedSceneId, backgroundColor, textCol
             </div>
           );
         })}
+
+        <button
+          type="button"
+          onClick={onAddScene}
+          className="flex h-[144px] w-[140px] flex-none items-center justify-center rounded-[22px] border border-dashed border-slate-300 bg-slate-50 text-3xl text-slate-400 transition hover:border-slate-400 hover:bg-white hover:text-slate-600"
+        >
+          +
+        </button>
       </div>
     </section>
   );
