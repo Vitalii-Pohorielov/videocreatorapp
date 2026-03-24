@@ -8,16 +8,16 @@ import { useAuthSession } from "@/lib/useAuthSession";
 
 const featureCards = [
   {
-    title: "Generate from website",
-    description: "Turn a product page into a draft video structure in a couple of clicks.",
+    title: "Start from a webpage",
+    description: "Drop in a URL and let ClipLab build a first video draft from the page content.",
   },
   {
-    title: "Edit scenes visually",
-    description: "Tweak text, layouts, screenshots, timing, presets, and exports in one workspace.",
+    title: "Shape every scene",
+    description: "Adjust text, screenshots, timing, layouts, and visual style in one focused workspace.",
   },
   {
-    title: "Save cloud projects",
-    description: "Keep each user's projects separated with Google sign-in and project management.",
+    title: "Keep drafts organized",
+    description: "Save projects to your account, reopen them later, and keep each workspace private.",
   },
 ];
 
@@ -35,8 +35,8 @@ export function LandingScreen() {
       <section className="mx-auto flex min-h-[calc(100vh-104px)] w-full max-w-7xl flex-col overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,15,29,0.95),rgba(15,23,42,0.88)),radial-gradient(circle_at_top_left,rgba(34,211,238,0.24),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(250,204,21,0.18),transparent_24%)] shadow-[0_30px_120px_rgba(2,6,23,0.45)]">
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5 lg:px-8">
           <div>
-            <p className="text-xs uppercase tracking-[0.34em] text-sky-300">Video Creator App</p>
-            <p className="mt-2 text-sm text-slate-400">Scene-based browser video editor for product storytelling.</p>
+            <p className="text-xs uppercase tracking-[0.34em] text-sky-300">ClipLab</p>
+            <p className="mt-2 text-sm text-slate-400">Minimal video creation for product stories, launches, and explainers.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -61,14 +61,14 @@ export function LandingScreen() {
           <div className="flex flex-col justify-center">
             <div className="max-w-3xl">
               <div className="inline-flex rounded-full border border-sky-300/25 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-sky-200">
-                One screen landing
+                Built for short-form product videos
               </div>
               <h1 className="mt-6 text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl xl:text-7xl">
-                Create promo videos in the browser without leaving your workflow.
+                Turn product ideas into polished clips with ClipLab.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-                This project lets you generate a scene draft from a website, refine every slide visually, export MP4 in the browser,
-                and manage your saved projects behind Google authentication.
+                ClipLab helps you turn a webpage or rough concept into a clean video draft, refine each scene visually,
+                export MP4 in the browser, and keep your saved projects in one place.
               </p>
             </div>
 
@@ -85,7 +85,7 @@ export function LandingScreen() {
                     href="/projects"
                     className="rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.1]"
                   >
-                    Manage projects
+                    Open library
                   </Link>
                 </>
               ) : (
@@ -119,7 +119,7 @@ export function LandingScreen() {
                 <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
                   <p className="text-xs uppercase tracking-[0.22em] text-sky-300">Flow</p>
                   <div className="mt-4 grid gap-3">
-                    {["1. Sign in with Google", "2. Open editor", "3. Generate or build scenes", "4. Save projects and export video"].map((step) => (
+                    {["1. Sign in with Google", "2. Start a new ClipLab project", "3. Build or generate scenes", "4. Save and export your clip"].map((step) => (
                       <div key={step} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">
                         {step}
                       </div>
@@ -130,19 +130,19 @@ export function LandingScreen() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-amber-200">Editor</p>
-                    <p className="mt-3 text-2xl font-semibold text-white">Scene timeline, inspector, preview, export</p>
+                    <p className="mt-3 text-2xl font-semibold text-white">Scenes, styling, preview, export</p>
                   </div>
                   <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-emerald-200">Security</p>
-                    <p className="mt-3 text-2xl font-semibold text-white">Google auth gates access to editor and project management</p>
+                    <p className="mt-3 text-2xl font-semibold text-white">Private workspace with Google sign-in and project-level access</p>
                   </div>
                 </div>
 
                 <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(15,23,42,0.12))] p-6">
                   <p className="text-sm uppercase tracking-[0.22em] text-slate-300">Project summary</p>
                   <p className="mt-4 text-base leading-7 text-slate-200">
-                    A browser-first video creation tool for marketing clips and product explainers, with scene generation from URLs,
-                    editable layouts, cloud saves, and user-scoped access.
+                    ClipLab is a browser-first studio for creating short product videos with URL-based draft generation,
+                    visual scene editing, cloud saves, and fast MP4 export.
                   </p>
                 </div>
               </div>

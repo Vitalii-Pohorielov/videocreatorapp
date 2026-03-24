@@ -15,7 +15,7 @@ type AuthGateProps = {
 export function AuthGate({
   children,
   title = "Sign in to continue",
-  description = "Use Google sign-in to open the video editor and manage your saved projects.",
+  description = "Use Google sign-in to open ClipLab, edit scenes, and manage your saved projects.",
 }: AuthGateProps) {
   const { isLoading, user, error } = useAuthSession();
 

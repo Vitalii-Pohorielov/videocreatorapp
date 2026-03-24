@@ -11,8 +11,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Browser Video Generator",
-  description: "Create simple slide-based MP4 videos fully in the browser.",
+  title: "ClipLab",
+  description: "ClipLab helps you turn ideas, webpages, and product stories into clean short videos in the browser.",
 };
 
 export default function RootLayout({
