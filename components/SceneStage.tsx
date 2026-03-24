@@ -451,9 +451,16 @@ function ShowcaseImageSlot({
 
   const mediaPositionControls =
     editable && onChangeMediaPosition ? (
-      <div className="pointer-events-none absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition group-hover:opacity-100">
+      <>
         {mediaButtons.map((button) => {
           const active = scene.mediaPosition === button.value;
+          const placementClassName =
+            button.value === "left"
+              ? "left-3 top-1/2 -translate-y-1/2"
+              : button.value === "right"
+                ? "right-3 top-1/2 -translate-y-1/2"
+                : "bottom-3 left-1/2 -translate-x-1/2";
+
           return (
             <button
               key={button.value}
@@ -463,7 +470,7 @@ function ShowcaseImageSlot({
                 event.stopPropagation();
                 onChangeMediaPosition(button.value);
               }}
-              className={`pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold backdrop-blur-sm transition ${
+              className={`absolute z-10 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold backdrop-blur-sm transition opacity-0 group-hover:opacity-100 ${placementClassName} ${
                 active
                   ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
                   : "border-white/20 bg-black/45 text-white hover:bg-black/65"
@@ -474,7 +481,7 @@ function ShowcaseImageSlot({
             </button>
           );
         })}
-      </div>
+      </>
     ) : null;
 
   if (websiteImageUrl) {
