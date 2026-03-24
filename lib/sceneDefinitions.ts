@@ -128,7 +128,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Hero intro scene.",
     createTemplate: () => ({
       type: "brand-reveal",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Intro",
       title: "Omnara",
@@ -149,7 +149,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Text plus uploaded product screenshot.",
     createTemplate: () => ({
       type: "product-showcase",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Highlight",
       title: "Your product, clearly explained",
@@ -170,7 +170,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Grid of feature cards.",
     createTemplate: () => ({
       type: "feature-grid",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Features",
       title: "Why teams choose it",
@@ -191,7 +191,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Big bold message.",
     createTemplate: () => ({
       type: "slogan",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Message",
       title: "Built to move fast.",
@@ -212,7 +212,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Two-column description.",
     createTemplate: () => ({
       type: "description",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Details",
       title: "What it does",
@@ -233,7 +233,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Scroll a manually uploaded website screenshot.",
     createTemplate: () => ({
       type: "website-scroll",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Website",
       title: "Show the product page in motion",
@@ -254,7 +254,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Numbers and proof points.",
     createTemplate: () => ({
       type: "metrics",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Results",
       title: "Numbers people remember",
@@ -275,7 +275,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Customer quote / testimonial.",
     createTemplate: () => ({
       type: "quote",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Social proof",
       title: '"This changed our workflow overnight."',
@@ -296,7 +296,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Checklist or step list.",
     createTemplate: () => ({
       type: "checklist",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "What you get",
       title: "Everything in one workflow",
@@ -317,7 +317,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Final call to action.",
     createTemplate: () => ({
       type: "cta",
-      durationSeconds: 3.5,
+      durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Call to action",
       title: "Launch your next promo today",
