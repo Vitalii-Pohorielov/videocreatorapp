@@ -159,7 +159,7 @@ export function StudioPreview({
                 disabled={isExporting}
                 className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
               >
-                {isExporting ? "Exporting..." : "Export"}
+                {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
               </button>
             </div>
           </div>
