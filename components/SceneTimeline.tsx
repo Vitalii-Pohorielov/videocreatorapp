@@ -15,6 +15,7 @@ import {
   horizontalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
+import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 
@@ -185,9 +186,12 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
           </div>
         </SortableContext>
 
-        <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
+        <DragOverlay
+          modifiers={[snapCenterToCursor]}
+          dropAnimation={{ duration: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}
+        >
           {activeScene ? (
-            <div className="rotate-[1.5deg] opacity-95">
+            <div className="opacity-95">
               <SceneCard
                 scene={activeScene}
                 index={scenes.findIndex((scene) => scene.id === activeScene.id)}
