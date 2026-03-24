@@ -40,8 +40,17 @@ function easeOutCubic(value: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function easeInCubic(value: number) {
+  const t = clamp(value);
+  return t * t * t;
+}
+
 function motion(progress: number, delay = 0, span = 1) {
   return easeOutCubic(clamp((progress - delay) / span));
+}
+
+function outroMotion(progress: number, delay = 0, span = 1) {
+  return easeInCubic(clamp((progress - delay) / span));
 }
 
 function revealStyle(progress: number, options?: { y?: number; x?: number; scaleFrom?: number; blur?: number; minOpacity?: number }): CSSProperties {
@@ -631,7 +640,7 @@ export function SceneStage({
   const titleIn = sharedIn;
   const subIn = sharedIn;
   const cardIn = sharedIn;
-  const outroFade = editable ? 1 : 1 - motion(progress, 0.72, 0.28);
+  const outroFade = editable ? 1 : 1 - outroMotion(progress, 0.72, 0.28);
   const s = presetStyles(preset, lightweightPreview);
   const titleSize = compact ? "text-lg" : "text-5xl";
   const midSize = compact ? "text-xs" : "text-lg";
