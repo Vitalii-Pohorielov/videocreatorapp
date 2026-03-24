@@ -4,7 +4,7 @@ import { useState, type CSSProperties, type ElementType, type FocusEvent, type K
 
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
 import { fileToStoredUrl } from "@/lib/imageUpload";
-import type { ExportProfile, ExportResolution, PreviewQuality, Scene, TemplatePreset } from "@/store/useStore";
+import type { ExportProfile, ExportResolution, Scene, TemplatePreset } from "@/store/useStore";
 
 type SceneStageProps = {
   scene: Scene;
@@ -14,7 +14,6 @@ type SceneStageProps = {
   renderLayer?: "full" | "background" | "content";
   progress?: number;
   compact?: boolean;
-  previewQuality?: PreviewQuality;
   editable?: boolean;
   onSceneChange?: (updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onRequestLogoUpload?: () => void;
@@ -23,16 +22,6 @@ type SceneStageProps = {
   uploadResolution?: ExportResolution;
   uploadProfile?: ExportProfile;
 };
-
-function tuneCardClassName(baseClassName: string, previewQuality: PreviewQuality) {
-  if (previewQuality === "low") {
-    return `${baseClassName} backdrop-blur-none shadow-none`;
-  }
-  if (previewQuality === "medium") {
-    return `${baseClassName} backdrop-blur-sm shadow-[0_12px_30px_rgba(15,23,42,0.12)]`;
-  }
-  return baseClassName;
-}
 
 function getRenderableImageUrl(value?: string) {
   const trimmed = value?.trim() ?? "";
@@ -541,7 +530,6 @@ function StageShell({
   textColor,
   children,
   compact,
-  previewQuality,
   renderLayer,
 }: {
   backgroundColor: string;
@@ -549,19 +537,15 @@ function StageShell({
   children: ReactNode;
   progress: number;
   compact: boolean;
-  previewQuality: PreviewQuality;
   renderLayer: "full" | "background" | "content";
 }) {
   const showBackground = renderLayer !== "content";
-  const showAmbientDecor = previewQuality !== "low";
-  const ambientGlowOpacity = previewQuality === "medium" ? 0.2 : 0.44;
-  const ambientGlowSecondaryOpacity = previewQuality === "medium" ? 0.16 : 0.34;
   return (
     <div className={`relative h-full w-full overflow-hidden rounded-[24px] ${compact ? "px-4 py-4" : "px-8 py-8"}`} style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
-      {showBackground && showAmbientDecor ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)", opacity: previewQuality === "medium" ? 0.75 : 1 }} /> : null}
-      {showBackground && showAmbientDecor ? <div className={`absolute left-[8%] top-[12%] rounded-full ${previewQuality === "medium" ? "blur-2xl" : "blur-3xl"} ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: ambientGlowOpacity }} /> : null}
-      {showBackground && showAmbientDecor ? <div className={`absolute right-[10%] top-[20%] rounded-full ${previewQuality === "medium" ? "blur-2xl" : "blur-3xl"} ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: ambientGlowSecondaryOpacity }} /> : null}
-      {showBackground && showAmbientDecor ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: previewQuality === "medium" ? 0.12 : 0.2, transform: "translate3d(0, 0, 0)" }} /> : null}
+      {showBackground ? <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
+      {showBackground ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
+      {showBackground ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
+      {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.2, transform: "translate3d(0, 0, 0)" }} /> : null}
       <div className="relative h-full w-full">{children}</div>
     </div>
   );
@@ -575,7 +559,6 @@ export function SceneStage({
   renderLayer = "full",
   progress = 1,
   compact = false,
-  previewQuality = "high",
   editable = false,
   onSceneChange,
   onRequestLogoUpload,
@@ -595,8 +578,6 @@ export function SceneStage({
   const midSize = compact ? "text-xs" : "text-lg";
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
-  const cardClassName = tuneCardClassName(s.card, previewQuality);
-  const showPresetDecor = previewQuality !== "low";
   const shellOverlay =
     preset === "white"
       ? {
@@ -754,9 +735,9 @@ export function SceneStage({
   };
 
   return (
-    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} previewQuality={previewQuality} renderLayer={renderLayer}>
-      {showSceneBackground && showPresetDecor && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
-      {showSceneBackground && showPresetDecor ? (
+    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer}>
+      {showSceneBackground && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
+      {showSceneBackground ? (
         <>
           <div
             className={`pointer-events-none absolute right-[8%] top-[14%] rounded-[32px] border ${shellDeco} ${compact ? "h-16 w-16" : "h-28 w-28"}`}
@@ -792,7 +773,7 @@ export function SceneStage({
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
             <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
           </div>
-          <div className={`w-full rounded-[28px] border p-5 ${cardClassName} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
+          <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
             <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
             <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/10">
               <ShowcaseImageSlot scene={scene} compact={compact} editable={editable} onPickImage={onRequestHighlightUpload} />
@@ -811,7 +792,7 @@ export function SceneStage({
             {scene.bullets.map((bullet, index) => {
               const itemIn = motion(progress, 0.1 + index * 0.04, 0.24);
               return (
-                <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${cardClassName}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: 0.12 + itemIn * 0.88 }}>
+                <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: 0.12 + itemIn * 0.88 }}>
                   {editable ? (
                     <EditableCardItem
                       text={bullet}
@@ -853,7 +834,7 @@ export function SceneStage({
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           </div>
-          <div className={`rounded-[26px] border p-5 text-left ${cardClassName}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px)`, opacity: 0.18 + cardIn * 0.82 }}>
+          <div className={`rounded-[26px] border p-5 text-left ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px)`, opacity: 0.18 + cardIn * 0.82 }}>
             <EditableText as="p" value={scene.description || scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ description: value })} className={midSize} style={revealStyle(cardIn, { y: 18, blur: 10, minOpacity: 0.16 })} placeholder="Description" />
           </div>
         </div>
@@ -863,7 +844,7 @@ export function SceneStage({
         <div className="flex h-full items-center justify-center">
           <WebsiteScrollFrame
             scene={scene}
-            cardClassName={cardClassName}
+            cardClassName={s.card}
             style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.94 + cardIn * 0.06})`, opacity: 0.16 + cardIn * 0.84 }}
             compact={compact}
             progress={progress}
@@ -881,7 +862,7 @@ export function SceneStage({
             {scene.bullets.map((bullet, index) => {
               const itemIn = motion(progress, 0.08 + index * 0.05, 0.25);
               return (
-                <div key={`${bullet}-${index}`} className={`rounded-[24px] border px-4 py-6 ${cardClassName}`} style={{ transform: `translateY(${24 * (1 - itemIn)}px)`, opacity: 0.12 + itemIn * 0.88 }}>
+                <div key={`${bullet}-${index}`} className={`rounded-[24px] border px-4 py-6 ${s.card}`} style={{ transform: `translateY(${24 * (1 - itemIn)}px)`, opacity: 0.12 + itemIn * 0.88 }}>
                   {editable ? (
                     <EditableCardItem
                       text={bullet}
@@ -911,7 +892,7 @@ export function SceneStage({
 
       {showSceneContent && scene.type === "quote" && (
         <div className="flex h-full items-center justify-center text-center">
-          <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${cardClassName}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: 0.16 + cardIn * 0.84 }}>
+          <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: 0.16 + cardIn * 0.84 }}>
             <QuoteAuthorPhoto scene={scene} progress={progress} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
             <div className="mb-4 text-4xl opacity-50">"</div>
             <EditableText as="h2" value={scene.title} editable={editable} multiline onCommit={(value) => onSceneChange?.({ title: value })} className={`leading-tight ${compact ? "text-base" : "text-4xl"} ${s.title} ${s.italic}`} placeholder="Quote" />
@@ -927,7 +908,7 @@ export function SceneStage({
           <div className="mx-auto mt-8 grid max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
               const itemIn = motion(progress, 0.08 + index * 0.04, 0.24);
-              return <div key={`${bullet}-${index}`} className={`flex items-center gap-3 rounded-[22px] border px-4 py-4 ${cardClassName}`} style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: 0.14 + itemIn * 0.86 }}><div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20">{index + 1}</div><p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0.22 })}>{bullet}</p></div>;
+              return <div key={`${bullet}-${index}`} className={`flex items-center gap-3 rounded-[22px] border px-4 py-4 ${s.card}`} style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: 0.14 + itemIn * 0.86 }}><div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20">{index + 1}</div><p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0.22 })}>{bullet}</p></div>;
             })}
           </div>
         </div>
@@ -939,7 +920,7 @@ export function SceneStage({
             <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
             {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mx-auto mt-5 max-w-2xl ${midSize}`} style={revealStyle(subIn, { y: 16, blur: 10, minOpacity: 0.18 })} placeholder="Subtitle" /> : null}
-            <div className={`mx-auto mt-8 inline-flex rounded-full border px-6 py-3 ${cardClassName}`} style={revealStyle(cardIn, { y: 14, blur: 8, minOpacity: 0.16 })}>Get started</div>
+            <div className={`mx-auto mt-8 inline-flex rounded-full border px-6 py-3 ${s.card}`} style={revealStyle(cardIn, { y: 14, blur: 8, minOpacity: 0.16 })}>Get started</div>
           </div>
         </div>
       )}

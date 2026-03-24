@@ -8,7 +8,7 @@ import { SceneTypeModal } from "@/components/SceneTypeModal";
 import { StudioPreview } from "@/components/StudioPreview";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
-import { type PreviewQuality, useStore } from "@/store/useStore";
+import { useStore } from "@/store/useStore";
 
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
@@ -21,7 +21,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     sceneTrack,
     selectedSceneId,
     exportSettings,
-    previewQuality,
     resetProject,
     hydrateProject,
     updateProjectMeta,
@@ -31,7 +30,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     selectScene,
     reorderScenes,
     updateExportSettings,
-    updatePreviewQuality,
   } = useStore();
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -74,13 +72,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     if (!isPlaying) return;
     let frameId = 0;
     let lastTimestamp: number | null = null;
-    let pendingSeconds = 0;
-    const frameInterval =
-      previewQuality === "low"
-        ? 1 / 15
-        : previewQuality === "medium"
-          ? 1 / 24
-          : 0;
 
     const tick = (timestamp: number) => {
       if (lastTimestamp === null) {
@@ -91,27 +82,22 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
       const deltaSeconds = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
-      pendingSeconds += deltaSeconds;
 
-      if (frameInterval === 0 || pendingSeconds >= frameInterval) {
-        const appliedDelta = pendingSeconds;
-        pendingSeconds = 0;
-        setCurrentTime((prev) => {
-          const next = prev + appliedDelta;
-          if (next >= totalDuration) {
-            setIsPlaying(false);
-            return totalDuration;
-          }
-          return next;
-        });
-      }
+      setCurrentTime((prev) => {
+        const next = prev + deltaSeconds;
+        if (next >= totalDuration) {
+          setIsPlaying(false);
+          return totalDuration;
+        }
+        return next;
+      });
 
       frameId = window.requestAnimationFrame(tick);
     };
 
     frameId = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frameId);
-  }, [isPlaying, previewQuality, totalDuration]);
+  }, [isPlaying, totalDuration]);
 
   useEffect(() => {
     return () => {
@@ -227,7 +213,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               textColor={exportSettings.textColor}
               preset={exportSettings.preset}
               profile={exportSettings.profile}
-              previewQuality={previewQuality}
               sceneProgress={playbackState.progress}
               isPlaying={isPlaying}
               currentTime={currentTime}
@@ -240,7 +225,6 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               isCloudBusy={isCloudBusy}
               onProjectNameChange={(value) => updateProjectMeta({ name: value })}
               onUpdateSettings={updateExportSettings}
-              onUpdatePreviewQuality={updatePreviewQuality}
               onSaveProject={handleSaveProject}
               onExport={handleExport}
               onTogglePlayback={togglePlayback}

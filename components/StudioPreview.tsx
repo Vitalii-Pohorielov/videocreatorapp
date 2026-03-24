@@ -9,8 +9,6 @@ import {
   exportProfileLabels,
   type ExportProfile,
   type ExportSettings,
-  previewQualityLabels,
-  type PreviewQuality,
   type Scene,
   type TemplatePreset,
 } from "@/store/useStore";
@@ -24,7 +22,6 @@ type StudioPreviewProps = {
   textColor: string;
   preset: TemplatePreset;
   profile: ExportProfile;
-  previewQuality: PreviewQuality;
   sceneProgress: number;
   isPlaying: boolean;
   currentTime: number;
@@ -37,7 +34,6 @@ type StudioPreviewProps = {
   isCloudBusy: boolean;
   onProjectNameChange: (value: string) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
-  onUpdatePreviewQuality: (quality: PreviewQuality) => void;
   onSaveProject: () => void;
   onExport: () => void;
   onTogglePlayback: () => void;
@@ -53,7 +49,6 @@ export function StudioPreview({
   textColor,
   preset,
   profile,
-  previewQuality,
   sceneProgress,
   isPlaying,
   currentTime,
@@ -66,7 +61,6 @@ export function StudioPreview({
   isCloudBusy,
   onProjectNameChange,
   onUpdateSettings,
-  onUpdatePreviewQuality,
   onSaveProject,
   onExport,
   onTogglePlayback,
@@ -76,7 +70,6 @@ export function StudioPreview({
   const highlightInputRef = useRef<HTMLInputElement>(null);
   const authorInputRef = useRef<HTMLInputElement>(null);
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
-  const previewQualityOptions: PreviewQuality[] = ["low", "medium", "high"];
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl" | "authorImageUrl", file: File | null) => {
     if (!file) return;
@@ -111,20 +104,6 @@ export function StudioPreview({
                   {profileOptions.map((option) => (
                     <option key={option} value={option}>
                       {exportProfileLabels[option]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                <select
-                  value={previewQuality}
-                  onChange={(event) => onUpdatePreviewQuality(event.target.value as PreviewQuality)}
-                  className="bg-transparent outline-none"
-                >
-                  {previewQualityOptions.map((option) => (
-                    <option key={option} value={option}>
-                      Preview {previewQualityLabels[option]}
                     </option>
                   ))}
                 </select>
@@ -201,7 +180,6 @@ export function StudioPreview({
                   preset={preset}
                   renderLayer="background"
                   progress={1}
-                  previewQuality={previewQuality}
                   uploadResolution={settings.resolution}
                   uploadProfile={profile}
                 />
@@ -214,7 +192,6 @@ export function StudioPreview({
                   preset={preset}
                   renderLayer="content"
                   progress={sceneProgress}
-                  previewQuality={previewQuality}
                   editable={!isPlaying}
                   onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
                   onRequestLogoUpload={() => logoInputRef.current?.click()}
