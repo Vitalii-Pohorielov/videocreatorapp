@@ -322,7 +322,7 @@ function WebsiteScrollFrame({
   editable?: boolean;
   onPickImage?: () => void;
 }) {
-  const scrollDelaySeconds = 2;
+  const scrollDelaySeconds = 1;
   const elapsedSceneSeconds = progress * scene.durationSeconds;
   const activeScrollSeconds = Math.max(0, elapsedSceneSeconds - scrollDelaySeconds);
   const scrollSpeedPerSecond = 12;
