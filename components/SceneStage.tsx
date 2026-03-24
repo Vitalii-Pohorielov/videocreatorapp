@@ -854,7 +854,6 @@ export function SceneStage({
         showcaseImageBottom ? (
           <div className="relative flex h-full flex-col overflow-hidden">
             <div className="relative z-10 max-w-2xl text-left">
-              <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
               <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
               <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
             </div>
@@ -880,7 +879,6 @@ export function SceneStage({
         ) : (
           <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
             <div className={`text-left ${showcaseMediaFirst ? "md:order-2" : ""}`}>
-              <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
               <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
               <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
             </div>
@@ -904,7 +902,6 @@ export function SceneStage({
       {scene.type === "feature-grid" && (
         <div className="flex h-full flex-col justify-center">
           <div className="text-center">
-            <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.28em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${20 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
           </div>
           <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
@@ -944,7 +941,6 @@ export function SceneStage({
       {scene.type === "slogan" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className="max-w-4xl">
-            <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title} ${s.italic}`} style={{ transform: `translateY(${54 * (1 - titleIn)}px) scale(${0.86 + titleIn * 0.14})`, opacity: 0.18 + titleIn * 0.82 }} placeholder="Title" />
             {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize}`} style={{ transform: `translateY(${24 * (1 - subIn)}px)`, opacity: 0.16 + subIn * 0.7 }} placeholder="Subtitle" /> : null}
           </div>
@@ -954,7 +950,6 @@ export function SceneStage({
       {scene.type === "description" && (
         <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
           <div className="text-left">
-            <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.26em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           </div>
           <div className={`rounded-[26px] border p-5 text-left ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px)`, opacity: 0.18 + cardIn * 0.82 }}>
@@ -980,7 +975,6 @@ export function SceneStage({
 
       {scene.type === "metrics" && (
         <div className="flex h-full flex-col justify-center text-center">
-          <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.28em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-3 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
@@ -1027,7 +1021,6 @@ export function SceneStage({
 
       {scene.type === "checklist" && (
         <div className="flex h-full flex-col justify-center">
-          <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`text-center uppercase tracking-[0.28em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 text-center leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
           <div className="mx-auto mt-8 grid max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
@@ -1041,7 +1034,6 @@ export function SceneStage({
       {scene.type === "cta" && (
         <div className="flex h-full items-center justify-center text-center">
           <div className="max-w-4xl">
-            <EditableText as="p" value={scene.eyebrow} editable={editable} onCommit={(value) => onSceneChange?.({ eyebrow: value })} className={`uppercase tracking-[0.3em] opacity-70 ${smallSize}`} placeholder="Eyebrow" />
             <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
             {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mx-auto mt-5 max-w-2xl ${midSize}`} style={revealStyle(subIn, { y: 16, blur: 10, minOpacity: 0.18 })} placeholder="Subtitle" /> : null}
             <div className={`mx-auto mt-8 inline-flex rounded-full border px-6 py-3 ${s.card}`} style={revealStyle(cardIn, { y: 14, blur: 8, minOpacity: 0.16 })}>Get started</div>

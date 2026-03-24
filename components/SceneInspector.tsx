@@ -274,10 +274,6 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
               <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
             </label>
             <label className="block">
-              <span className={labelClassName}>Eyebrow</span>
-              <input value={scene.eyebrow} onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })} className={fieldClassName} />
-            </label>
-            <label className="block">
               <span className={labelClassName}>Title</span>
               <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
             </label>
