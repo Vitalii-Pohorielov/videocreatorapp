@@ -6,7 +6,8 @@ import { fileToStoredUrl } from "@/lib/imageUpload";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = [
-  "clean",
+  "black",
+  "white",
   "premium",
   "bold",
   "editorial",

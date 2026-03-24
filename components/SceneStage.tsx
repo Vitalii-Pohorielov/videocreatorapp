@@ -59,11 +59,18 @@ function revealStyle(progress: number, options?: { y?: number; x?: number; scale
 
 function presetStyles(preset: TemplatePreset) {
   switch (preset) {
-    case "clean":
+    case "white":
       return {
-        card: "bg-white/70 border-black/8 backdrop-blur-sm shadow-[0_18px_50px_rgba(15,23,42,0.08)]",
-        accent: "bg-black/75",
-        title: "font-semibold tracking-[-0.03em]",
+        card: "bg-white/88 border-black/10 shadow-[0_18px_50px_rgba(15,23,42,0.08)]",
+        accent: "bg-black/85",
+        title: "font-semibold tracking-[-0.04em]",
+        italic: "",
+      };
+    case "black":
+      return {
+        card: "bg-white/6 border-white/16 shadow-[0_24px_70px_rgba(0,0,0,0.38)]",
+        accent: "bg-white",
+        title: "font-semibold tracking-[-0.04em]",
         italic: "",
       };
     case "premium":
@@ -572,11 +579,16 @@ export function SceneStage({
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
   const shellOverlay =
-    preset === "clean"
+    preset === "white"
       ? {
           background:
-            "linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.04) 42%, rgba(255,255,255,0)), radial-gradient(circle at 14% 18%, rgba(15,23,42,0.05), transparent 18%), radial-gradient(circle at 84% 22%, rgba(15,23,42,0.04), transparent 18%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.03), rgba(0,0,0,0) 48%), radial-gradient(circle at 16% 18%, rgba(15,23,42,0.04), transparent 18%), radial-gradient(circle at 84% 22%, rgba(15,23,42,0.035), transparent 18%)",
         }
+      : preset === "black"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 50%), radial-gradient(circle at 16% 18%, rgba(255,255,255,0.06), transparent 18%), radial-gradient(circle at 84% 22%, rgba(255,255,255,0.04), transparent 18%)",
+          }
       : preset === "premium"
         ? {
             background:
@@ -666,8 +678,10 @@ export function SceneStage({
               }
             : null;
   const shellDeco =
-    preset === "clean"
+    preset === "white"
       ? "border-black/10"
+      : preset === "black"
+        ? "border-white/18"
       : preset === "premium"
         ? "border-[#d7b98a]/22"
       : preset === "bold"
@@ -734,7 +748,7 @@ export function SceneStage({
                   : preset === "terminal" || preset === "blueprint"
                     ? "rotate(0deg)"
                     : "rotate(14deg)",
-              opacity: preset === "neon-grid" || preset === "terminal" || preset === "blueprint" ? 0.4 : preset === "clean" ? 0.14 : 0.24,
+              opacity: preset === "neon-grid" || preset === "terminal" || preset === "blueprint" ? 0.4 : preset === "white" ? 0.14 : 0.24,
             }}
           />
           <div

@@ -6,6 +6,7 @@ import {
   exportProfileLabels,
   exportResolutionDimensions,
   exportResolutionLabels,
+  normalizeTemplatePreset,
   presetDefaults,
   type ExportSettings,
   type Scene,
@@ -71,9 +72,9 @@ export const useStore = create<StudioStore>((set, get) => ({
   exportSettings: {
     fps: DEFAULT_FPS,
     transitionSeconds: DEFAULT_TRANSITION_SECONDS,
-    backgroundColor: presetDefaults.clean.backgroundColor,
-    textColor: presetDefaults.clean.textColor,
-    preset: "clean",
+    backgroundColor: presetDefaults.white.backgroundColor,
+    textColor: presetDefaults.white.textColor,
+    preset: "white",
     resolution: "720p",
     profile: "standard",
   },
@@ -87,9 +88,9 @@ export const useStore = create<StudioStore>((set, get) => ({
       exportSettings: {
         fps: DEFAULT_FPS,
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
-        backgroundColor: presetDefaults.clean.backgroundColor,
-        textColor: presetDefaults.clean.textColor,
-        preset: "clean",
+        backgroundColor: presetDefaults.white.backgroundColor,
+        textColor: presetDefaults.white.textColor,
+        preset: "white",
         resolution: "720p",
         profile: "standard",
       },
@@ -97,6 +98,8 @@ export const useStore = create<StudioStore>((set, get) => ({
   },
   hydrateProject: (project) => {
     const nextScenes = project.sceneTrack.scenes.length > 0 ? project.sceneTrack.scenes : createInitialSceneTrack().scenes;
+    const normalizedPreset = normalizeTemplatePreset(project.exportSettings.preset);
+    const normalizedDefaults = presetDefaults[normalizedPreset];
     set({
       projectId: project.id,
       projectName: project.name.trim() || "Untitled project",
@@ -110,9 +113,9 @@ export const useStore = create<StudioStore>((set, get) => ({
       exportSettings: {
         fps: DEFAULT_FPS,
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
-        backgroundColor: project.exportSettings.backgroundColor,
-        textColor: project.exportSettings.textColor,
-        preset: project.exportSettings.preset,
+        backgroundColor: project.exportSettings.backgroundColor || normalizedDefaults.backgroundColor,
+        textColor: project.exportSettings.textColor || normalizedDefaults.textColor,
+        preset: normalizedPreset,
         resolution: project.exportSettings.resolution,
         profile: project.exportSettings.profile,
       },
@@ -193,7 +196,7 @@ export const useStore = create<StudioStore>((set, get) => ({
   },
   updateExportSettings: (updates) => {
     set((state) => {
-      const nextPreset = updates.preset ?? state.exportSettings.preset;
+      const nextPreset = updates.preset ? normalizeTemplatePreset(updates.preset) : state.exportSettings.preset;
       const presetColors = presetDefaults[nextPreset];
       const presetChanged = updates.preset !== undefined && updates.preset !== state.exportSettings.preset;
 

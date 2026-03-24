@@ -1,6 +1,7 @@
 export type TransitionType = "fade";
 export type TemplatePreset =
-  | "clean"
+  | "white"
+  | "black"
   | "premium"
   | "bold"
   | "editorial"
@@ -17,6 +18,26 @@ export type TemplatePreset =
   | "acid-pop"
   | "retro-print"
   | "ember-glow";
+const templatePresets = [
+  "white",
+  "black",
+  "premium",
+  "bold",
+  "editorial",
+  "sunset",
+  "mono",
+  "neon-grid",
+  "paper-cut",
+  "arctic-glass",
+  "brutalist",
+  "velvet-noir",
+  "mint-pop",
+  "terminal",
+  "blueprint",
+  "acid-pop",
+  "retro-print",
+  "ember-glow",
+] as const satisfies readonly TemplatePreset[];
 export type ExportResolution = "480p" | "540p" | "720p";
 export type ExportProfile = "draft" | "standard" | "high";
 export type SceneType =
@@ -76,7 +97,8 @@ type SceneDefinition = {
 };
 
 export const presetLabels: Record<TemplatePreset, string> = {
-  clean: "Clean",
+  white: "White",
+  black: "Black",
   premium: "Premium",
   bold: "Bold",
   editorial: "Editorial",
@@ -96,7 +118,8 @@ export const presetLabels: Record<TemplatePreset, string> = {
 };
 
 export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor">> = {
-  clean: { backgroundColor: "#f7f4ee", textColor: "#1b1f23" },
+  white: { backgroundColor: "#ffffff", textColor: "#111111" },
+  black: { backgroundColor: "#111111", textColor: "#ffffff" },
   premium: { backgroundColor: "#10233a", textColor: "#f8f3ea" },
   bold: { backgroundColor: "#13111c", textColor: "#ffd166" },
   editorial: { backgroundColor: "#efe8de", textColor: "#181411" },
@@ -114,6 +137,12 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   "retro-print": { backgroundColor: "#f6dfc8", textColor: "#3e2418" },
   "ember-glow": { backgroundColor: "#1b0a07", textColor: "#ffd9bf" },
 };
+
+export function normalizeTemplatePreset(preset: string | undefined | null): TemplatePreset {
+  if (preset === "clean") return "white";
+  if (preset && (templatePresets as readonly string[]).includes(preset)) return preset as TemplatePreset;
+  return "white";
+}
 
 export const exportResolutionLabels: Record<ExportResolution, string> = {
   "480p": "480p",
