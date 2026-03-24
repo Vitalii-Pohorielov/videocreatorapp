@@ -82,7 +82,7 @@ export function ProjectsWorkspace() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Workspace</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-white">Your ClipLab projects, all in one place.</h1>
+              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-white">Your projects, all in one place.</h1>
               <p className="mt-3 text-base leading-7 text-slate-300">
                 Start a new clip, reopen an existing draft, and jump back into editing without losing your flow.
               </p>
@@ -115,7 +115,7 @@ export function ProjectsWorkspace() {
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Library</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Saved ClipLab drafts</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Saved drafts</h2>
             </div>
             <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-400">{projects.length} items</span>
           </div>
@@ -125,7 +125,7 @@ export function ProjectsWorkspace() {
 
           {!isLoading && !error && projects.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center">
-              <p className="text-lg font-medium text-white">No ClipLab drafts yet.</p>
+              <p className="text-lg font-medium text-white">No drafts yet.</p>
               <p className="mt-2 text-sm text-slate-400">Create your first clip in the editor and it will appear here.</p>
             </div>
           ) : null}

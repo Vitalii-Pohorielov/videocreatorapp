@@ -16,7 +16,7 @@ export function LandingScreen() {
       <section className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
         <div className="max-w-4xl">
           <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl xl:text-7xl">
-            ClipLab
+            Create product videos in minutes
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
             Minimal video creation for product stories, launches, and explainers.

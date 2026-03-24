@@ -20,7 +20,7 @@ export function AppHeader() {
 
   const avatarLabel = useMemo(() => {
     const metadata = user?.user_metadata;
-    const fullName = metadata?.full_name ?? metadata?.name ?? user?.email ?? "ClipLab user";
+    const fullName = metadata?.full_name ?? metadata?.name ?? user?.email ?? "User";
     return String(fullName).trim().charAt(0).toUpperCase() || "C";
   }, [user]);
 
@@ -94,7 +94,7 @@ export function AppHeader() {
               {isMenuOpen ? (
                 <div className="absolute right-0 top-[calc(100%+0.75rem)] w-64 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/95 p-2 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-xl">
                   <div className="border-b border-white/10 px-3 py-3">
-                    <p className="truncate text-sm font-medium text-white">{user.user_metadata?.full_name ?? user.user_metadata?.name ?? "ClipLab user"}</p>
+                    <p className="truncate text-sm font-medium text-white">{user.user_metadata?.full_name ?? user.user_metadata?.name ?? "User"}</p>
                     <p className="truncate text-xs text-slate-400">{user.email}</p>
                   </div>
 
