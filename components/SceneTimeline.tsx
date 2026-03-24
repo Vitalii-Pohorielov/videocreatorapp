@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { sceneTypeLabels, type SceneTrack } from "@/store/useStore";
 
@@ -16,24 +16,60 @@ type SceneTimelineProps = {
 
 export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDuplicate, onAddScene, onReorder }: SceneTimelineProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [freshSceneIds, setFreshSceneIds] = useState<string[]>([]);
   const { scenes } = track;
+  const previousSceneIdsRef = useRef<string[]>(scenes.map((scene) => scene.id));
+
+  useEffect(() => {
+    const previousIds = previousSceneIdsRef.current;
+    const nextIds = scenes.map((scene) => scene.id);
+    const addedIds = nextIds.filter((id) => !previousIds.includes(id));
+
+    if (addedIds.length > 0) {
+      setFreshSceneIds((current) => Array.from(new Set([...current, ...addedIds])));
+      const timeout = window.setTimeout(() => {
+        setFreshSceneIds((current) => current.filter((id) => !addedIds.includes(id)));
+      }, 520);
+
+      previousSceneIdsRef.current = nextIds;
+      return () => window.clearTimeout(timeout);
+    }
+
+    previousSceneIdsRef.current = nextIds;
+  }, [scenes]);
 
   return (
     <section className="shrink-0 px-4 py-3">
       <div className="flex gap-3 overflow-x-auto pb-2">
         {scenes.map((scene, index) => {
           const active = scene.id === selectedSceneId;
+          const isDragged = draggedId === scene.id;
+          const isGapTarget = draggedId && dragOverId === scene.id && draggedId !== scene.id;
+          const isFresh = freshSceneIds.includes(scene.id);
           return (
             <div
               key={scene.id}
               draggable
               onDragStart={() => setDraggedId(scene.id)}
-              onDragOver={(event) => event.preventDefault()}
+              onDragEnter={() => {
+                if (draggedId && draggedId !== scene.id) setDragOverId(scene.id);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (draggedId && draggedId !== scene.id && dragOverId !== scene.id) {
+                  setDragOverId(scene.id);
+                }
+              }}
               onDrop={() => {
                 if (draggedId) onReorder(draggedId, scene.id);
                 setDraggedId(null);
+                setDragOverId(null);
               }}
-              onDragEnd={() => setDraggedId(null)}
+              onDragEnd={() => {
+                setDraggedId(null);
+                setDragOverId(null);
+              }}
               role="button"
               tabIndex={0}
               onClick={() => onSelect(scene.id)}
@@ -43,8 +79,9 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
                   onSelect(scene.id);
                 }
               }}
-              className={`group relative flex h-[144px] w-[180px] flex-none flex-col rounded-[22px] border p-4 text-left transition ${active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"}`}
+              className={`group relative flex h-[144px] w-[180px] flex-none flex-col rounded-[22px] border p-4 text-left transition-all duration-300 ease-out ${active ? "border-sky-400 bg-sky-400/10" : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"} ${isDragged ? "scale-[0.98] opacity-55 shadow-none" : "shadow-[0_12px_24px_rgba(2,6,23,0.18)]"} ${isGapTarget ? "ml-8" : "ml-0"} ${isFresh ? "animate-scene-card-enter" : ""}`}
             >
+              <div className={`pointer-events-none absolute inset-0 rounded-[22px] transition-all duration-300 ${isGapTarget ? "ring-1 ring-sky-400/50 ring-offset-4 ring-offset-[#08101d]" : "ring-0 ring-transparent"}`} />
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{scene.name || `Scene ${index + 1}`}</p>
@@ -101,7 +138,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
         <button
           type="button"
           onClick={onAddScene}
-          className="flex h-[144px] w-[180px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
+          className="flex h-[144px] w-[180px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-all duration-300 hover:scale-[1.02] hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
         >
           +
         </button>
