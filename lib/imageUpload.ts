@@ -39,11 +39,11 @@ function getImageCompressionConfig(resolution: ExportResolution, profile: Export
   const { width } = exportResolutionDimensions[resolution];
   switch (profile) {
     case "draft":
-      return { maxDimension: Math.round(width * 1.5), quality: 0.84 };
+      return { maxDimension: Math.round(width * 2.4), quality: 0.9 };
     case "high":
-      return { maxDimension: Math.round(width * 2.6), quality: 0.96 };
+      return { maxDimension: Math.round(width * 4.2), quality: 0.98 };
     default:
-      return { maxDimension: Math.round(width * 2), quality: 0.9 };
+      return { maxDimension: Math.round(width * 3.2), quality: 0.95 };
   }
 }
 
@@ -66,6 +66,8 @@ export async function fileToOptimizedDataUrl(file: File, resolution: ExportResol
     const ctx = canvas.getContext("2d");
     if (!ctx) return sourceDataUrl;
 
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
     return mimeType === "image/png" ? canvas.toDataURL("image/png") : canvas.toDataURL(mimeType, quality);
   } catch {
@@ -92,6 +94,8 @@ async function optimizeImageFile(file: File, resolution: ExportResolution, profi
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
 
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
     const blob = await new Promise<Blob | null>((resolve) => {
