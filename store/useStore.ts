@@ -24,6 +24,7 @@ type StudioStore = {
   sceneTrack: SceneTrack;
   selectedSceneId: string;
   exportSettings: ExportSettings;
+  resetProject: () => void;
   hydrateProject: (project: {
     id: string | null;
     name: string;
@@ -75,6 +76,24 @@ export const useStore = create<StudioStore>((set, get) => ({
     preset: "clean",
     resolution: "720p",
     profile: "standard",
+  },
+  resetProject: () => {
+    const nextTrack = createInitialSceneTrack();
+    set({
+      projectId: null,
+      projectName: "Untitled project",
+      sceneTrack: nextTrack,
+      selectedSceneId: nextTrack.scenes[0].id,
+      exportSettings: {
+        fps: DEFAULT_FPS,
+        transitionSeconds: DEFAULT_TRANSITION_SECONDS,
+        backgroundColor: presetDefaults.clean.backgroundColor,
+        textColor: presetDefaults.clean.textColor,
+        preset: "clean",
+        resolution: "720p",
+        profile: "standard",
+      },
+    });
   },
   hydrateProject: (project) => {
     const nextScenes = project.sceneTrack.scenes.length > 0 ? project.sceneTrack.scenes : createInitialSceneTrack().scenes;

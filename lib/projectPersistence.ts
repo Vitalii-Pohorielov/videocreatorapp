@@ -10,6 +10,7 @@ type PersistedProjectRow = {
   id: string;
   name: string;
   payload: PersistedProjectPayload;
+  created_at?: string;
   updated_at?: string;
 };
 
@@ -81,6 +82,22 @@ export async function loadProject(projectId: string) {
 
   if (error) {
     throw new Error(`Project load failed: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function listProjects(limit = 24) {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select("id, name, created_at, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+    .returns<PersistedProjectRow[]>();
+
+  if (error) {
+    throw new Error(`Project list failed: ${error.message}`);
   }
 
   return data;
