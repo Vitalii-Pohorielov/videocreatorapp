@@ -86,18 +86,18 @@ export function StudioPreview({
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col border-b border-slate-200">
-      <div className="border-b border-slate-200 px-4 py-3">
+    <section className="flex min-h-0 flex-1 flex-col border-b border-white/10">
+      <div className="border-b border-white/10 px-4 py-3">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <Link href="/" className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100">
+              <Link href="/" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 transition hover:bg-white/[0.08]">
                 Projects
               </Link>
               <input
                 value={projectName}
                 onChange={(event) => onProjectNameChange(event.target.value)}
-                className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-sky-500"
+                className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
                 placeholder="Project name"
               />
             </div>
@@ -106,7 +106,7 @@ export function StudioPreview({
               <input
                 value={sourceUrl}
                 onChange={(event) => onSourceUrlChange(event.target.value)}
-                className="min-w-[220px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-500"
+                className="min-w-[220px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
                 placeholder="Paste website URL"
               />
 
@@ -114,12 +114,12 @@ export function StudioPreview({
                 type="button"
                 onClick={onGenerateFromUrl}
                 disabled={isGeneratingFromUrl}
-                className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-700 transition hover:bg-sky-100 disabled:opacity-60"
+                className="rounded-2xl border border-sky-400/25 bg-sky-400/12 px-4 py-2.5 text-sm font-medium text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
               >
                 {isGeneratingFromUrl ? "Generating..." : "Generate"}
               </button>
 
-              <label className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <label className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200">
                 <select
                   value={settings.profile}
                   onChange={(event) => onUpdateSettings({ profile: event.target.value as ExportProfile })}
@@ -137,13 +137,13 @@ export function StudioPreview({
                 type="button"
                 onClick={onSaveProject}
                 disabled={isCloudBusy}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50 disabled:opacity-60"
+                className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-60"
               >
                 {isCloudBusy ? "Saving..." : "Save"}
               </button>
 
               {downloadUrl ? (
-                <a href={downloadUrl} download={downloadFileName} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50">
+                <a href={downloadUrl} download={downloadFileName} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08]">
                   Download
                 </a>
               ) : null}
@@ -152,7 +152,7 @@ export function StudioPreview({
                 type="button"
                 onClick={onExport}
                 disabled={isExporting}
-                className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
+                className="rounded-2xl bg-sky-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
               >
                 {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
               </button>
@@ -193,7 +193,7 @@ export function StudioPreview({
             event.target.value = "";
           }}
         />
-        <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-slate-200 bg-slate-900 shadow-sm">
+        <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-white/10 bg-slate-950 shadow-[0_16px_40px_rgba(2,6,23,0.45)]">
           <div className="flex flex-1 items-center justify-center overflow-hidden rounded-[24px] bg-black">
             <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden rounded-[24px] bg-black">
               <div className="absolute inset-0">

@@ -110,14 +110,14 @@ type SceneInspectorProps = {
 
 function InspectorSection({ title, description, defaultOpen = false, children }: { title: string; description?: string; defaultOpen?: boolean; children: ReactNode }) {
   return (
-    <details open={defaultOpen} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <details open={defaultOpen} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <summary className="cursor-pointer list-none">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-slate-900">{title}</p>
-            {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+            <p className="text-sm font-medium text-white">{title}</p>
+            {description ? <p className="mt-1 text-sm text-slate-400">{description}</p> : null}
           </div>
-          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">Open</span>
+          <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Open</span>
         </div>
       </summary>
       <div className="mt-4">{children}</div>
@@ -188,11 +188,11 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
   };
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
       <div className="mb-4 shrink-0">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Inspector</p>
-        <h2 className="mt-1 text-lg font-semibold text-slate-900">{scene.name}</h2>
-        <p className="mt-1 text-sm text-slate-500">{sceneTypeLabels[scene.type]}</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Inspector</p>
+        <h2 className="mt-1 text-lg font-semibold text-white">{scene.name}</h2>
+        <p className="mt-1 text-sm text-slate-400">{sceneTypeLabels[scene.type]}</p>
       </div>
 
       <div className="min-h-0 space-y-3 overflow-y-auto pr-1">

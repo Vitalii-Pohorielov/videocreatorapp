@@ -252,10 +252,10 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   };
 
   return (
-    <main className="h-screen overflow-hidden bg-[#f4f6f8] px-4 py-4 text-slate-900">
+    <main className="h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_26%),linear-gradient(180deg,#060b16_0%,#0b1220_42%,#0f172a_100%)] px-4 py-4 text-slate-100">
       <div className="mx-auto flex h-full max-w-[1600px] flex-col">
         <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
             <StudioPreview
               projectId={projectId}
               projectName={projectName}

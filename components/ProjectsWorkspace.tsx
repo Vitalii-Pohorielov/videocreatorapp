@@ -67,14 +67,14 @@ export function ProjectsWorkspace() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#eef6ff,transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-4 py-6 text-slate-900">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.16),transparent_32%),linear-gradient(180deg,#060b16_0%,#0b1220_44%,#0f172a_100%)] px-4 py-6 text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <section className="rounded-[32px] border border-white/70 bg-white/90 px-6 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <section className="rounded-[32px] border border-white/10 bg-slate-950/70 px-6 py-8 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-xs uppercase tracking-[0.28em] text-sky-600">Workspace</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-slate-950">Projects and editor, separated cleanly.</h1>
-              <p className="mt-3 text-base leading-7 text-slate-600">
+              <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Workspace</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-white">Projects and editor, separated cleanly.</h1>
+              <p className="mt-3 text-base leading-7 text-slate-300">
                 Start a new video, reopen an existing project, and keep the editor focused only on building scenes.
               </p>
             </div>
@@ -82,7 +82,7 @@ export function ProjectsWorkspace() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/editor"
-                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
               >
                 New project
               </Link>
@@ -90,43 +90,43 @@ export function ProjectsWorkspace() {
           </div>
         </section>
 
-        <section className="rounded-[32px] border border-slate-200 bg-white px-6 py-6 shadow-sm">
+        <section className="rounded-[32px] border border-white/10 bg-slate-950/70 px-6 py-6 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Library</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950">Saved projects</h2>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Library</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Saved projects</h2>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">{projects.length} items</span>
+            <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-400">{projects.length} items</span>
           </div>
 
-          {isLoading ? <p className="text-sm text-slate-500">Loading projects...</p> : null}
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+          {isLoading ? <p className="text-sm text-slate-400">Loading projects...</p> : null}
+          {error ? <p className="text-sm text-rose-400">{error}</p> : null}
 
           {!isLoading && !error && projects.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
-              <p className="text-lg font-medium text-slate-900">No saved projects yet.</p>
-              <p className="mt-2 text-sm text-slate-500">Create one in the editor and it will appear here.</p>
+            <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center">
+              <p className="text-lg font-medium text-white">No saved projects yet.</p>
+              <p className="mt-2 text-sm text-slate-400">Create one in the editor and it will appear here.</p>
             </div>
           ) : null}
 
           {!isLoading && !error && projects.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {projects.map((project) => (
-                <article key={project.id} className="flex min-h-[220px] flex-col rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:border-slate-300 hover:bg-white">
+                <article key={project.id} className="flex min-h-[220px] flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-sky-400/40 hover:bg-white/[0.07]">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="truncate text-lg font-semibold text-slate-950">{project.name}</h3>
-                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">Updated {formatRelativeDate(project.updated_at)}</p>
+                      <h3 className="truncate text-lg font-semibold text-white">{project.name}</h3>
+                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">Updated {formatRelativeDate(project.updated_at)}</p>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Project ID</p>
-                    <p className="mt-2 line-clamp-2 break-all text-sm leading-6 text-slate-500">{project.id}</p>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Project ID</p>
+                    <p className="mt-2 line-clamp-2 break-all text-sm leading-6 text-slate-300">{project.id}</p>
                   </div>
                   <div className="mt-auto flex gap-3 pt-5">
                     <Link
                       href={`/editor?project=${project.id}`}
-                      className="flex-1 rounded-2xl bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-slate-800"
+                      className="flex-1 rounded-2xl bg-sky-400 px-4 py-2.5 text-center text-sm font-medium text-slate-950 transition hover:bg-sky-300"
                     >
                       Edit
                     </Link>
@@ -134,7 +134,7 @@ export function ProjectsWorkspace() {
                       type="button"
                       onClick={() => handleDeleteProject(project.id, project.name)}
                       disabled={busyProjectId === project.id}
-                      className="flex-1 rounded-2xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex-1 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-2.5 text-sm font-medium text-rose-300 transition hover:bg-rose-400/15 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {busyProjectId === project.id ? "Deleting..." : "Delete"}
                     </button>

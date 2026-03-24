@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 * {
@@ -17,8 +17,10 @@ body {
 
 body {
   min-height: 100vh;
-  background: #f4f6f8;
-  color: #0f172a;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 28%),
+    linear-gradient(180deg, #060b16 0%, #0b1220 44%, #0f172a 100%);
+  color: #e2e8f0;
 }
 
 .website-scroll-image {
