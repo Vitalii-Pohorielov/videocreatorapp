@@ -3,7 +3,7 @@
 import { useRef } from "react";
 
 import { SceneStage } from "@/components/SceneStage";
-import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
+import { fileToStoredUrl } from "@/lib/imageUpload";
 import { exportResolutionDimensions, exportResolutionLabels, type ExportProfile, type ExportResolution, type Scene, type TemplatePreset } from "@/store/useStore";
 
 type StudioPreviewProps = {
@@ -28,7 +28,7 @@ export function StudioPreview({ scene, backgroundColor, textColor, preset, resol
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl", file: File | null) => {
     if (!file) return;
-    const imageUrl = await fileToOptimizedDataUrl(file, resolution, profile);
+    const imageUrl = await fileToStoredUrl(file, resolution, profile);
     onUpdateScene(scene.id, { [field]: imageUrl });
   };
 

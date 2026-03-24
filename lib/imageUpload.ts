@@ -1,5 +1,6 @@
 "use client";
 
+import { uploadProjectImage } from "@/lib/projectPersistence";
 import type { ExportProfile, ExportResolution } from "@/lib/sceneDefinitions";
 import { exportResolutionDimensions } from "@/lib/sceneDefinitions";
 
@@ -17,6 +18,12 @@ function readFileAsDataUrl(file: File) {
 
 export function fileToDataUrl(file: File) {
   return readFileAsDataUrl(file);
+}
+
+function getOutputMimeType(file: File) {
+  if (file.type === "image/png") return "image/png";
+  if (file.type === "image/jpeg" || file.type === "image/jpg") return "image/jpeg";
+  return "image/webp";
 }
 
 function loadImage(src: string) {
@@ -63,4 +70,47 @@ export async function fileToOptimizedDataUrl(file: File, resolution: ExportResol
   } catch {
     return sourceDataUrl;
   }
+}
+
+async function optimizeImageFile(file: File, resolution: ExportResolution, profile: ExportProfile) {
+  const sourceDataUrl = await readFileAsDataUrl(file);
+  if (!file.type.startsWith("image/")) return file;
+
+  try {
+    const image = await loadImage(sourceDataUrl);
+    const { maxDimension, quality } = getImageCompressionConfig(resolution, profile);
+    const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
+    const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
+    const targetWidth = Math.max(1, Math.round(image.naturalWidth * scale));
+    const targetHeight = Math.max(1, Math.round(image.naturalHeight * scale));
+    const mimeType = getOutputMimeType(file);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, mimeType, quality);
+    });
+
+    if (!blob) return file;
+
+    const extension = mimeType === "image/png" ? "png" : mimeType === "image/jpeg" ? "jpg" : "webp";
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "upload"}.${extension}`, { type: mimeType });
+  } catch {
+    return file;
+  }
+}
+
+export async function fileToStoredUrl(file: File, resolution: ExportResolution, profile: ExportProfile) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return fileToOptimizedDataUrl(file, resolution, profile);
+  }
+
+  const optimizedFile = await optimizeImageFile(file, resolution, profile);
+  return uploadProjectImage(optimizedFile);
 }

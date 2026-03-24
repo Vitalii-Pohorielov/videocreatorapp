@@ -19,9 +19,18 @@ export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
 type StudioStore = {
+  projectId: string | null;
+  projectName: string;
   sceneTrack: SceneTrack;
   selectedSceneId: string;
   exportSettings: ExportSettings;
+  hydrateProject: (project: {
+    id: string | null;
+    name: string;
+    sceneTrack: SceneTrack;
+    exportSettings: ExportSettings;
+  }) => void;
+  updateProjectMeta: (updates: { id?: string | null; name?: string }) => void;
   addScene: (type: SceneType) => void;
   updateScene: (id: string, updates: SceneUpdates) => void;
   deleteScene: (id: string) => void;
@@ -54,6 +63,8 @@ function normalizeSceneArrays(scene: Scene, updates: SceneUpdates) {
 const initialSceneTrack = createInitialSceneTrack();
 
 export const useStore = create<StudioStore>((set, get) => ({
+  projectId: null,
+  projectName: "Untitled project",
   sceneTrack: initialSceneTrack,
   selectedSceneId: initialSceneTrack.scenes[0].id,
   exportSettings: {
@@ -65,6 +76,34 @@ export const useStore = create<StudioStore>((set, get) => ({
     resolution: "720p",
     profile: "standard",
   },
+  hydrateProject: (project) => {
+    const nextScenes = project.sceneTrack.scenes.length > 0 ? project.sceneTrack.scenes : createInitialSceneTrack().scenes;
+    set({
+      projectId: project.id,
+      projectName: project.name.trim() || "Untitled project",
+      sceneTrack: {
+        ...project.sceneTrack,
+        id: "main-track",
+        name: project.sceneTrack.name || "Scene Track",
+        scenes: nextScenes,
+      },
+      selectedSceneId: nextScenes[0]?.id ?? crypto.randomUUID(),
+      exportSettings: {
+        fps: DEFAULT_FPS,
+        transitionSeconds: DEFAULT_TRANSITION_SECONDS,
+        backgroundColor: project.exportSettings.backgroundColor,
+        textColor: project.exportSettings.textColor,
+        preset: project.exportSettings.preset,
+        resolution: project.exportSettings.resolution,
+        profile: project.exportSettings.profile,
+      },
+    });
+  },
+  updateProjectMeta: (updates) =>
+    set((state) => ({
+      projectId: updates.id === undefined ? state.projectId : updates.id,
+      projectName: updates.name === undefined ? state.projectName : updates.name,
+    })),
   addScene: (type) => {
     const { sceneTrack } = get();
     if (sceneTrack.scenes.length >= 10) return;

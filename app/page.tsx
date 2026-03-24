@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
@@ -8,16 +8,35 @@ import { SceneTypeModal } from "@/components/SceneTypeModal";
 import { StudioPreview } from "@/components/StudioPreview";
 import { TopBar } from "@/components/TopBar";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
+import { loadProject, saveProject } from "@/lib/projectPersistence";
 import { useStore } from "@/store/useStore";
 
 export default function HomePage() {
-  const { sceneTrack, selectedSceneId, exportSettings, addScene, updateScene, deleteScene, selectScene, reorderScenes, updateExportSettings } = useStore();
+  const {
+    projectId,
+    projectName,
+    sceneTrack,
+    selectedSceneId,
+    exportSettings,
+    hydrateProject,
+    updateProjectMeta,
+    addScene,
+    updateScene,
+    deleteScene,
+    selectScene,
+    reorderScenes,
+    updateExportSettings,
+  } = useStore();
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [cloudStatus, setCloudStatus] = useState<string | null>(null);
+  const [isCloudBusy, setIsCloudBusy] = useState(false);
+  const [projectLookupId, setProjectLookupId] = useState("");
+  const didHydrateFromUrl = useRef(false);
 
   const scenes = sceneTrack.scenes;
   const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0], [scenes, selectedSceneId]);
@@ -72,6 +91,36 @@ export default function HomePage() {
     return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
   }, []);
 
+  useEffect(() => {
+    if (didHydrateFromUrl.current) return;
+    didHydrateFromUrl.current = true;
+
+    const projectIdFromUrl = new URLSearchParams(window.location.search).get("project");
+    if (!projectIdFromUrl) return;
+
+    setProjectLookupId(projectIdFromUrl);
+    setCloudStatus(`Loading project ${projectIdFromUrl} from Supabase...`);
+    setIsCloudBusy(true);
+
+    loadProject(projectIdFromUrl)
+      .then((project) => {
+        hydrateProject({
+          id: project.id,
+          name: project.name,
+          sceneTrack: project.payload.sceneTrack,
+          exportSettings: project.payload.exportSettings,
+        });
+        setCloudStatus(`Loaded "${project.name}" from Supabase.`);
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Could not load project.";
+        setCloudStatus(message);
+      })
+      .finally(() => {
+        setIsCloudBusy(false);
+      });
+  }, [hydrateProject]);
+
   const resetDownload = () => {
     if (downloadUrl) {
       URL.revokeObjectURL(downloadUrl);
@@ -99,22 +148,144 @@ export default function HomePage() {
     });
   };
 
+  const handleSaveProject = async () => {
+    try {
+      setIsCloudBusy(true);
+      setCloudStatus("Saving project to Supabase...");
+      const project = await saveProject({
+        projectId,
+        projectName,
+        sceneTrack,
+        exportSettings,
+      });
+      updateProjectMeta({ id: project.id, name: project.name });
+      setProjectLookupId(project.id);
+      window.history.replaceState({}, "", `/?project=${project.id}`);
+      setCloudStatus(`Saved "${project.name}" to Supabase.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not save project.";
+      setCloudStatus(message);
+    } finally {
+      setIsCloudBusy(false);
+    }
+  };
+
+  const handleLoadProject = async () => {
+    const normalizedId = projectLookupId.trim();
+    if (!normalizedId) return;
+
+    try {
+      setIsCloudBusy(true);
+      setCloudStatus(`Loading project ${normalizedId} from Supabase...`);
+      const project = await loadProject(normalizedId);
+      hydrateProject({
+        id: project.id,
+        name: project.name,
+        sceneTrack: project.payload.sceneTrack,
+        exportSettings: project.payload.exportSettings,
+      });
+      resetDownload();
+      setIsPlaying(false);
+      setCurrentTime(0);
+      window.history.replaceState({}, "", `/?project=${project.id}`);
+      setCloudStatus(`Loaded "${project.name}" from Supabase.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not load project.";
+      setCloudStatus(message);
+    } finally {
+      setIsCloudBusy(false);
+    }
+  };
+
+  const handleCopyProjectLink = async () => {
+    if (!projectId) return;
+    const shareUrl = `${window.location.origin}/?project=${projectId}`;
+    await navigator.clipboard.writeText(shareUrl);
+    setCloudStatus("Share link copied to clipboard.");
+  };
+
   return (
     <main className="h-screen overflow-hidden bg-[#f4f6f8] px-4 py-4 text-slate-900">
       <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-        <TopBar settings={exportSettings} isExporting={isExporting} exportProgress={exportProgress} downloadUrl={downloadUrl} onUpdateSettings={updateExportSettings} onExport={handleExport} />
+        <TopBar
+          projectId={projectId}
+          projectName={projectName}
+          settings={exportSettings}
+          isExporting={isExporting}
+          exportProgress={exportProgress}
+          downloadUrl={downloadUrl}
+          cloudStatus={cloudStatus}
+          isCloudBusy={isCloudBusy}
+          projectLookupId={projectLookupId}
+          onProjectLookupIdChange={setProjectLookupId}
+          onProjectNameChange={(value) => updateProjectMeta({ name: value })}
+          onLoadProject={handleLoadProject}
+          onSaveProject={handleSaveProject}
+          onCopyProjectLink={handleCopyProjectLink}
+          onUpdateSettings={updateExportSettings}
+          onExport={handleExport}
+        />
 
         <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <StudioPreview scene={playbackState.scene} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} resolution={exportSettings.resolution} profile={exportSettings.profile} sceneProgress={playbackState.progress} isPlaying={isPlaying} currentTime={currentTime} totalDuration={totalDuration} onTogglePlayback={togglePlayback} onUpdateScene={(id, updates) => { resetDownload(); updateScene(id, updates); }} />
-            <SceneTimeline track={sceneTrack} selectedSceneId={selectedScene.id} backgroundColor={exportSettings.backgroundColor} textColor={exportSettings.textColor} preset={exportSettings.preset} onSelect={(id) => { setIsPlaying(false); setCurrentTime(0); selectScene(id); }} onDelete={(id) => { resetDownload(); deleteScene(id); }} onAddScene={() => setIsSceneModalOpen(true)} onReorder={reorderScenes} />
+            <StudioPreview
+              scene={playbackState.scene}
+              backgroundColor={exportSettings.backgroundColor}
+              textColor={exportSettings.textColor}
+              preset={exportSettings.preset}
+              resolution={exportSettings.resolution}
+              profile={exportSettings.profile}
+              sceneProgress={playbackState.progress}
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              totalDuration={totalDuration}
+              onTogglePlayback={togglePlayback}
+              onUpdateScene={(id, updates) => {
+                resetDownload();
+                updateScene(id, updates);
+              }}
+            />
+            <SceneTimeline
+              track={sceneTrack}
+              selectedSceneId={selectedScene.id}
+              backgroundColor={exportSettings.backgroundColor}
+              textColor={exportSettings.textColor}
+              preset={exportSettings.preset}
+              onSelect={(id) => {
+                setIsPlaying(false);
+                setCurrentTime(0);
+                selectScene(id);
+              }}
+              onDelete={(id) => {
+                resetDownload();
+                deleteScene(id);
+              }}
+              onAddScene={() => setIsSceneModalOpen(true)}
+              onReorder={reorderScenes}
+            />
           </div>
 
-          <SceneInspector scene={selectedScene} settings={exportSettings} onUpdate={(id, updates) => { resetDownload(); updateScene(id, updates); }} onUpdateSettings={updateExportSettings} />
+          <SceneInspector
+            scene={selectedScene}
+            settings={exportSettings}
+            onUpdate={(id, updates) => {
+              resetDownload();
+              updateScene(id, updates);
+            }}
+            onUpdateSettings={updateExportSettings}
+          />
         </section>
       </div>
 
-      <SceneTypeModal isOpen={isSceneModalOpen} onClose={() => setIsSceneModalOpen(false)} onSelect={(type) => { addScene(type); setIsSceneModalOpen(false); resetDownload(); }} />
+      <SceneTypeModal
+        isOpen={isSceneModalOpen}
+        onClose={() => setIsSceneModalOpen(false)}
+        onSelect={(type) => {
+          addScene(type);
+          setIsSceneModalOpen(false);
+          resetDownload();
+        }}
+      />
     </main>
   );
 }

@@ -1,0 +1,87 @@
+"use client";
+
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import type { ExportSettings, SceneTrack } from "@/store/useStore";
+
+const PROJECTS_TABLE = "video_projects";
+const IMAGES_BUCKET = "project-images";
+
+type PersistedProjectRow = {
+  id: string;
+  name: string;
+  payload: PersistedProjectPayload;
+  updated_at?: string;
+};
+
+export type PersistedProjectPayload = {
+  version: 1;
+  sceneTrack: SceneTrack;
+  exportSettings: ExportSettings;
+};
+
+export async function uploadProjectImage(file: File) {
+  const supabase = getSupabaseBrowserClient();
+  const extension = file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() ?? "webp" : "webp";
+  const safeExtension = extension.replace(/[^a-z0-9]/g, "") || "webp";
+  const path = `uploads/${crypto.randomUUID()}.${safeExtension}`;
+
+  const { error } = await supabase.storage.from(IMAGES_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+
+  if (error) {
+    throw new Error(`Image upload failed: ${error.message}`);
+  }
+
+  const { data } = supabase.storage.from(IMAGES_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export async function saveProject(input: {
+  projectId: string | null;
+  projectName: string;
+  sceneTrack: SceneTrack;
+  exportSettings: ExportSettings;
+}) {
+  const supabase = getSupabaseBrowserClient();
+  const payload: PersistedProjectPayload = {
+    version: 1,
+    sceneTrack: input.sceneTrack,
+    exportSettings: input.exportSettings,
+  };
+
+  const row = {
+    id: input.projectId ?? crypto.randomUUID(),
+    name: input.projectName.trim() || "Untitled project",
+    payload,
+  };
+
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .upsert(row, { onConflict: "id" })
+    .select("id, name, payload, updated_at")
+    .single<PersistedProjectRow>();
+
+  if (error) {
+    throw new Error(`Project save failed: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function loadProject(projectId: string) {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .select("id, name, payload, updated_at")
+    .eq("id", projectId)
+    .single<PersistedProjectRow>();
+
+  if (error) {
+    throw new Error(`Project load failed: ${error.message}`);
+  }
+
+  return data;
+}

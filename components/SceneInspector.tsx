@@ -2,7 +2,7 @@
 
 import { type ChangeEvent, type ReactNode } from "react";
 
-import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
+import { fileToStoredUrl } from "@/lib/imageUpload";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = ["clean", "premium", "bold", "editorial", "sunset", "mono", "neon-grid", "paper-cut", "arctic-glass"];
@@ -75,21 +75,21 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
   const handleAuthorImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    onUpdate(scene.id, { authorImageUrl: await fileToOptimizedDataUrl(file, settings.resolution, settings.profile) });
+    onUpdate(scene.id, { authorImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
     event.target.value = "";
   };
 
   const handleLogoImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    onUpdate(scene.id, { logoImageUrl: await fileToOptimizedDataUrl(file, settings.resolution, settings.profile) });
+    onUpdate(scene.id, { logoImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
     event.target.value = "";
   };
 
   const handleWebsiteImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    onUpdate(scene.id, { websiteImageUrl: await fileToOptimizedDataUrl(file, settings.resolution, settings.profile) });
+    onUpdate(scene.id, { websiteImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
     event.target.value = "";
   };
 

@@ -3,7 +3,7 @@
 import { useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
-import { fileToOptimizedDataUrl } from "@/lib/imageUpload";
+import { fileToStoredUrl } from "@/lib/imageUpload";
 import type { ExportProfile, ExportResolution, Scene, TemplatePreset } from "@/store/useStore";
 
 type SceneStageProps = {
@@ -497,7 +497,7 @@ export function SceneStage({
   const updateBulletImage = async (index: number, value: File | string | null) => {
     const bulletImageUrls = [...scene.bulletImageUrls];
     if (typeof value === "string") bulletImageUrls[index] = value;
-    else bulletImageUrls[index] = value ? await fileToOptimizedDataUrl(value, uploadResolution, uploadProfile) : "";
+    else bulletImageUrls[index] = value ? await fileToStoredUrl(value, uploadResolution, uploadProfile) : "";
     onSceneChange?.({ bulletImageUrls });
   };
 
