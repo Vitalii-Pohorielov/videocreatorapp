@@ -10,7 +10,6 @@ type ScrapedSiteData = {
   paragraphs: string[];
   bullets: string[];
   cta: string[];
-  metrics: string[];
   ogImageUrl: string;
 };
 
@@ -95,11 +94,6 @@ function absolutizeUrl(value: string, sourceUrl: string) {
   }
 }
 
-function extractMetrics(text: string) {
-  const matches = text.match(/\b\d+(?:\.\d+)?(?:[%xX]|ms|hrs?|hours?|days?|weeks?|months?|years?)\b/g) ?? [];
-  return uniqueNonEmpty(matches, 3);
-}
-
 function getDomainLabel(sourceUrl: string) {
   try {
     const hostname = new URL(sourceUrl).hostname.replace(/^www\./, "");
@@ -145,7 +139,6 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
   const paragraphs = matchAllText(cleanedHtml, /<p[^>]*>([\s\S]*?)<\/p>/gi, 12).filter((item) => item.length > 35);
   const bullets = matchAllText(cleanedHtml, /<li[^>]*>([\s\S]*?)<\/li>/gi, 10).filter((item) => item.length > 8);
   const allText = uniqueNonEmpty([...headings, ...paragraphs, ...bullets], 20).join(" ");
-  const metrics = extractMetrics(allText);
   const cta = uniqueNonEmpty(
     [
       ...matchAllText(cleanedHtml, /<(?:a|button)[^>]*>([\s\S]*?)<\/(?:a|button)>/gi, 20),
@@ -163,7 +156,6 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
     paragraphs,
     bullets,
     cta,
-    metrics,
     ogImageUrl,
   };
 }
@@ -192,7 +184,6 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   const heroTitle = scraped.headings[0] || scraped.title || projectName;
   const heroSubtitle = scraped.description || scraped.headings[1] || `Explore ${projectName}.`;
   const featureBullets = takeBullets(scraped.bullets.length ? scraped.bullets : scraped.headings.slice(1), 3);
-  const metricBullets = takeBullets(scraped.metrics, 3);
   const ctaLine = scraped.cta[0] || `Visit ${projectName}`;
   const supportingParagraph = scraped.paragraphs[0] || scraped.description;
 
@@ -237,19 +228,6 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
         eyebrow: "Overview",
         title: scraped.headings[1] || "What it does",
         description: supportingParagraph.slice(0, 220),
-      }),
-    );
-  }
-
-  if (metricBullets.length > 0) {
-    scenes.push(
-      applyScene(createScene("metrics", scenes.length), {
-        name: "Metrics 1",
-        eyebrow: "Proof",
-        title: "Key numbers on the page",
-        bullets: metricBullets,
-        bulletEmojis: metricBullets.map(() => ""),
-        bulletImageUrls: metricBullets.map(() => ""),
       }),
     );
   }

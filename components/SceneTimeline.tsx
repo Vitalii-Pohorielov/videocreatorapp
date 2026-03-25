@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { sceneTypeLabels, type Scene, type SceneTrack } from "@/store/useStore";
 
@@ -137,6 +137,8 @@ function SortableSceneCard(props: SceneCardProps) {
 
 export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDuplicate, onAddScene, onReorder }: SceneTimelineProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const addButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousSceneCountRef = useRef(track.scenes.length);
   const scenes = track.scenes;
   const sceneIds = useMemo(() => scenes.map((scene) => scene.id), [scenes]);
   const activeScene = activeId ? scenes.find((scene) => scene.id === activeId) ?? null : null;
@@ -163,6 +165,23 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
     setActiveId(null);
   };
 
+  useEffect(() => {
+    const previousCount = previousSceneCountRef.current;
+    previousSceneCountRef.current = scenes.length;
+
+    if (scenes.length <= previousCount) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      addButtonRef.current?.scrollIntoView({
+        behavior: "smooth",
+        inline: "end",
+        block: "nearest",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [scenes.length]);
+
   return (
     <section className="shrink-0 px-4 py-3">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
@@ -181,6 +200,7 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
             ))}
 
             <button
+              ref={addButtonRef}
               type="button"
               onClick={onAddScene}
               className="flex h-[144px] w-[180px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-colors duration-150 hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"

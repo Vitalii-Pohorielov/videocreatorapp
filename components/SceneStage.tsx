@@ -58,7 +58,7 @@ function revealStyle(progress: number, options?: { y?: number; x?: number; scale
   const x = options?.x ?? 0;
   const scaleFrom = options?.scaleFrom ?? 0.98;
   const blur = options?.blur ?? 10;
-  const minOpacity = options?.minOpacity ?? 0.14;
+  const minOpacity = options?.minOpacity ?? 0;
 
   return {
     transform: `translate(${x * (1 - progress)}px, ${y * (1 - progress)}px) scale(${scaleFrom + progress * (1 - scaleFrom)})`,
@@ -198,9 +198,101 @@ function presetStyles(preset: TemplatePreset, lightweight = false) {
   }
 }
 
+function presetAccentColor(preset: TemplatePreset) {
+  switch (preset) {
+    case "white":
+      return "#4b5563";
+    case "black":
+      return "#cbd5e1";
+    case "premium":
+      return "#b89d74";
+    case "bold":
+      return "#e7b84f";
+    case "editorial":
+      return "#826644";
+    case "sunset":
+      return "#dd7d31";
+    case "mono":
+      return "#cfcfcf";
+    case "neon-grid":
+      return "#27c9d4";
+    case "paper-cut":
+      return "#b9492b";
+    case "arctic-glass":
+      return "#1067d6";
+    case "brutalist":
+      return "#4a4a4a";
+    case "velvet-noir":
+      return "#d86492";
+    case "mint-pop":
+      return "#14a789";
+    case "terminal":
+      return "#24cc5b";
+    case "blueprint":
+      return "#5fb7e4";
+    case "acid-pop":
+      return "#d93fb8";
+    case "retro-print":
+      return "#aa5a31";
+    case "ember-glow":
+      return "#d97440";
+  }
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const normalized = hex.replace("#", "");
+  const safe =
+    normalized.length === 3
+      ? normalized
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : normalized;
+
+  const value = Number.parseInt(safe, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function mixHexColors(baseHex: string, mixHex: string, amount: number) {
+  const normalize = (hex: string) => {
+    const value = hex.replace("#", "");
+    return value.length === 3
+      ? value
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : value;
+  };
+
+  const base = normalize(baseHex);
+  const mix = normalize(mixHex);
+  const ratio = clamp(amount);
+
+  const baseValue = Number.parseInt(base, 16);
+  const mixValue = Number.parseInt(mix, 16);
+
+  const baseR = (baseValue >> 16) & 255;
+  const baseG = (baseValue >> 8) & 255;
+  const baseB = baseValue & 255;
+  const mixR = (mixValue >> 16) & 255;
+  const mixG = (mixValue >> 8) & 255;
+  const mixB = mixValue & 255;
+
+  const r = Math.round(baseR + (mixR - baseR) * ratio);
+  const g = Math.round(baseG + (mixG - baseG) * ratio);
+  const b = Math.round(baseB + (mixB - baseB) * ratio);
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function IntroLogo({
   scene,
   entryProgress,
+  outroProgress = 0,
   compact,
   editable,
   onPickImage,
@@ -208,6 +300,7 @@ function IntroLogo({
 }: {
   scene: Scene;
   entryProgress: number;
+  outroProgress?: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
@@ -220,8 +313,8 @@ function IntroLogo({
     <div
       className="mx-auto mb-6 flex items-center justify-center"
       style={{
-        transform: `translateY(${18 * (1 - entryProgress)}px) scale(${0.92 + entryProgress * 0.08})`,
-        opacity: entryProgress,
+        transform: `translateY(${18 * (1 - entryProgress) - 16 * outroProgress}px) scale(${0.92 + entryProgress * 0.08 + outroProgress * 0.36})`,
+        opacity: entryProgress * (1 - outroProgress * 0.18),
       }}
     >
       <button
@@ -238,6 +331,7 @@ function IntroLogo({
 function IntroLogoSlot({
   scene,
   entryProgress,
+  outroProgress = 0,
   compact,
   editable,
   onPickImage,
@@ -245,21 +339,22 @@ function IntroLogoSlot({
 }: {
   scene: Scene;
   entryProgress: number;
+  outroProgress?: number;
   compact: boolean;
   editable: boolean;
   onPickImage?: () => void;
   lightweightPreview?: boolean;
 }) {
   if (getRenderableImageUrl(scene.logoImageUrl)) {
-    return <IntroLogo scene={scene} entryProgress={entryProgress} compact={compact} editable={editable} onPickImage={onPickImage} lightweightPreview={lightweightPreview} />;
+    return <IntroLogo scene={scene} entryProgress={entryProgress} outroProgress={outroProgress} compact={compact} editable={editable} onPickImage={onPickImage} lightweightPreview={lightweightPreview} />;
   }
 
   return (
     <div
       className="mx-auto mb-6 flex items-center justify-center"
       style={{
-        transform: `translateY(${18 * (1 - entryProgress)}px) scale(${0.92 + entryProgress * 0.08})`,
-        opacity: entryProgress,
+        transform: `translateY(${18 * (1 - entryProgress) - 16 * outroProgress}px) scale(${0.92 + entryProgress * 0.08 + outroProgress * 0.36})`,
+        opacity: entryProgress * (1 - outroProgress * 0.18),
       }}
     >
       <button
@@ -292,8 +387,6 @@ function QuoteAuthorPhoto({
   onPickImage?: () => void;
 }) {
   const authorImageUrl = getRenderableImageUrl(scene.authorImageUrl);
-  if (!authorImageUrl) return null;
-
   return (
     <div
       className="mb-5 flex justify-center"
@@ -302,13 +395,24 @@ function QuoteAuthorPhoto({
         opacity: entryProgress,
       }}
     >
-      <button
-        type="button"
-        onClick={editable ? onPickImage : undefined}
-        className={`${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"} rounded-full`}
-      >
-        <img src={authorImageUrl} alt="Author portrait" className={compact ? "h-12 w-12 rounded-full object-cover ring-2 ring-white/15" : "h-20 w-20 rounded-full object-cover ring-4 ring-white/10"} />
-      </button>
+      {authorImageUrl ? (
+        <button
+          type="button"
+          onClick={editable ? onPickImage : undefined}
+          className={`${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"} rounded-full`}
+        >
+          <img src={authorImageUrl} alt="Author photo or logo" className={compact ? "h-12 w-12 rounded-full object-cover ring-2 ring-white/15" : "h-20 w-20 rounded-full object-cover ring-4 ring-white/10"} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={editable ? onPickImage : undefined}
+          className={`flex items-center justify-center rounded-full border border-dashed border-white/20 bg-white/5 text-white/70 ${editable ? "cursor-pointer transition hover:scale-105 hover:bg-white/10" : "cursor-default"} ${compact ? "h-12 w-12 text-lg" : "h-20 w-20 text-3xl"}`}
+          aria-label="Upload author photo or logo"
+        >
+          <span className="leading-none">+</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -604,7 +708,7 @@ function StageShell({
 }) {
   const showBackground = renderLayer !== "content";
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[24px]" style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
+    <div className="relative h-full w-full overflow-hidden" style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
       {showBackground ? <div className="absolute inset-0" style={{ background: lightweightPreview ? "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 52%)" : "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
       {showBackground && !lightweightPreview ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
       {showBackground && !lightweightPreview ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
@@ -642,6 +746,22 @@ export function SceneStage({
   const cardIn = sharedIn;
   const outroFade = editable ? 1 : 1 - outroMotion(progress, 0.72, 0.28);
   const s = presetStyles(preset, lightweightPreview);
+  const accentColor = presetAccentColor(preset);
+  const elevatedAccentColor = mixHexColors(accentColor, "#000000", preset === "black" ? 0.08 : 0.16);
+  const accentGlow = hexToRgba(accentColor, 0.28);
+  const urlTypingProgress = editable ? 1 : motion(progress, 0.08, 0.34);
+  const urlCharacterCount = Math.max(1, Math.min(scene.title.length, Math.ceil((scene.title.length * urlTypingProgress) / 2) * 2));
+  const displayedUrl = (editable ? scene.title : scene.title.slice(0, urlCharacterCount)).toLowerCase();
+  const urlHover = editable ? 0 : motion(progress, 0.42, 0.1);
+  const urlPress = editable ? 0 : motion(progress, 0.56, 0.08);
+  const urlBurst = editable ? 0 : motion(progress, 0.62, 0.1);
+  const urlFade = editable ? 0 : outroMotion(progress, 0.76, 0.18);
+  const introLogoOutro = editable ? 0 : outroMotion(progress, 0.72, 0.2);
+  const introTextOutro = editable ? 0 : outroMotion(progress, 0.68, 0.18);
+  const ctaHover = editable ? 0 : motion(progress, 0.22, 0.12);
+  const ctaPress = editable ? 0 : motion(progress, 0.42, 0.08);
+  const ctaBurst = editable ? 0 : motion(progress, 0.48, 0.12);
+  const ctaFade = editable ? 0 : outroMotion(progress, 0.72, 0.2);
   const titleSize = compact ? "text-lg" : "text-5xl";
   const midSize = compact ? "text-xs" : "text-lg";
   const smallSize = compact ? "text-[9px]" : "text-xs";
@@ -837,14 +957,14 @@ export function SceneStage({
         >
       {scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
-          <IntroLogoSlot scene={scene} entryProgress={sharedIn} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} />
+          <IntroLogoSlot scene={scene} entryProgress={sharedIn} outroProgress={introLogoOutro} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} />
           <EditableText
             as="h2"
             value={scene.title}
             editable={editable}
             onCommit={(value) => onSceneChange?.({ title: value })}
             className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title}`}
-            style={{ transform: `translateY(${40 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`, opacity: 0.2 + titleIn * 0.8, filter: `blur(${16 * blurMultiplier * (1 - titleIn)}px)` }}
+            style={{ transform: `translateY(${40 * (1 - titleIn) - 26 * introTextOutro}px) scale(${0.9 + titleIn * 0.1})`, opacity: titleIn * (1 - introTextOutro), filter: `blur(${16 * blurMultiplier * (1 - titleIn) + 10 * introTextOutro}px)` }}
             placeholder="Scene title"
           />
         </div>
@@ -854,12 +974,12 @@ export function SceneStage({
         showcaseImageBottom ? (
           <div className="relative flex h-full flex-col overflow-hidden">
             <div className="relative z-10 max-w-2xl text-left">
-              <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
-              <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
+              <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: titleIn }} placeholder="Title" />
+              <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0 })} placeholder="Subtitle" />
             </div>
             <div
               className={`pointer-events-auto absolute left-1/2 top-[44%] w-[88%] -translate-x-1/2 rounded-[28px] border p-5 ${s.card}`}
-              style={{ transform: `translate(-50%, ${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}
+              style={{ transform: `translate(-50%, ${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: cardIn }}
             >
               <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
               <div className={`overflow-hidden rounded-[22px] border border-white/10 bg-black/10 ${compact ? "h-[170px]" : "h-[430px]"}`}>
@@ -879,10 +999,10 @@ export function SceneStage({
         ) : (
           <div className="grid h-full items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
             <div className={`text-left ${showcaseMediaFirst ? "md:order-2" : ""}`}>
-              <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
-              <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0.18 })} placeholder="Subtitle" />
+              <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${-24 * (1 - titleIn)}px)`, opacity: titleIn }} placeholder="Title" />
+              <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 max-w-xl ${midSize}`} style={revealStyle(subIn, { y: 26, blur: 12, minOpacity: 0 })} placeholder="Subtitle" />
             </div>
-            <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: 0.16 + cardIn * 0.84 }}>
+            <div className={`w-full rounded-[28px] border p-5 ${s.card} ${showcaseMediaFirst ? "md:order-1" : ""}`} style={{ transform: `translateY(${34 * (1 - cardIn)}px) scale(${0.92 + cardIn * 0.08})`, opacity: cardIn }}>
               <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
               <div className="overflow-hidden rounded-[22px] border border-white/10 bg-black/10">
                 <ShowcaseImageSlot
@@ -902,20 +1022,20 @@ export function SceneStage({
       {scene.type === "feature-grid" && (
         <div className="flex h-full flex-col justify-center">
           <div className="text-center">
-            <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${20 * (1 - titleIn)}px)`, opacity: 0.2 + titleIn * 0.8 }} placeholder="Title" />
+            <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} style={{ transform: `translateY(${20 * (1 - titleIn)}px)`, opacity: titleIn }} placeholder="Title" />
           </div>
           <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
               const itemIn = editable ? 1 : motion(progress, 0.1 + index * 0.05, 0.24);
               return (
-                <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: 0.12 + itemIn * 0.88 }}>
+                <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: itemIn }}>
                   {editable ? (
                     <EditableCardItem
                       text={bullet}
                       emoji={scene.bulletEmojis[index]}
                       imageUrl={scene.bulletImageUrls[index]}
                       compact={compact}
-                      textClassName={compact ? "text-[10px]" : "text-sm"}
+                      textClassName={compact ? "text-sm font-medium" : "text-lg font-semibold"}
                       accentClassName={s.accent}
                       onTextChange={(value) => updateBullet(index, value)}
                       onEmojiChange={(value) => updateBulletEmoji(index, value)}
@@ -926,7 +1046,7 @@ export function SceneStage({
                       <div className="mb-0 shrink-0">
                         <BulletMarker emoji={scene.bulletEmojis[index]} imageUrl={scene.bulletImageUrls[index]} accentClassName={s.accent} compact={compact} />
                       </div>
-                      <p className={compact ? "text-sm font-medium" : "text-xl font-semibold leading-tight"} style={revealStyle(itemIn, { x: -8, y: 0, blur: 6, minOpacity: 0.22 })}>
+                      <p className={compact ? "text-base font-semibold leading-snug" : "text-2xl font-semibold leading-tight"} style={revealStyle(itemIn, { x: -8, y: 0, blur: 6, minOpacity: 0 })}>
                         {bullet}
                       </p>
                     </div>
@@ -957,7 +1077,7 @@ export function SceneStage({
               className={`${compact ? "text-3xl" : "text-6xl md:text-7xl"} mx-auto max-w-4xl font-semibold leading-[0.92] tracking-[-0.06em] text-white`}
               style={{
                 transform: `translateY(${42 * (1 - titleIn)}px) scale(${0.9 + titleIn * 0.1})`,
-                opacity: 0.22 + titleIn * 0.78,
+                opacity: titleIn,
               }}
               placeholder="Title"
             />
@@ -966,12 +1086,162 @@ export function SceneStage({
       )}
 
       {scene.type === "description" && (
-        <div className="relative grid h-full items-center gap-8 overflow-hidden md:grid-cols-[0.9fr_1.1fr]">
-          <div className="text-left">
-            <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
+        <div className={`relative flex h-full items-center overflow-hidden ${compact ? "-mx-4 -my-4" : "-mx-8 -my-8"}`}>
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <svg
+              viewBox="0 0 1280 720"
+              preserveAspectRatio="none"
+              className="h-full w-full"
+              style={{ opacity: editable ? 0.94 : 0.9 }}
+            >
+              <path
+                d="M -280 140 C -60 -40, 120 60, 280 240 S 520 620, 700 560 S 960 220, 1140 320 S 1400 700, 1660 180"
+                fill="none"
+                stroke={elevatedAccentColor}
+                strokeWidth={compact ? 18 : 26}
+                strokeLinecap="round"
+                style={{
+                  filter: lightweightPreview ? "none" : `drop-shadow(0 0 18px ${accentGlow})`,
+                  strokeDasharray: 2200,
+                  strokeDashoffset: editable ? 0 : 2200 * (1 - motion(progress, 0.04, 0.66)),
+                  transform: `translate(${Math.sin((editable ? 0.7 : progress) * 4.6) * 8}px, ${Math.cos((editable ? 0.7 : progress) * 4.1) * 6}px)`,
+                  transformOrigin: "center",
+                }}
+              />
+            </svg>
           </div>
-          <div className={`rounded-[26px] border p-5 text-left ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px)`, opacity: 0.18 + cardIn * 0.82 }}>
-            <EditableText as="p" value={scene.description || scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ description: value })} className={midSize} style={revealStyle(cardIn, { y: 18, blur: 10, minOpacity: 0.16 })} placeholder="Description" />
+          <div className={`relative w-full text-left ${compact ? "px-4 py-4" : "px-8 py-8"}`}>
+            <div className="relative">
+              <EditableText
+                as="h2"
+                value={scene.title}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ title: value })}
+                className={`${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.18, 0.14), { y: 20, blur: 8, minOpacity: 0 })}
+                placeholder="Line 1"
+              />
+              <EditableText
+                as="h2"
+                value={scene.subtitle}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.38, 0.14), { y: 22, blur: 8, minOpacity: 0 })}
+                placeholder="Line 2"
+              />
+              <EditableText
+                as="h2"
+                value={scene.description}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ description: value })}
+                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.58, 0.14), { y: 24, blur: 8, minOpacity: 0 })}
+                placeholder="Line 3"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {scene.type === "website-url" && (
+        <div className={`flex h-full items-center justify-center overflow-hidden text-center ${compact ? "-mx-4 -my-4" : "-mx-8 -my-8"}`}>
+          <div
+            className="relative w-full"
+            style={{
+              transform: `scale(${1 + urlFade * 0.12})`,
+              opacity: 1 - urlFade,
+            }}
+          >
+            <div
+              style={{
+                transform: `translateY(${-42 * urlFade}px) scale(${1 + urlHover * 0.02 - urlPress * 0.06 + urlBurst * 0.08 + urlFade * 0.08})`,
+                opacity: 1 - urlFade,
+              }}
+            >
+              <div
+                className={`mx-auto flex items-center gap-4 rounded-full border ${compact ? "px-5 py-4" : "px-7 py-5"} ${s.card}`}
+                style={{
+                  width: compact ? "88%" : "82%",
+                  maxWidth: compact ? "720px" : "980px",
+                  backgroundColor: "rgba(255, 255, 255, 0.08)",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`flex shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/8 ${compact ? "h-10 w-10" : "h-14 w-14"}`}
+                >
+                  <svg viewBox="0 0 24 24" className={compact ? "h-4 w-4" : "h-6 w-6"} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="M16 16l4.5 4.5" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="inline-flex max-w-full items-end">
+                    <EditableText
+                      as="h2"
+                      value={displayedUrl}
+                      editable={editable}
+                      onCommit={(value) => onSceneChange?.({ title: value.toLowerCase() })}
+                      className={`${compact ? "text-xl" : "text-4xl md:text-5xl"} max-w-5xl font-medium leading-[0.92] tracking-[-0.05em] lowercase`}
+                      style={{
+                        opacity: 1 - urlFade,
+                        filter: `brightness(${1 + urlPress * 0.12})`,
+                      }}
+                      placeholder="website.com"
+                    />
+                    {!editable ? (
+                      <span
+                        aria-hidden="true"
+                        className="ml-1 shrink-0 rounded-full bg-current"
+                        style={{
+                          width: compact ? "2px" : "3px",
+                          height: compact ? "28px" : "42px",
+                          opacity: urlTypingProgress < 1 ? 0.9 : 0,
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+                {!editable ? (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute"
+                    style={{
+                      left: compact ? "50%" : "50%",
+                      top: compact ? "61%" : "63%",
+                      transform: `translate(-50%, -50%) translate(${180 * (1 - urlHover)}px, ${110 * (1 - urlHover) + 8 - urlPress * 8}px) scale(${1 - urlPress * 0.08}) rotate(-8deg)`,
+                      opacity: (1 - urlFade) * (1 - Math.min(1, urlBurst * 1.35)),
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 64 72"
+                      className={compact ? "h-10 w-8" : "h-16 w-12"}
+                      fill="none"
+                    >
+                      <path
+                        d="M10 7 V63 L31 38 H56 L10 7 Z"
+                        fill="#ffffff"
+                        stroke="#0f172a"
+                        strokeWidth="5.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span
+                      className="absolute left-[62%] top-[54%] rounded-full border"
+                      style={{
+                        width: `${10 + urlBurst * 20}px`,
+                        height: `${10 + urlBurst * 20}px`,
+                        transform: "translate(-50%, -50%)",
+                        opacity: urlBurst > 0.06 ? (1 - urlBurst) * 0.55 : 0,
+                        borderColor: hexToRgba(accentColor, 0.3 * (1 - urlBurst)),
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -981,7 +1251,7 @@ export function SceneStage({
           <WebsiteScrollFrame
             scene={scene}
             cardClassName={s.card}
-            style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.94 + cardIn * 0.06})`, opacity: 0.16 + cardIn * 0.84 }}
+            style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.94 + cardIn * 0.06})`, opacity: cardIn }}
             compact={compact}
             progress={progress}
             editable={editable}
@@ -991,48 +1261,32 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "metrics" && (
-        <div className="flex h-full flex-col justify-center text-center">
-          <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-3 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
-          <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
-            {scene.bullets.map((bullet, index) => {
-              const itemIn = sharedIn;
-              return (
-                <div key={`${bullet}-${index}`} className={`rounded-[24px] border px-4 py-6 ${s.card}`} style={{ transform: `translateY(${24 * (1 - itemIn)}px)`, opacity: 0.12 + itemIn * 0.88 }}>
-                  {editable ? (
-                    <EditableCardItem
-                      text={bullet}
-                      emoji={scene.bulletEmojis[index]}
-                      imageUrl={scene.bulletImageUrls[index]}
-                      compact={compact}
-                      textClassName={compact ? "text-[10px]" : "text-base font-medium"}
-                      accentClassName={s.accent}
-                      onTextChange={(value) => updateBullet(index, value)}
-                      onEmojiChange={(value) => updateBulletEmoji(index, value)}
-                      onImageChange={(file) => updateBulletImage(index, file)}
-                    />
-                  ) : (
-                    <>
-                      <div className="flex justify-center">
-                        <BulletMarker emoji={scene.bulletEmojis[index]} imageUrl={scene.bulletImageUrls[index]} accentClassName={s.accent} compact={compact} />
-                      </div>
-                      <p className={compact ? "text-[10px]" : "text-base font-medium"} style={revealStyle(itemIn, { y: 10, blur: 6, minOpacity: 0.24 })}>{bullet}</p>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {scene.type === "quote" && (
         <div className="flex h-full items-center justify-center text-center">
-          <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: 0.16 + cardIn * 0.84 }}>
-            <QuoteAuthorPhoto scene={scene} entryProgress={sharedIn} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
-            <div className="mb-4 text-4xl opacity-50">"</div>
-            <EditableText as="h2" value={scene.title} editable={editable} multiline onCommit={(value) => onSceneChange?.({ title: value })} className={`leading-tight ${compact ? "text-base" : "text-4xl"} ${s.title} ${s.italic}`} placeholder="Quote" />
-            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mt-5 ${midSize} opacity-75`} style={revealStyle(subIn, { y: 14, blur: 8, minOpacity: 0.18 })} placeholder="Author" /> : null}
+          <div className={`max-w-4xl rounded-[28px] border px-6 py-8 ${s.card}`} style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.95 + cardIn * 0.05})`, opacity: cardIn }}>
+            <QuoteAuthorPhoto scene={scene} entryProgress={editable ? 1 : motion(progress, 0.08, 0.14)} compact={compact} editable={editable} onPickImage={onRequestAuthorUpload} />
+            <EditableText
+              as="h2"
+              value={scene.title}
+              editable={editable}
+              multiline
+              onCommit={(value) => onSceneChange?.({ title: value })}
+              className={`leading-tight ${compact ? "text-base" : "text-4xl"} ${s.title} ${s.italic}`}
+              style={revealStyle(editable ? 1 : motion(progress, 0.22, 0.16), { y: 18, blur: 10, minOpacity: 0 })}
+              placeholder="Quote"
+            />
+            {scene.subtitle || editable ? (
+              <EditableText
+                as="p"
+                value={scene.subtitle}
+                editable={editable}
+                multiline
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mt-5 ${midSize} opacity-75`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.42, 0.16), { y: 14, blur: 8, minOpacity: 0 })}
+                placeholder="Author"
+              />
+            ) : null}
           </div>
         </div>
       )}
@@ -1040,10 +1294,25 @@ export function SceneStage({
       {scene.type === "checklist" && (
         <div className="flex h-full flex-col justify-center">
           <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 text-center leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
-          <div className="mx-auto mt-8 grid max-w-3xl gap-3">
+          <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
             {scene.bullets.map((bullet, index) => {
-              const itemIn = sharedIn;
-              return <div key={`${bullet}-${index}`} className={`flex items-center gap-3 rounded-[22px] border px-4 py-4 ${s.card}`} style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: 0.14 + itemIn * 0.86 }}><div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20">{index + 1}</div><p className={compact ? "text-[10px]" : "text-sm"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0.22 })}>{bullet}</p></div>;
+              const itemIn = editable ? 1 : motion(progress, 0.14 + index * 0.09, 0.18);
+              return (
+                <div
+                  key={`${bullet}-${index}`}
+                  className={`grid items-center gap-4 rounded-[22px] px-4 py-4 text-left ${compact ? "grid-cols-[52px_1fr]" : "grid-cols-[72px_1fr]"}`}
+                  style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: itemIn }}
+                >
+                  <div className="flex items-center justify-center">
+                    <div className={`flex items-center justify-center rounded-full border border-white/10 bg-white/10 ${compact ? "h-10 w-10 text-sm" : "h-14 w-14 text-lg"} font-semibold`}>
+                      {index + 1}
+                    </div>
+                  </div>
+                  <p className={compact ? "text-base font-semibold leading-snug" : "text-2xl font-semibold leading-tight"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0 })}>
+                    {bullet}
+                  </p>
+                </div>
+              );
             })}
           </div>
         </div>
@@ -1051,10 +1320,62 @@ export function SceneStage({
 
       {scene.type === "cta" && (
         <div className="flex h-full items-center justify-center text-center">
-          <div className="max-w-4xl">
-            <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 leading-tight ${titleSize} ${s.title}`} placeholder="Title" />
-            {scene.subtitle || editable ? <EditableText as="p" value={scene.subtitle} editable={editable} multiline onCommit={(value) => onSceneChange?.({ subtitle: value })} className={`mx-auto mt-5 max-w-2xl ${midSize}`} style={revealStyle(subIn, { y: 16, blur: 10, minOpacity: 0.18 })} placeholder="Subtitle" /> : null}
-            <div className={`mx-auto mt-8 inline-flex rounded-full border px-6 py-3 ${s.card}`} style={revealStyle(cardIn, { y: 14, blur: 8, minOpacity: 0.16 })}>Get started</div>
+          <div
+            className="relative max-w-4xl"
+            style={{
+              transform: `scale(${1 + ctaFade * 0.18}) translateY(${-48 * ctaFade}px)`,
+              opacity: 1 - ctaFade,
+              filter: `blur(${14 * ctaFade}px)`,
+            }}
+          >
+            <EditableText
+              as="h2"
+              value={scene.title}
+              editable={editable}
+              onCommit={(value) => onSceneChange?.({ title: value })}
+              className={`mt-4 leading-tight ${titleSize} ${s.title}`}
+              style={revealStyle(editable ? 1 : motion(progress, 0.08, 0.16), { y: 18, blur: 10, minOpacity: 0 })}
+              placeholder="Title"
+            />
+            {scene.subtitle || editable ? (
+              <EditableText
+                as="p"
+                value={scene.subtitle}
+                editable={editable}
+                multiline
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mx-auto mt-5 max-w-2xl ${midSize}`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.24, 0.16), { y: 16, blur: 10, minOpacity: 0 })}
+                placeholder="Subtitle"
+              />
+            ) : null}
+            <div className="relative mx-auto mt-8 inline-flex">
+              <div
+                className={`mx-auto inline-flex rounded-full border ${compact ? "px-8 py-4 text-sm" : "px-12 py-5 text-xl"} ${s.card}`}
+                style={{
+                  ...revealStyle(editable ? 1 : motion(progress, 0.36, 0.14), { y: 14, blur: 8, minOpacity: 0 }),
+                  transform: `translateY(${14 * (1 - cardIn)}px) scale(${1 + ctaHover * 0.05 - ctaPress * 0.16 + ctaBurst * 0.2 + ctaFade * 0.1})`,
+                  filter: `brightness(${1 + ctaHover * 0.08 + ctaPress * 0.28 + ctaBurst * 0.14})`,
+                  backgroundColor: `rgba(255,255,255,${0.03 + ctaPress * 0.2 + ctaBurst * 0.08})`,
+                }}
+              >
+                Get started
+              </div>
+              {!editable ? (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-1/2 rounded-full"
+                  style={{
+                    width: `${12 + ctaBurst * 96}px`,
+                    height: `${12 + ctaBurst * 96}px`,
+                    transform: "translate(-50%, -50%)",
+                    opacity: ctaBurst > 0.08 ? (1 - ctaBurst) * 0.8 : 0,
+                    background: "transparent",
+                    boxShadow: `0 0 0 ${10 + ctaBurst * 28}px rgba(255,255,255,${0.12 * (1 - ctaBurst)})`,
+                  }}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       )}

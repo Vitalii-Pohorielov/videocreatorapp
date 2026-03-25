@@ -19,6 +19,18 @@ export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
+function normalizeLoadedScene(scene: Scene): Scene {
+  if ((scene as unknown as { type?: string }).type !== "metrics") return scene;
+
+  return {
+    ...scene,
+    type: "feature-grid",
+    eyebrow: scene.eyebrow || "Highlights",
+    title: scene.title || "Why teams choose it",
+    name: scene.name.replace(/metrics/i, "Features"),
+  } as Scene;
+}
+
 type StudioStore = {
   projectId: string | null;
   projectName: string;
@@ -98,7 +110,10 @@ export const useStore = create<StudioStore>((set, get) => ({
     });
   },
   hydrateProject: (project) => {
-    const nextScenes = project.sceneTrack.scenes.length > 0 ? project.sceneTrack.scenes : createInitialSceneTrack().scenes;
+    const nextScenes =
+      project.sceneTrack.scenes.length > 0
+        ? project.sceneTrack.scenes.map((scene) => normalizeLoadedScene(scene))
+        : createInitialSceneTrack().scenes;
     const normalizedPreset = normalizeTemplatePreset(project.exportSettings.preset);
     const normalizedDefaults = presetDefaults[normalizedPreset];
     set({

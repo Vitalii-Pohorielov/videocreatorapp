@@ -274,16 +274,18 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
               <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
             </label>
             <label className="block">
-              <span className={labelClassName}>Title</span>
+              <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : "Title"}</span>
               <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
             </label>
-            <label className="block">
-              <span className={labelClassName}>Subtitle</span>
-              <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
-            </label>
+            {scene.type !== "website-url" ? (
+              <label className="block">
+                <span className={labelClassName}>{scene.type === "description" ? "Line 2" : "Subtitle"}</span>
+                <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
+              </label>
+            ) : null}
             {scene.type === "description" ? (
               <label className="block">
-                <span className={labelClassName}>Description</span>
+                <span className={labelClassName}>Line 3</span>
                 <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className={textareaClassName} />
               </label>
             ) : null}
@@ -388,31 +390,31 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
         ) : null}
 
         {scene.type === "quote" ? (
-          <InspectorSection title="Author photo" description="Upload the portrait that should appear next to the quote.">
+          <InspectorSection title="Author media" description="Upload a photo or logo that should appear next to the quote.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
-                Upload photo
+                Upload photo or logo
                 <input type="file" accept="image/*" onChange={handleAuthorImageChange} className="sr-only" />
               </label>
               {authorImageUrl ? (
                 <button type="button" onClick={() => onUpdate(scene.id, { authorImageUrl: "" })} className={ghostButtonClassName}>
-                  Remove photo
+                  Remove media
                 </button>
               ) : null}
             </div>
             <div className={panelClassName}>
               {authorImageUrl ? (
                 <div className="flex h-40 items-center justify-center p-6">
-                  <img src={authorImageUrl} alt="Author portrait" className="h-28 w-28 rounded-full object-cover" />
+                  <img src={authorImageUrl} alt="Author photo or logo" className="h-28 w-28 rounded-full object-cover" />
                 </div>
               ) : (
-                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No author photo uploaded yet.</div>
+                <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No author photo or logo uploaded yet.</div>
               )}
             </div>
           </InspectorSection>
         ) : null}
 
-        {scene.type === "feature-grid" || scene.type === "metrics" ? (
+        {scene.type === "feature-grid" ? (
           <InspectorSection title="Items" description="Manage card text and markers for this scene.">
             <div className="flex items-center justify-between gap-3">
               <div>

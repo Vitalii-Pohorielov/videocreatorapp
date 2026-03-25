@@ -31,8 +31,6 @@ let renderRoot: ReturnType<ReactClientModule["createRoot"]> | null = null;
 let renderHostSize: { width: number; height: number } | null = null;
 
 const coreBaseUrl = "/ffmpeg";
-const FINAL_FRAME_FREEZE_PROGRESS = 0.38;
-const FULL_DURATION_SCENE_TYPES = new Set<Scene["type"]>(["website-scroll"]);
 
 function getVideoSize(settings: ExportSettings) {
   return exportResolutionDimensions[settings.resolution];
@@ -172,6 +170,7 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
           backgroundColor: settings.backgroundColor,
           textColor: settings.textColor,
           preset: settings.preset,
+          performanceMode: "light",
           renderLayer,
           progress,
         }),
@@ -205,15 +204,7 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
 
 function normalizeSceneProgress(scene: Scene, progress: number) {
   const clamped = clampProgress(progress);
-  if (FULL_DURATION_SCENE_TYPES.has(scene.type)) {
-    return Number(clamped.toFixed(3));
-  }
-
-  if (clamped >= FINAL_FRAME_FREEZE_PROGRESS) {
-    return FINAL_FRAME_FREEZE_PROGRESS;
-  }
-
-  return Number(clamped.toFixed(2));
+  return Number(clamped.toFixed(3));
 }
 
 function getRenderCacheKey(scene: Scene, settings: ExportSettings, progress: number) {

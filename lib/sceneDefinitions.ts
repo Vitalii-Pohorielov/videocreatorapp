@@ -1,4 +1,5 @@
 export type TransitionType = "fade";
+
 export type TemplatePreset =
   | "white"
   | "black"
@@ -18,6 +19,7 @@ export type TemplatePreset =
   | "acid-pop"
   | "retro-print"
   | "ember-glow";
+
 const templatePresets = [
   "white",
   "black",
@@ -38,16 +40,18 @@ const templatePresets = [
   "retro-print",
   "ember-glow",
 ] as const satisfies readonly TemplatePreset[];
+
 export type ExportResolution = "480p" | "540p" | "720p";
 export type ExportProfile = "draft" | "standard" | "high";
+
 export type SceneType =
   | "brand-reveal"
   | "product-showcase"
   | "feature-grid"
   | "slogan"
   | "description"
+  | "website-url"
   | "website-scroll"
-  | "metrics"
   | "quote"
   | "checklist"
   | "cta";
@@ -218,7 +222,7 @@ export const sceneDefinitions: SceneDefinition[] = [
       subtitle: "",
       description: "",
       bullets: ["Fast setup", "Clear workflow", "Export in browser"],
-      bulletEmojis: ["⚡", "🧭", "📦"],
+      bulletEmojis: ["", "", ""],
       bulletImageUrls: [],
       websiteImageUrl: "",
       logoImageUrl: "",
@@ -250,15 +254,36 @@ export const sceneDefinitions: SceneDefinition[] = [
   {
     type: "description",
     label: "Description",
-    catalogDescription: "Two-column description.",
+    catalogDescription: "Three-line oversized text scene.",
     createTemplate: () => ({
       type: "description",
       durationSeconds: 2.5,
       transition: "fade",
       eyebrow: "Details",
-      title: "What it does",
+      title: "Real-world",
+      subtitle: "design inspiration",
+      description: "& UX patterns",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "website-url",
+    label: "URL",
+    catalogDescription: "Large domain text with click-and-launch motion.",
+    createTemplate: () => ({
+      type: "website-url",
+      durationSeconds: 2.5,
+      transition: "fade",
+      eyebrow: "Website",
+      title: "screensdesign.com",
       subtitle: "",
-      description: "Use this scene for a short paragraph describing the product.",
+      description: "",
       bullets: [],
       bulletEmojis: [],
       bulletImageUrls: [],
@@ -290,27 +315,6 @@ export const sceneDefinitions: SceneDefinition[] = [
     }),
   },
   {
-    type: "metrics",
-    label: "Metrics",
-    catalogDescription: "Numbers and proof points.",
-    createTemplate: () => ({
-      type: "metrics",
-      durationSeconds: 2.5,
-      transition: "fade",
-      eyebrow: "Results",
-      title: "Numbers people remember",
-      subtitle: "",
-      description: "",
-      bullets: ["3x faster", "42% more output", "5 min setup"],
-      bulletEmojis: ["📈", "🚀", "⏱️"],
-      bulletImageUrls: [],
-      websiteImageUrl: "",
-      logoImageUrl: "",
-      authorImageUrl: "",
-      mediaPosition: "right",
-    }),
-  },
-  {
     type: "quote",
     label: "Quote",
     catalogDescription: "Customer quote / testimonial.",
@@ -320,7 +324,7 @@ export const sceneDefinitions: SceneDefinition[] = [
       transition: "fade",
       eyebrow: "Social proof",
       title: '"This changed our workflow overnight."',
-      subtitle: "— Team lead, Product Ops",
+      subtitle: "Team lead, Product Ops",
       description: "",
       bullets: [],
       bulletEmojis: [],
@@ -403,7 +407,7 @@ export function createScene(type: SceneType, index: number) {
 }
 
 export function createInitialSceneTrack(): SceneTrack {
-  const sceneTypes: SceneType[] = ["brand-reveal", "product-showcase", "feature-grid", "metrics", "cta"];
+  const sceneTypes: SceneType[] = ["brand-reveal", "product-showcase", "feature-grid", "checklist", "cta"];
 
   return {
     id: "main-track",

@@ -209,8 +209,8 @@ export function StudioPreview({
           }}
         />
         <div className="flex h-full w-full max-w-5xl flex-col rounded-[28px] border border-white/10 bg-slate-950 shadow-[0_16px_40px_rgba(2,6,23,0.45)]">
-          <div className="flex flex-1 items-center justify-center overflow-hidden rounded-[24px] bg-black">
-            <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden rounded-[24px] bg-black">
+          <div className="flex flex-1 items-center justify-center overflow-hidden bg-black">
+            <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden bg-black">
               <div className="absolute inset-0">
                 <SceneStage
                   scene={scene}
