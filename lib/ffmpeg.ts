@@ -89,7 +89,7 @@ function clampProgress(value: number) {
 function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: number) {
   return scenes.reduce((total, scene, sceneIndex) => {
     const nextScene = scenes[sceneIndex + 1];
-    const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps) - (nextScene ? transitionFrameCount : 0));
+    const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
     return total + stillFrameCount + (nextScene ? transitionFrameCount : 0);
   }, 0);
 }
@@ -370,11 +370,10 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       const scene = scenes[sceneIndex];
       const nextScene = scenes[sceneIndex + 1];
       const totalSceneFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
-      const incomingTransitionFrames = sceneIndex === 0 ? 0 : transitionFrameCount;
-      const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps) - (nextScene ? transitionFrameCount : 0));
+      const stillFrameCount = totalSceneFrameCount;
 
       for (let repeat = 0; repeat < stillFrameCount; repeat += 1) {
-        const sceneProgress = getFrameProgress(repeat + incomingTransitionFrames, totalSceneFrameCount);
+        const sceneProgress = getFrameProgress(repeat, totalSceneFrameCount);
         const normalizedSceneProgress = normalizeSceneProgress(scene, sceneProgress);
         const sceneCanvas = await renderSceneCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true);
         await writeCanvasFrame(frameIndex, sceneCanvas, frameExtension, frameMimeType, frameQuality);
