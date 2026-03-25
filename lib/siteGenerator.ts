@@ -168,6 +168,15 @@ function takeBullets(values: string[], maxItems = 3) {
   return uniqueNonEmpty(values.filter((item) => item.length <= 90), maxItems).slice(0, maxItems);
 }
 
+function randomChoice<T>(values: T[]) {
+  return values[Math.floor(Math.random() * values.length)] as T;
+}
+
+function toShortLine(value: string, fallback: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return (normalized || fallback).slice(0, maxLength);
+}
+
 export async function generateProjectFromUrl(inputUrl: string): Promise<GeneratedProjectPayload> {
   const url = inputUrl.trim();
   if (!url) throw new Error("Add a website URL first.");
@@ -186,6 +195,12 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   const featureBullets = takeBullets(scraped.bullets.length ? scraped.bullets : scraped.headings.slice(1), 3);
   const ctaLine = scraped.cta[0] || `Visit ${projectName}`;
   const supportingParagraph = scraped.paragraphs[0] || scraped.description;
+  const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const descriptionLine1 = toShortLine(scraped.headings[1] || heroTitle, "Built for modern teams", 48);
+  const descriptionLine2 = toShortLine(scraped.headings[2] || scraped.description || heroSubtitle, "Clear product communication", 56);
+  const descriptionLine3 = toShortLine(scraped.headings[3] || supportingParagraph || `Explore ${projectName}`, "Fast demos and exports", 56);
+  const middleSceneType = randomChoice<"product-showcase" | "feature-grid">(["product-showcase", "feature-grid"]);
+  const finalSceneType = randomChoice<"cta" | "website-url">(["cta", "website-url"]);
 
   const scenes: Scene[] = [];
 
@@ -199,56 +214,71 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   );
 
   scenes.push(
-    applyScene(createScene("product-showcase", scenes.length), {
-      name: "Highlight 1",
-      eyebrow: "Website",
-      title: heroTitle.slice(0, 90),
-      subtitle: heroSubtitle.slice(0, 120),
-      websiteImageUrl: scraped.ogImageUrl,
+    applyScene(createScene("description", scenes.length), {
+      name: "Description 1",
+      eyebrow: "Overview",
+      title: descriptionLine1,
+      subtitle: descriptionLine2,
+      description: descriptionLine3,
     }),
   );
 
-  if (featureBullets.length > 0) {
+  if (middleSceneType === "product-showcase") {
+    scenes.push(
+      applyScene(createScene("product-showcase", scenes.length), {
+        name: "Highlight 1",
+        eyebrow: "Highlight",
+        title: heroTitle.slice(0, 90),
+        subtitle: heroSubtitle.slice(0, 120),
+        websiteImageUrl: scraped.ogImageUrl,
+      }),
+    );
+  } else {
+    const generatedBullets = featureBullets.length > 0 ? featureBullets : takeBullets([scraped.headings[1] || "", scraped.headings[2] || "", heroSubtitle], 3);
     scenes.push(
       applyScene(createScene("feature-grid", scenes.length), {
         name: "Features 1",
         eyebrow: "Highlights",
         title: `Why ${projectName} stands out`,
-        bullets: featureBullets,
-        bulletEmojis: featureBullets.map(() => ""),
-        bulletImageUrls: featureBullets.map(() => ""),
-      }),
-    );
-  }
-
-  if (supportingParagraph) {
-    scenes.push(
-      applyScene(createScene("description", scenes.length), {
-        name: "Description 1",
-        eyebrow: "Overview",
-        title: scraped.headings[1] || "What it does",
-        description: supportingParagraph.slice(0, 220),
+        bullets: generatedBullets,
+        bulletEmojis: generatedBullets.map(() => ""),
+        bulletImageUrls: generatedBullets.map(() => ""),
       }),
     );
   }
 
   scenes.push(
-    applyScene(createScene("cta", scenes.length), {
-      name: "CTA 1",
-      eyebrow: "Next step",
-      title: ctaLine.slice(0, 90),
-      subtitle: normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+    applyScene(createScene("website-scroll", scenes.length), {
+      name: "Website Scroll 1",
+      eyebrow: "Website",
+      title: "Show the product page in motion",
+      subtitle: "Upload a tall screenshot and the scene will auto-scroll it",
+      websiteImageUrl: "",
     }),
   );
 
-  const finalScenes = scenes.slice(0, 6);
+  scenes.push(
+    finalSceneType === "cta"
+      ? applyScene(createScene("cta", scenes.length), {
+          name: "CTA 1",
+          eyebrow: "Next step",
+          title: ctaLine.slice(0, 90),
+          subtitle: normalizedDomain,
+        })
+      : applyScene(createScene("website-url", scenes.length), {
+          name: "URL 1",
+          eyebrow: "Website",
+          title: normalizedDomain.toLowerCase(),
+          subtitle: "",
+        }),
+  );
 
   return {
     projectName,
     sceneTrack: {
       id: "main-track",
       name: "Scene Track",
-      scenes: finalScenes,
+      scenes,
     },
     exportSettings: {
       fps: 30,
