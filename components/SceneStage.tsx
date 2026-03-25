@@ -1308,9 +1308,16 @@ export function SceneStage({
                       {index + 1}
                     </div>
                   </div>
-                  <p className={compact ? "text-base font-semibold leading-snug" : "text-2xl font-semibold leading-tight"} style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0 })}>
-                    {bullet}
-                  </p>
+                  <EditableText
+                    as="p"
+                    value={bullet}
+                    editable={editable}
+                    multiline
+                    onCommit={(value) => updateBullet(index, value)}
+                    className={compact ? "text-base font-semibold leading-snug" : "text-2xl font-semibold leading-tight"}
+                    style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0 })}
+                    placeholder={`Item ${index + 1}`}
+                  />
                 </div>
               );
             })}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { deleteProject, listProjects } from "@/lib/projectPersistence";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
@@ -28,6 +29,7 @@ export function ProjectsWorkspace() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const handleSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -59,9 +61,6 @@ export function ProjectsWorkspace() {
   }, []);
 
   const handleDeleteProject = async (projectId: string, projectName: string) => {
-    const confirmed = window.confirm(`Delete "${projectName}"?`);
-    if (!confirmed) return;
-
     try {
       setBusyProjectId(projectId);
       setError(null);
@@ -72,6 +71,7 @@ export function ProjectsWorkspace() {
       setError(message);
     } finally {
       setBusyProjectId(null);
+      setPendingDelete(null);
     }
   };
 
@@ -149,7 +149,7 @@ export function ProjectsWorkspace() {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => handleDeleteProject(project.id, project.name)}
+                      onClick={() => setPendingDelete({ id: project.id, name: project.name })}
                       disabled={busyProjectId === project.id}
                       className="flex-1 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-2.5 text-sm font-medium text-rose-300 transition hover:bg-rose-400/15 disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -162,6 +162,20 @@ export function ProjectsWorkspace() {
           ) : null}
         </section>
       </div>
+      <ConfirmModal
+        isOpen={Boolean(pendingDelete)}
+        title={pendingDelete ? `Delete "${pendingDelete.name}"?` : "Delete project?"}
+        description="This project will be removed from your library."
+        confirmLabel="Delete project"
+        cancelLabel="Cancel"
+        tone="danger"
+        isBusy={Boolean(pendingDelete && busyProjectId === pendingDelete.id)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          void handleDeleteProject(pendingDelete.id, pendingDelete.name);
+        }}
+      />
     </main>
   );
 }

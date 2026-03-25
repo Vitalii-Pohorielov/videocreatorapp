@@ -6,6 +6,7 @@ import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
 import { SceneTypeModal } from "@/components/SceneTypeModal";
 import { StudioPreview } from "@/components/StudioPreview";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
 import { useStore } from "@/store/useStore";
@@ -46,6 +47,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [isGeneratingFromUrl, setIsGeneratingFromUrl] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const [isCloudBusy, setIsCloudBusy] = useState(false);
+  const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
   const didHydrateProject = useRef<string | null | undefined>(undefined);
   const currentTimeRef = useRef(0);
 
@@ -190,15 +192,12 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     }
   };
 
-  const handleGenerateFromUrl = async () => {
+  const runGenerateFromUrl = async () => {
     const trimmedUrl = sourceUrl.trim();
     if (!trimmedUrl) {
       setCloudStatus("Add a website URL first.");
       return;
     }
-
-    const shouldReplace = window.confirm("Generate a new scene draft from this website? Unsaved editor changes will be replaced.");
-    if (!shouldReplace) return;
 
     try {
       setIsGeneratingFromUrl(true);
@@ -239,6 +238,16 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     } finally {
       setIsGeneratingFromUrl(false);
     }
+  };
+
+  const handleGenerateFromUrl = () => {
+    const trimmedUrl = sourceUrl.trim();
+    if (!trimmedUrl) {
+      setCloudStatus("Add a website URL first.");
+      return;
+    }
+
+    setIsGenerateConfirmOpen(true);
   };
 
   const togglePlayback = () => {
@@ -355,6 +364,19 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
           addScene(type);
           setIsSceneModalOpen(false);
           resetDownload();
+        }}
+      />
+      <ConfirmModal
+        isOpen={isGenerateConfirmOpen}
+        title="Replace current draft?"
+        description="Generate a new scene draft from this website. Unsaved editor changes will be replaced."
+        confirmLabel="Generate draft"
+        cancelLabel="Keep current"
+        isBusy={isGeneratingFromUrl}
+        onClose={() => setIsGenerateConfirmOpen(false)}
+        onConfirm={() => {
+          setIsGenerateConfirmOpen(false);
+          void runGenerateFromUrl();
         }}
       />
     </main>
