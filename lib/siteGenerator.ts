@@ -177,6 +177,10 @@ function toShortLine(value: string, fallback: string, maxLength: number) {
   return (normalized || fallback).slice(0, maxLength);
 }
 
+function withDuration(scene: Scene, durationSeconds = 3) {
+  return { ...scene, durationSeconds };
+}
+
 export async function generateProjectFromUrl(inputUrl: string): Promise<GeneratedProjectPayload> {
   const url = inputUrl.trim();
   if (!url) throw new Error("Add a website URL first.");
@@ -205,72 +209,72 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   const scenes: Scene[] = [];
 
   scenes.push(
-    applyScene(createScene("brand-reveal", scenes.length), {
-      name: "Intro 1",
-      eyebrow: getDomainLabel(normalizedUrl),
-      title: projectName,
-      subtitle: heroSubtitle.slice(0, 110),
-    }),
+    withDuration(
+      applyScene(createScene("brand-reveal", scenes.length), {
+        name: "Intro 1",
+        eyebrow: getDomainLabel(normalizedUrl),
+        title: projectName,
+        subtitle: heroSubtitle.slice(0, 110),
+      }),
+    ),
   );
 
   scenes.push(
-    applyScene(createScene("description", scenes.length), {
-      name: "Description 1",
-      eyebrow: "Overview",
-      title: descriptionLine1,
-      subtitle: descriptionLine2,
-      description: descriptionLine3,
-    }),
+    withDuration(
+      applyScene(createScene("description", scenes.length), {
+        name: "Description 1",
+        eyebrow: "Overview",
+        title: descriptionLine1,
+        subtitle: descriptionLine2,
+        description: descriptionLine3,
+      }),
+    ),
   );
 
   if (middleSceneType === "product-showcase") {
     scenes.push(
-      applyScene(createScene("product-showcase", scenes.length), {
-        name: "Highlight 1",
-        eyebrow: "Highlight",
-        title: heroTitle.slice(0, 90),
-        subtitle: heroSubtitle.slice(0, 120),
-        websiteImageUrl: scraped.ogImageUrl,
-      }),
+      withDuration(
+        applyScene(createScene("product-showcase", scenes.length), {
+          name: "Highlight 1",
+          eyebrow: "Highlight",
+          title: heroTitle.slice(0, 90),
+          subtitle: heroSubtitle.slice(0, 120),
+          websiteImageUrl: scraped.ogImageUrl,
+        }),
+      ),
     );
   } else {
     const generatedBullets = featureBullets.length > 0 ? featureBullets : takeBullets([scraped.headings[1] || "", scraped.headings[2] || "", heroSubtitle], 3);
     scenes.push(
-      applyScene(createScene("feature-grid", scenes.length), {
-        name: "Features 1",
-        eyebrow: "Highlights",
-        title: `Why ${projectName} stands out`,
-        bullets: generatedBullets,
-        bulletEmojis: generatedBullets.map(() => ""),
-        bulletImageUrls: generatedBullets.map(() => ""),
-      }),
+      withDuration(
+        applyScene(createScene("feature-grid", scenes.length), {
+          name: "Features 1",
+          eyebrow: "Highlights",
+          title: `Why ${projectName} stands out`,
+          bullets: generatedBullets,
+          bulletEmojis: generatedBullets.map(() => ""),
+          bulletImageUrls: generatedBullets.map(() => ""),
+        }),
+      ),
     );
   }
 
   scenes.push(
-    applyScene(createScene("website-scroll", scenes.length), {
-      name: "Website Scroll 1",
-      eyebrow: "Website",
-      title: "Show the product page in motion",
-      subtitle: "Upload a tall screenshot and the scene will auto-scroll it",
-      websiteImageUrl: "",
-    }),
-  );
-
-  scenes.push(
-    finalSceneType === "cta"
-      ? applyScene(createScene("cta", scenes.length), {
-          name: "CTA 1",
-          eyebrow: "Next step",
-          title: ctaLine.slice(0, 90),
-          subtitle: normalizedDomain,
-        })
-      : applyScene(createScene("website-url", scenes.length), {
-          name: "URL 1",
-          eyebrow: "Website",
-          title: normalizedDomain.toLowerCase(),
-          subtitle: "",
-        }),
+    withDuration(
+      finalSceneType === "cta"
+        ? applyScene(createScene("cta", scenes.length), {
+            name: "CTA 1",
+            eyebrow: "Next step",
+            title: ctaLine.slice(0, 90),
+            subtitle: normalizedDomain,
+          })
+        : applyScene(createScene("website-url", scenes.length), {
+            name: "URL 1",
+            eyebrow: "Website",
+            title: normalizedDomain.toLowerCase(),
+            subtitle: "",
+          }),
+    ),
   );
 
   return {
@@ -282,7 +286,7 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
     },
     exportSettings: {
       fps: 30,
-      transitionSeconds: 0.8,
+      transitionSeconds: 0.4,
       backgroundColor: presetDefaults.white.backgroundColor,
       textColor: presetDefaults.white.textColor,
       preset: "white",
