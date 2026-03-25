@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
@@ -9,7 +9,7 @@ import { StudioPreview } from "@/components/StudioPreview";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
-import { useStore } from "@/store/useStore";
+import { useStore, type Scene, type SceneType } from "@/store/useStore";
 
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
@@ -19,23 +19,21 @@ const PREVIEW_FPS = 24;
 const PREVIEW_FRAME_SECONDS = 1 / PREVIEW_FPS;
 
 export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProps) {
-  const {
-    projectId,
-    projectName,
-    sceneTrack,
-    selectedSceneId,
-    exportSettings,
-    resetProject,
-    hydrateProject,
-    updateProjectMeta,
-    addScene,
-    duplicateScene,
-    updateScene,
-    deleteScene,
-    selectScene,
-    reorderScenes,
-    updateExportSettings,
-  } = useStore();
+  const projectId = useStore((state) => state.projectId);
+  const projectName = useStore((state) => state.projectName);
+  const sceneTrack = useStore((state) => state.sceneTrack);
+  const selectedSceneId = useStore((state) => state.selectedSceneId);
+  const exportSettings = useStore((state) => state.exportSettings);
+  const resetProject = useStore((state) => state.resetProject);
+  const hydrateProject = useStore((state) => state.hydrateProject);
+  const updateProjectMeta = useStore((state) => state.updateProjectMeta);
+  const addScene = useStore((state) => state.addScene);
+  const duplicateScene = useStore((state) => state.duplicateScene);
+  const updateScene = useStore((state) => state.updateScene);
+  const deleteScene = useStore((state) => state.deleteScene);
+  const selectScene = useStore((state) => state.selectScene);
+  const reorderScenes = useStore((state) => state.reorderScenes);
+  const updateExportSettings = useStore((state) => state.updateExportSettings);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -172,12 +170,12 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       });
   }, [hydrateProject, initialProjectId, resetProject]);
 
-  const resetDownload = () => {
+  const resetDownload = useCallback(() => {
     if (downloadUrl) {
       URL.revokeObjectURL(downloadUrl);
       setDownloadUrl(null);
     }
-  };
+  }, [downloadUrl]);
 
   const handleExport = async () => {
     try {
@@ -240,7 +238,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     }
   };
 
-  const handleGenerateFromUrl = () => {
+  const handleGenerateFromUrl = useCallback(() => {
     const trimmedUrl = sourceUrl.trim();
     if (!trimmedUrl) {
       setCloudStatus("Add a website URL first.");
@@ -248,16 +246,76 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     }
 
     setIsGenerateConfirmOpen(true);
-  };
+  }, [sourceUrl]);
 
-  const togglePlayback = () => {
+  const togglePlayback = useCallback(() => {
     setIsPlaying((prev) => {
       if (prev) return false;
       currentTimeRef.current = selectedSceneStartTime;
       setCurrentTime(selectedSceneStartTime);
       return true;
     });
-  };
+  }, [selectedSceneStartTime]);
+
+  const handlePreviewSceneUpdate = useCallback(
+    (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => {
+      resetDownload();
+      updateScene(id, updates);
+    },
+    [resetDownload, updateScene],
+  );
+
+  const handleInspectorSceneUpdate = useCallback(
+    (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => {
+      resetDownload();
+      updateScene(id, updates);
+    },
+    [resetDownload, updateScene],
+  );
+
+  const handleTimelineSelect = useCallback(
+    (id: string) => {
+      setIsPlaying(false);
+      selectScene(id);
+      let elapsed = 0;
+      for (const timelineScene of sceneTrack.scenes) {
+        if (timelineScene.id === id) break;
+        elapsed += timelineScene.durationSeconds;
+      }
+      currentTimeRef.current = elapsed;
+      setCurrentTime(elapsed);
+    },
+    [sceneTrack.scenes, selectScene],
+  );
+
+  const handleTimelineDelete = useCallback(
+    (id: string) => {
+      resetDownload();
+      deleteScene(id);
+    },
+    [deleteScene, resetDownload],
+  );
+
+  const handleTimelineDuplicate = useCallback(
+    (id: string) => {
+      resetDownload();
+      duplicateScene(id);
+    },
+    [duplicateScene, resetDownload],
+  );
+
+  const handleSceneTypeSelect = useCallback(
+    (type: SceneType) => {
+      addScene(type);
+      setIsSceneModalOpen(false);
+      resetDownload();
+    },
+    [addScene, resetDownload],
+  );
+
+  const handleOpenSceneModal = useCallback(() => {
+    setIsSceneModalOpen(true);
+  }, []);
 
   const handleSaveProject = async () => {
     try {
@@ -313,34 +371,15 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               onSaveProject={handleSaveProject}
               onExport={handleExport}
               onTogglePlayback={togglePlayback}
-              onUpdateScene={(id, updates) => {
-                resetDownload();
-                updateScene(id, updates);
-              }}
+              onUpdateScene={handlePreviewSceneUpdate}
             />
             <SceneTimeline
               track={sceneTrack}
               selectedSceneId={selectedScene.id}
-              onSelect={(id) => {
-                setIsPlaying(false);
-                selectScene(id);
-                let elapsed = 0;
-                for (const scene of sceneTrack.scenes) {
-                  if (scene.id === id) break;
-                  elapsed += scene.durationSeconds;
-                }
-                currentTimeRef.current = elapsed;
-                setCurrentTime(elapsed);
-              }}
-              onDelete={(id) => {
-                resetDownload();
-                deleteScene(id);
-              }}
-              onDuplicate={(id) => {
-                resetDownload();
-                duplicateScene(id);
-              }}
-              onAddScene={() => setIsSceneModalOpen(true)}
+              onSelect={handleTimelineSelect}
+              onDelete={handleTimelineDelete}
+              onDuplicate={handleTimelineDuplicate}
+              onAddScene={handleOpenSceneModal}
               onReorder={reorderScenes}
             />
           </div>
@@ -348,10 +387,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
           <SceneInspector
             scene={selectedScene}
             settings={exportSettings}
-            onUpdate={(id, updates) => {
-              resetDownload();
-              updateScene(id, updates);
-            }}
+            onUpdate={handleInspectorSceneUpdate}
             onUpdateSettings={updateExportSettings}
           />
         </section>
@@ -360,11 +396,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       <SceneTypeModal
         isOpen={isSceneModalOpen}
         onClose={() => setIsSceneModalOpen(false)}
-        onSelect={(type) => {
-          addScene(type);
-          setIsSceneModalOpen(false);
-          resetDownload();
-        }}
+        onSelect={handleSceneTypeSelect}
       />
       <ConfirmModal
         isOpen={isGenerateConfirmOpen}

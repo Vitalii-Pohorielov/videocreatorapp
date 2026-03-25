@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { sceneTypeLabels, type Scene, type SceneTrack } from "@/store/useStore";
 
@@ -135,7 +135,7 @@ function SortableSceneCard(props: SceneCardProps) {
   );
 }
 
-export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDuplicate, onAddScene, onReorder }: SceneTimelineProps) {
+export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDuplicate, onAddScene, onReorder }: SceneTimelineProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const addButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousSceneCountRef = useRef(track.scenes.length);
@@ -230,4 +230,4 @@ export function SceneTimeline({ track, selectedSceneId, onSelect, onDelete, onDu
       </DndContext>
     </section>
   );
-}
+});

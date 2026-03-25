@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, type ReactNode } from "react";
+import { memo, type ChangeEvent, type ReactNode } from "react";
 
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
@@ -125,7 +125,7 @@ function InspectorSection({ title, description, defaultOpen = false, children }:
   );
 }
 
-export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: SceneInspectorProps) {
+export const SceneInspector = memo(function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: SceneInspectorProps) {
   const fieldClassName =
     "w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400";
   const textareaClassName =
@@ -485,4 +485,4 @@ export function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: 
       </div>
     </aside>
   );
-}
+});

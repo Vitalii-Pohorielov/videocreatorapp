@@ -1,6 +1,6 @@
 "use server";
 
-import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack } from "@/lib/sceneDefinitions";
+import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset } from "@/lib/sceneDefinitions";
 
 type ScrapedSiteData = {
   sourceUrl: string;
@@ -172,6 +172,8 @@ function randomChoice<T>(values: T[]) {
   return values[Math.floor(Math.random() * values.length)] as T;
 }
 
+const generatedPresets = Object.keys(presetDefaults) as TemplatePreset[];
+
 function toShortLine(value: string, fallback: string, maxLength: number) {
   const normalized = value.replace(/\s+/g, " ").trim();
   return (normalized || fallback).slice(0, maxLength);
@@ -205,6 +207,8 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   const descriptionLine3 = toShortLine(scraped.headings[3] || supportingParagraph || `Explore ${projectName}`, "Fast demos and exports", 56);
   const middleSceneType = randomChoice<"product-showcase" | "feature-grid">(["product-showcase", "feature-grid"]);
   const finalSceneType = randomChoice<"cta" | "website-url">(["cta", "website-url"]);
+  const preset = randomChoice(generatedPresets);
+  const presetColors = presetDefaults[preset];
 
   const scenes: Scene[] = [];
 
@@ -287,9 +291,9 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
     exportSettings: {
       fps: 30,
       transitionSeconds: 0.4,
-      backgroundColor: presetDefaults.white.backgroundColor,
-      textColor: presetDefaults.white.textColor,
-      preset: "white",
+      backgroundColor: presetColors.backgroundColor,
+      textColor: presetColors.textColor,
+      preset,
       resolution: "720p",
       profile: "standard",
     },

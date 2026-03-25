@@ -88,78 +88,108 @@ export function StudioPreview({
   return (
     <section className="flex min-h-0 flex-1 flex-col border-b border-white/10">
       <div className="border-b border-white/10 px-4 py-3">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <Link href="/projects" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 transition hover:bg-white/[0.08]">
-                Projects
-              </Link>
-              <input
-                value={projectName}
-                onChange={(event) => onProjectNameChange(event.target.value)}
-                className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
-                placeholder="Project name"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                value={sourceUrl}
-                onChange={(event) => onSourceUrlChange(event.target.value)}
-                className="min-w-[220px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
-                placeholder="Paste website URL"
-              />
-
-              <button
-                type="button"
-                onClick={onGenerateFromUrl}
-                disabled={isGeneratingFromUrl}
-                className="rounded-2xl border border-sky-400/25 bg-sky-400/12 px-4 py-2.5 text-sm font-medium text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
-              >
-                {isGeneratingFromUrl ? "Generating..." : "Generate"}
-              </button>
-
-              <label className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200">
-                <select
-                  value={settings.profile}
-                  onChange={(event) => onUpdateSettings({ profile: event.target.value as ExportProfile })}
-                  className="bg-transparent outline-none"
-                >
-                  {profileOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {exportProfileLabels[option]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button
-                type="button"
-                onClick={onSaveProject}
-                disabled={isCloudBusy}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-60"
-              >
-                {isCloudBusy ? "Saving..." : "Save"}
-              </button>
-
-              {downloadUrl ? (
-                <a href={downloadUrl} download={downloadFileName} className="rounded-2xl border border-white/30 bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-slate-100">
-                  Download
-                </a>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={onExport}
-                disabled={isExporting}
-                className="rounded-2xl bg-sky-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
-              >
-                {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
-              </button>
-
-            </div>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between xl:gap-6">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:gap-3">
+            <Link
+              href="/projects"
+              aria-label="Open projects"
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-2.5 text-slate-200 transition hover:bg-white/[0.08]"
+            >
+              <span className="grid grid-cols-2 gap-1" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-[2px] bg-current" />
+                <span className="h-2.5 w-2.5 rounded-[2px] bg-current" />
+                <span className="h-2.5 w-2.5 rounded-[2px] bg-current" />
+                <span className="h-2.5 w-2.5 rounded-[2px] bg-current" />
+              </span>
+            </Link>
+            <input
+              value={projectName}
+              onChange={(event) => onProjectNameChange(event.target.value)}
+              className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[180px] xl:w-[200px] xl:flex-none"
+              placeholder="Project name"
+            />
+            <button
+              type="button"
+              onClick={onSaveProject}
+              disabled={isCloudBusy}
+              className="shrink-0 rounded-2xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-60"
+            >
+              {isCloudBusy ? "Saving..." : "Save"}
+            </button>
           </div>
 
+          <div className="flex min-w-0 flex-wrap items-center gap-2 xl:flex-[0_0_auto] xl:flex-nowrap xl:justify-center">
+            <input
+              value={sourceUrl}
+              onChange={(event) => onSourceUrlChange(event.target.value)}
+              className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[220px] xl:w-[280px] xl:flex-none"
+              placeholder="Paste website URL"
+            />
+            <button
+              type="button"
+              onClick={onGenerateFromUrl}
+              disabled={isGeneratingFromUrl}
+              aria-label={isGeneratingFromUrl ? "Generating" : "Generate from URL"}
+              className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
+            >
+              {isGeneratingFromUrl ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-200/30 border-t-sky-200" aria-hidden="true" />
+              ) : (
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current">
+                  <path d="M8.6 6.8c0-.9 1-1.46 1.78-.98l7.02 4.37c.73.45.73 1.52 0 1.98l-7.02 4.37c-.78.48-1.78-.08-1.78-.98V6.8Z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
+            <label className="w-[126px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200">
+              <select
+                value={settings.profile}
+                onChange={(event) => onUpdateSettings({ profile: event.target.value as ExportProfile })}
+                className="w-full bg-transparent outline-none"
+              >
+                {profileOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {exportProfileLabels[option]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {downloadUrl ? (
+              <a
+                href={downloadUrl}
+                download={downloadFileName}
+                className="inline-flex w-[132px] items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+              >
+                <span aria-hidden="true" className="text-base leading-none">
+                  ↓
+                </span>
+                <span>Download</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="inline-flex w-[132px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-500"
+              >
+                <span aria-hidden="true" className="text-base leading-none">
+                  ↓
+                </span>
+                <span>Download</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onExport}
+              disabled={isExporting}
+              className="w-[148px] rounded-2xl bg-sky-400 px-4 py-2.5 text-center text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
+            >
+              {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
+            </button>
+          </div>
         </div>
       </div>
 

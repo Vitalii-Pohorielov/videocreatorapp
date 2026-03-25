@@ -439,7 +439,7 @@ function WebsiteScrollFrame({
   const scrollDelaySeconds = 1;
   const elapsedSceneSeconds = progress * scene.durationSeconds;
   const activeScrollSeconds = Math.max(0, elapsedSceneSeconds - scrollDelaySeconds);
-  const scrollSpeedPerSecond = 12;
+  const scrollSpeedPerSecond = lightweightPreview ? 9 : 12;
   const scrollOffset = `${activeScrollSeconds * scrollSpeedPerSecond}%`;
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
   const viewportHeight = compact ? 156 : 540;
@@ -462,7 +462,7 @@ function WebsiteScrollFrame({
             src={websiteImageUrl}
             alt="Website screenshot"
             className="block w-full"
-            style={{ transform: `translateY(-${scrollOffset}) translateZ(0)`, transition: lightweightPreview ? "none" : "transform 80ms linear", willChange: lightweightPreview ? "auto" : "transform" }}
+            style={{ transform: `translateY(-${scrollOffset})`, transition: lightweightPreview ? "none" : "transform 80ms linear", willChange: lightweightPreview ? "auto" : "transform" }}
           />
         ) : (
           <div className="p-5">
@@ -736,7 +736,8 @@ export function SceneStage({
   uploadProfile = "standard",
 }: SceneStageProps) {
   const lightweightPreview = performanceMode === "light";
-  const blurMultiplier = lightweightPreview ? 0.35 : 1;
+  const optimizedLightRender = lightweightPreview && !editable;
+  const blurMultiplier = optimizedLightRender ? 0.08 : lightweightPreview ? 0.2 : 1;
   const showSceneBackground = renderLayer !== "content";
   const showSceneContent = renderLayer !== "background";
   const sharedIn = editable ? 1 : motion(progress, 0.06, 0.24);
@@ -748,7 +749,7 @@ export function SceneStage({
   const s = presetStyles(preset, lightweightPreview);
   const accentColor = presetAccentColor(preset);
   const elevatedAccentColor = mixHexColors(accentColor, "#000000", preset === "black" ? 0.08 : 0.16);
-  const accentGlow = hexToRgba(accentColor, 0.28);
+  const accentGlow = hexToRgba(accentColor, optimizedLightRender ? 0.16 : 0.28);
   const urlTypingProgress = editable ? 1 : motion(progress, 0.08, 0.34);
   const urlCharacterCount = Math.max(1, Math.min(scene.title.length, Math.ceil((scene.title.length * urlTypingProgress) / 2) * 2));
   const displayedUrl = (editable ? scene.title : scene.title.slice(0, urlCharacterCount)).toLowerCase();
@@ -1101,10 +1102,10 @@ export function SceneStage({
                 strokeWidth={compact ? 18 : 26}
                 strokeLinecap="round"
                 style={{
-                  filter: lightweightPreview ? "none" : `drop-shadow(0 0 18px ${accentGlow})`,
+                  filter: optimizedLightRender ? "none" : lightweightPreview ? "drop-shadow(0 0 8px rgba(0,0,0,0.08))" : `drop-shadow(0 0 18px ${accentGlow})`,
                   strokeDasharray: 2200,
                   strokeDashoffset: editable ? 0 : 2200 * (1 - motion(progress, 0.04, 0.66)),
-                  transform: `translate(${Math.sin((editable ? 0.7 : progress) * 4.6) * 8}px, ${Math.cos((editable ? 0.7 : progress) * 4.1) * 6}px)`,
+                  transform: optimizedLightRender ? "translate(0px, 0px)" : `translate(${Math.sin((editable ? 0.7 : progress) * 4.6) * 8}px, ${Math.cos((editable ? 0.7 : progress) * 4.1) * 6}px)`,
                   transformOrigin: "center",
                 }}
               />
@@ -1118,7 +1119,7 @@ export function SceneStage({
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ title: value })}
                 className={`${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
-                style={revealStyle(editable ? 1 : motion(progress, 0.18, 0.14), { y: 20, blur: 8, minOpacity: 0 })}
+                style={revealStyle(editable ? 1 : motion(progress, 0.18, 0.14), { y: 20, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Line 1"
               />
               <EditableText
@@ -1127,7 +1128,7 @@ export function SceneStage({
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ subtitle: value })}
                 className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
-                style={revealStyle(editable ? 1 : motion(progress, 0.38, 0.14), { y: 22, blur: 8, minOpacity: 0 })}
+                style={revealStyle(editable ? 1 : motion(progress, 0.38, 0.14), { y: 22, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Line 2"
               />
               <EditableText
@@ -1136,7 +1137,7 @@ export function SceneStage({
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ description: value })}
                 className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
-                style={revealStyle(editable ? 1 : motion(progress, 0.58, 0.14), { y: 24, blur: 8, minOpacity: 0 })}
+                style={revealStyle(editable ? 1 : motion(progress, 0.58, 0.14), { y: 24, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Line 3"
               />
             </div>
@@ -1149,13 +1150,13 @@ export function SceneStage({
           <div
             className="relative w-full"
             style={{
-              transform: `scale(${1 + urlFade * 0.12})`,
+              transform: `scale(${1 + urlFade * (optimizedLightRender ? 0.08 : 0.12)})`,
               opacity: 1 - urlFade,
             }}
           >
             <div
               style={{
-                transform: `translateY(${-42 * urlFade}px) scale(${1 + urlHover * 0.02 - urlPress * 0.06 + urlBurst * 0.08 + urlFade * 0.08})`,
+                transform: `translateY(${-42 * urlFade}px) scale(${1 + urlHover * (optimizedLightRender ? 0.012 : 0.02) - urlPress * (optimizedLightRender ? 0.035 : 0.06) + urlBurst * (optimizedLightRender ? 0.04 : 0.08) + urlFade * (optimizedLightRender ? 0.04 : 0.08)})`,
                 opacity: 1 - urlFade,
               }}
             >
@@ -1186,7 +1187,7 @@ export function SceneStage({
                       className={`${compact ? "text-xl" : "text-4xl md:text-5xl"} max-w-5xl font-medium leading-[0.92] tracking-[-0.05em] lowercase`}
                       style={{
                         opacity: 1 - urlFade,
-                        filter: `brightness(${1 + urlPress * 0.12})`,
+                        filter: optimizedLightRender ? "none" : `brightness(${1 + urlPress * 0.12})`,
                       }}
                       placeholder="website.com"
                     />
@@ -1207,13 +1208,13 @@ export function SceneStage({
                   <div
                     aria-hidden="true"
                     className="pointer-events-none absolute"
-                    style={{
-                      left: compact ? "50%" : "50%",
-                      top: compact ? "61%" : "63%",
-                      transform: `translate(-50%, -50%) translate(${180 * (1 - urlHover)}px, ${110 * (1 - urlHover) + 8 - urlPress * 8}px) scale(${1 - urlPress * 0.08}) rotate(-8deg)`,
-                      opacity: (1 - urlFade) * (1 - Math.min(1, urlBurst * 1.35)),
-                    }}
-                  >
+                      style={{
+                        left: compact ? "50%" : "50%",
+                        top: compact ? "61%" : "63%",
+                        transform: `translate(-50%, -50%) translate(${(optimizedLightRender ? 120 : 180) * (1 - urlHover)}px, ${(optimizedLightRender ? 72 : 110) * (1 - urlHover) + 8 - urlPress * (optimizedLightRender ? 5 : 8)}px) scale(${1 - urlPress * (optimizedLightRender ? 0.04 : 0.08)}) rotate(-8deg)`,
+                        opacity: optimizedLightRender ? (1 - urlFade) * (1 - Math.min(1, urlBurst * 1.8)) : (1 - urlFade) * (1 - Math.min(1, urlBurst * 1.35)),
+                      }}
+                    >
                     <svg
                       viewBox="0 0 64 72"
                       className={compact ? "h-10 w-8" : "h-16 w-12"}
@@ -1228,16 +1229,18 @@ export function SceneStage({
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span
-                      className="absolute left-[62%] top-[54%] rounded-full border"
-                      style={{
-                        width: `${10 + urlBurst * 20}px`,
-                        height: `${10 + urlBurst * 20}px`,
-                        transform: "translate(-50%, -50%)",
-                        opacity: urlBurst > 0.06 ? (1 - urlBurst) * 0.55 : 0,
-                        borderColor: hexToRgba(accentColor, 0.3 * (1 - urlBurst)),
-                      }}
-                    />
+                    {!optimizedLightRender ? (
+                      <span
+                        className="absolute left-[62%] top-[54%] rounded-full border"
+                        style={{
+                          width: `${10 + urlBurst * 20}px`,
+                          height: `${10 + urlBurst * 20}px`,
+                          transform: "translate(-50%, -50%)",
+                          opacity: urlBurst > 0.06 ? (1 - urlBurst) * 0.55 : 0,
+                          borderColor: hexToRgba(accentColor, 0.3 * (1 - urlBurst)),
+                        }}
+                      />
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -1251,7 +1254,7 @@ export function SceneStage({
           <WebsiteScrollFrame
             scene={scene}
             cardClassName={s.card}
-            style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${0.94 + cardIn * 0.06})`, opacity: cardIn }}
+            style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${optimizedLightRender ? 0.97 + cardIn * 0.03 : 0.94 + cardIn * 0.06})`, opacity: cardIn }}
             compact={compact}
             progress={progress}
             editable={editable}
@@ -1330,9 +1333,9 @@ export function SceneStage({
           <div
             className="relative max-w-4xl"
             style={{
-              transform: `scale(${1 + ctaFade * 0.18}) translateY(${-48 * ctaFade}px)`,
+              transform: `scale(${1 + ctaFade * (optimizedLightRender ? 0.1 : 0.18)}) translateY(${-48 * ctaFade}px)`,
               opacity: 1 - ctaFade,
-              filter: `blur(${14 * ctaFade}px)`,
+              filter: optimizedLightRender ? "none" : `blur(${14 * ctaFade}px)`,
             }}
           >
             <EditableText
@@ -1361,14 +1364,14 @@ export function SceneStage({
                 className={`mx-auto inline-flex rounded-full border ${compact ? "px-8 py-4 text-sm" : "px-12 py-5 text-xl"} ${s.card}`}
                 style={{
                   ...revealStyle(editable ? 1 : motion(progress, 0.36, 0.14), { y: 14, blur: 8, minOpacity: 0 }),
-                  transform: `translateY(${14 * (1 - cardIn)}px) scale(${1 + ctaHover * 0.05 - ctaPress * 0.16 + ctaBurst * 0.2 + ctaFade * 0.1})`,
-                  filter: `brightness(${1 + ctaHover * 0.08 + ctaPress * 0.28 + ctaBurst * 0.14})`,
+                  transform: `translateY(${14 * (1 - cardIn)}px) scale(${1 + ctaHover * (optimizedLightRender ? 0.03 : 0.05) - ctaPress * (optimizedLightRender ? 0.08 : 0.16) + ctaBurst * (optimizedLightRender ? 0.08 : 0.2) + ctaFade * (optimizedLightRender ? 0.04 : 0.1)})`,
+                  filter: optimizedLightRender ? "none" : `brightness(${1 + ctaHover * 0.08 + ctaPress * 0.28 + ctaBurst * 0.14})`,
                   backgroundColor: `rgba(255,255,255,${0.03 + ctaPress * 0.2 + ctaBurst * 0.08})`,
                 }}
               >
                 Get started
               </div>
-              {!editable ? (
+              {!editable && !optimizedLightRender ? (
                 <span
                   aria-hidden="true"
                   className="pointer-events-none absolute left-1/2 top-1/2 rounded-full"
