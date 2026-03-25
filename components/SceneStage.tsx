@@ -313,8 +313,8 @@ function IntroLogo({
     <div
       className="mx-auto mb-6 flex items-center justify-center"
       style={{
-        transform: `translateY(${18 * (1 - entryProgress) - 16 * outroProgress}px) scale(${0.92 + entryProgress * 0.08 + outroProgress * 0.36})`,
-        opacity: entryProgress * (1 - outroProgress * 0.18),
+        transform: `translateY(${18 * (1 - entryProgress) - 28 * outroProgress}px) scale(${0.92 + entryProgress * 0.08 + outroProgress * 0.7})`,
+        opacity: entryProgress,
       }}
     >
       <button
@@ -353,8 +353,8 @@ function IntroLogoSlot({
     <div
       className="mx-auto mb-6 flex items-center justify-center"
       style={{
-        transform: `translateY(${18 * (1 - entryProgress) - 16 * outroProgress}px) scale(${0.92 + entryProgress * 0.08 + outroProgress * 0.36})`,
-        opacity: entryProgress * (1 - outroProgress * 0.18),
+        transform: `translateY(${18 * (1 - entryProgress) - 28 * outroProgress}px) scale(${0.92 + entryProgress * 0.08 + outroProgress * 0.7})`,
+        opacity: entryProgress,
       }}
     >
       <button
@@ -757,7 +757,7 @@ export function SceneStage({
   const urlBurst = editable ? 0 : motion(progress, 0.62, 0.1);
   const urlFade = editable ? 0 : outroMotion(progress, 0.76, 0.18);
   const introLogoOutro = editable ? 0 : outroMotion(progress, 0.72, 0.2);
-  const introTextOutro = editable ? 0 : outroMotion(progress, 0.68, 0.18);
+  const introTextOutro = editable ? 0 : outroMotion(progress, 0.58, 0.16);
   const ctaHover = editable ? 0 : motion(progress, 0.22, 0.12);
   const ctaPress = editable ? 0 : motion(progress, 0.42, 0.08);
   const ctaBurst = editable ? 0 : motion(progress, 0.48, 0.12);
@@ -964,7 +964,7 @@ export function SceneStage({
             editable={editable}
             onCommit={(value) => onSceneChange?.({ title: value })}
             className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title}`}
-            style={{ transform: `translateY(${40 * (1 - titleIn) - 26 * introTextOutro}px) scale(${0.9 + titleIn * 0.1})`, opacity: titleIn * (1 - introTextOutro), filter: `blur(${16 * blurMultiplier * (1 - titleIn) + 10 * introTextOutro}px)` }}
+            style={{ transform: `translateY(${40 * (1 - titleIn) - 42 * introTextOutro}px) scale(${0.9 + titleIn * 0.1 + introTextOutro * 0.04})`, opacity: titleIn * (1 - Math.min(1, introTextOutro * 1.6)), filter: `blur(${16 * blurMultiplier * (1 - titleIn) + 18 * introTextOutro}px)` }}
             placeholder="Scene title"
           />
         </div>
