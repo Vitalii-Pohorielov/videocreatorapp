@@ -12,8 +12,40 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Video Creator",
-  description: "Turn ideas, webpages, and product stories into clean short videos in the browser.",
+  metadataBase: new URL("https://videocreatorapp.vercel.app"),
+  title: {
+    default: "ClipLab",
+    template: "%s | ClipLab",
+  },
+  description: "Create short promo videos from ideas, websites, and product stories right in the browser.",
+  applicationName: "ClipLab",
+  keywords: ["video creator", "promo video", "website to video", "browser video editor", "product video"],
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "ClipLab",
+    description: "Create short promo videos from ideas, websites, and product stories right in the browser.",
+    siteName: "ClipLab",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "ClipLab logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "ClipLab",
+    description: "Create short promo videos from ideas, websites, and product stories right in the browser.",
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({
