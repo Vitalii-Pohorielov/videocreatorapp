@@ -245,35 +245,33 @@ function getFrameProgress(frameIndex: number, frameCount: number) {
   return Math.min(1, Math.max(0, frameIndex / (frameCount - 1)));
 }
 
-async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, nextSceneProgress: number, cache: Map<string, HTMLCanvasElement>) {
+async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, cache: Map<string, HTMLCanvasElement>) {
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
   const normalizedCurrentProgress = normalizeSceneProgress(currentScene, 1);
-  const normalizedNextProgress = normalizeSceneProgress(nextScene, nextSceneProgress);
+  const normalizedNextProgress = normalizeSceneProgress(nextScene, 0);
   // These renders must stay sequential because all export captures share one
   // offscreen React root. Parallel rendering causes layers to overwrite each
   // other and can produce empty/black transition frames.
-  const backgroundCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "background");
+  const currentBackgroundCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "background");
+  const nextBackgroundCanvas = await renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "background");
   const currentContentCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "content");
-  const nextContentCanvas = await renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "content");
 
-  ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
-  // Keep one continuous background while easing content out and in smoothly.
-  // This avoids the hard midpoint switch that made text disappear abruptly.
-  const currentOpacity = 1 - easeInOut(Math.min(1, progress / 0.58));
-  const nextOpacity = easeInOut(Math.max(0, (progress - 0.42) / 0.58));
+  ctx.drawImage(currentBackgroundCanvas, 0, 0, videoWidth, videoHeight);
 
+  const backgroundBlend = easeInOut(progress);
+  if (backgroundBlend > 0.001) {
+    ctx.save();
+    ctx.globalAlpha = backgroundBlend;
+    ctx.drawImage(nextBackgroundCanvas, 0, 0, videoWidth, videoHeight);
+    ctx.restore();
+  }
+
+  const currentOpacity = 1 - easeInOut(Math.min(1, progress / 0.72));
   if (currentOpacity > 0.001) {
     ctx.save();
     ctx.globalAlpha = currentOpacity;
     ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
-    ctx.restore();
-  }
-
-  if (nextOpacity > 0.001) {
-    ctx.save();
-    ctx.globalAlpha = nextOpacity;
-    ctx.drawImage(nextContentCanvas, 0, 0, videoWidth, videoHeight);
     ctx.restore();
   }
 
@@ -383,11 +381,9 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       }
 
       if (nextScene) {
-        const nextSceneTotalFrameCount = Math.max(1, Math.round(nextScene.durationSeconds * fps));
         for (let transitionStep = 0; transitionStep < transitionFrameCount; transitionStep += 1) {
           const progress = (transitionStep + 1) / transitionFrameCount;
-          const nextSceneProgress = getFrameProgress(transitionStep, nextSceneTotalFrameCount);
-          const transitionCanvas = await renderTransitionFrame(scene, nextScene, settings, progress, nextSceneProgress, renderCache);
+          const transitionCanvas = await renderTransitionFrame(scene, nextScene, settings, progress, renderCache);
           await writeCanvasFrame(frameIndex, transitionCanvas, frameExtension, frameMimeType, frameQuality);
           renderedFrameCount += 1;
           reportFrameProgress();

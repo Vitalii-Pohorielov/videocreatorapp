@@ -100,13 +100,6 @@ export function AppHeader() {
 
                   <div className="mt-2 flex flex-col gap-1">
                     <Link
-                      href="/editor"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="rounded-2xl px-3 py-2.5 text-sm text-white transition hover:bg-white/[0.06]"
-                    >
-                      Open editor
-                    </Link>
-                    <Link
                       href="/projects"
                       onClick={() => setIsMenuOpen(false)}
                       className="rounded-2xl px-3 py-2.5 text-sm text-white transition hover:bg-white/[0.06]"
