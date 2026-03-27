@@ -121,8 +121,6 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
     .filter((line, index, all) => !(line === "" && index === all.length - 1))
     .slice(0, compact ? 14 : 18);
   const lineProgress = clamp(progress);
-  const maxLineLength = Math.max(1, ...lines.map((line) => line.length));
-  const contentScale = clamp(Math.min(1, compact ? 1 : 0.98, 74 / maxLineLength, lines.length > 12 ? 12 / lines.length : 1));
 
   return (
     <div
@@ -141,29 +139,19 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
           <span className="h-2.5 w-2.5 rounded-full bg-white/35" />
           {editable ? <span className="ml-3 rounded-full border border-sky-400/20 bg-sky-400/12 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-sky-200">Click to edit</span> : null}
         </div>
-        <div className="overflow-hidden">
-          <div
-            className="origin-top-left font-mono text-[14px] leading-[1.5] tracking-[-0.025em] text-white"
-            style={{
-              width: `${Math.max(100, 100 / contentScale)}%`,
-              transform: `scale(${contentScale})`,
-            }}
-          >
-            <div className="space-y-1">
-              {lines.map((line, lineIndex) => (
-                <div key={`${lineIndex}-${line}`} className="flex items-start gap-3">
-                  <div className="w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
-                  <div className="min-w-0 flex-1 whitespace-pre-wrap break-words">
-                    {tokenizeLine(line).map((token, tokenIndex) => (
-                      <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
-                        {token.text}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+        <div className="space-y-[0.48rem] overflow-x-auto font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-white">
+          {lines.map((line, lineIndex) => (
+            <div key={`${lineIndex}-${line}`} className="flex min-w-max">
+              <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
+              <div className="min-w-0 flex-1 whitespace-pre">
+                {tokenizeLine(line).map((token, tokenIndex) => (
+                  <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
+                    {token.text}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
 
         <div className="mt-6 h-[3px] overflow-hidden rounded-full bg-white/10">
