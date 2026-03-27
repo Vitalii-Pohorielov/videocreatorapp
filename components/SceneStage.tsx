@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 
+import { CodeEditorModal } from "@/components/CodeEditorModal";
 import { CodePreviewCard } from "@/components/CodePreviewCard";
 import { AnimatedIconPlayer } from "@/components/AnimatedIconPlayer";
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
@@ -889,6 +890,8 @@ export function SceneStage({
   uploadResolution = "540p",
   uploadProfile = "standard",
 }: SceneStageProps) {
+  const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
+  const [codeDraft, setCodeDraft] = useState(scene.code ?? scene.description);
   const lightweightPreview = performanceMode === "light";
   const optimizedLightRender = lightweightPreview && !editable;
   const blurMultiplier = optimizedLightRender ? 0.08 : lightweightPreview ? 0.2 : 1;
@@ -923,6 +926,11 @@ export function SceneStage({
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
   const showcaseImageBottom = scene.mediaPosition === "bottom";
+  useEffect(() => {
+    if (!isCodeEditorOpen) {
+      setCodeDraft(scene.code ?? scene.description);
+    }
+  }, [scene.code, scene.description, isCodeEditorOpen]);
   const shellOverlay =
     preset === "white"
       ? {
@@ -1224,7 +1232,7 @@ export function SceneStage({
             progress={editable ? 1 : progress}
             compact={compact}
             editable={editable}
-            onChange={(value) => onSceneChange?.({ code: value, description: value })}
+            onClick={editable ? () => setIsCodeEditorOpen(true) : undefined}
           />
         </div>
       )}
@@ -1567,6 +1575,22 @@ export function SceneStage({
         </div>
       ) : null}
       </div>
+      {scene.type === "code-preview" ? (
+        <CodeEditorModal
+          isOpen={isCodeEditorOpen && editable}
+          title={scene.name}
+          code={codeDraft}
+          onChange={setCodeDraft}
+          onClose={() => {
+            setIsCodeEditorOpen(false);
+            setCodeDraft(scene.code ?? scene.description);
+          }}
+          onApply={() => {
+            onSceneChange?.({ code: codeDraft, description: codeDraft });
+            setIsCodeEditorOpen(false);
+          }}
+        />
+      ) : null}
     </StageShell>
   );
 }
