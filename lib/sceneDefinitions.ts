@@ -1,3 +1,5 @@
+import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
+
 export type TransitionType = "fade";
 
 export type TemplatePreset =
@@ -173,7 +175,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Hero intro scene.",
     createTemplate: () => ({
       type: "brand-reveal",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Intro",
       title: "Omnara",
@@ -194,7 +196,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Text plus uploaded product screenshot.",
     createTemplate: () => ({
       type: "product-showcase",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Highlight",
       title: "Your product, clearly explained",
@@ -215,7 +217,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Grid of feature cards.",
     createTemplate: () => ({
       type: "feature-grid",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Features",
       title: "Why teams choose it",
@@ -236,7 +238,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Big bold message.",
     createTemplate: () => ({
       type: "slogan",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Message",
       title: "Built to move fast.",
@@ -257,7 +259,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Three-line oversized text scene.",
     createTemplate: () => ({
       type: "description",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Details",
       title: "Real-world",
@@ -278,7 +280,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Large domain text with click-and-launch motion.",
     createTemplate: () => ({
       type: "website-url",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Website",
       title: "screensdesign.com",
@@ -299,7 +301,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Scroll a manually uploaded website screenshot.",
     createTemplate: () => ({
       type: "website-scroll",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Website",
       title: "Show the product page in motion",
@@ -320,7 +322,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Customer quote / testimonial.",
     createTemplate: () => ({
       type: "quote",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Social proof",
       title: '"This changed our workflow overnight."',
@@ -341,13 +343,13 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Checklist or step list.",
     createTemplate: () => ({
       type: "checklist",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "What you get",
       title: "Everything in one workflow",
       subtitle: "",
       description: "",
-      bullets: ["Capture", "Edit", "Export", "Share"],
+      bullets: ["Capture", "Edit", "Export"],
       bulletEmojis: [],
       bulletImageUrls: [],
       websiteImageUrl: "",
@@ -362,7 +364,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Final call to action.",
     createTemplate: () => ({
       type: "cta",
-      durationSeconds: 2.5,
+      durationSeconds: 2.7,
       transition: "fade",
       eyebrow: "Call to action",
       title: "Launch your next promo today",
@@ -398,11 +400,14 @@ export const sceneTypeLabels: Record<SceneType, string> = sceneDefinitions.reduc
 export function createScene(type: SceneType, index: number) {
   const definition = sceneDefinitionMap[type];
   const template = definition.createTemplate();
+  const defaultFeatureIcons = type === "feature-grid" ? getFeatureAnimatedIcons(template.bullets.length) : [];
 
   return {
     id: crypto.randomUUID(),
     name: `${definition.label} ${index + 1}`,
     ...template,
+    bulletEmojis: type === "feature-grid" ? defaultFeatureIcons.map((icon) => icon.fallbackEmoji) : template.bulletEmojis,
+    bulletImageUrls: type === "feature-grid" ? defaultFeatureIcons.map((icon) => icon.imageUrl) : template.bulletImageUrls,
   } satisfies Scene;
 }
 

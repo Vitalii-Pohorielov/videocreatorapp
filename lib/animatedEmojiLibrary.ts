@@ -47,3 +47,23 @@ export const animatedEmojiGroupLabels: Record<AnimatedEmojiOption["group"], stri
   infra: "Infra",
   status: "Status",
 };
+
+const featureGridDefaultIconIds = [
+  "sparkles",
+  "robot",
+  "brain",
+  "shield",
+  "target",
+  "money-bag",
+  "magnet",
+  "megaphone",
+] as const;
+
+const animatedEmojiById = new Map(animatedEmojiLibrary.map((item) => [item.id, item]));
+
+export function getDefaultAnimatedFeatureIcons(count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const iconId = featureGridDefaultIconIds[index % featureGridDefaultIconIds.length];
+    return animatedEmojiById.get(iconId) ?? animatedEmojiLibrary[index % animatedEmojiLibrary.length];
+  });
+}

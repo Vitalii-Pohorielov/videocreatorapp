@@ -2,6 +2,7 @@
 
 import { memo, type ChangeEvent, type ReactNode } from "react";
 
+import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
@@ -160,10 +161,11 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
 
   const addBulletItem = () => {
     if (scene.bullets.length >= 6) return;
+    const nextDefaultIcon = getFeatureAnimatedIcons(scene.bullets.length + 1)[scene.bullets.length];
     onUpdate(scene.id, {
       bullets: [...scene.bullets, `New item ${scene.bullets.length + 1}`],
-      bulletEmojis: [...scene.bulletEmojis, ""],
-      bulletImageUrls: [...scene.bulletImageUrls, ""],
+      bulletEmojis: [...scene.bulletEmojis, nextDefaultIcon?.fallbackEmoji ?? ""],
+      bulletImageUrls: [...scene.bulletImageUrls, nextDefaultIcon?.imageUrl ?? ""],
     });
   };
 
@@ -173,6 +175,11 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
       bulletEmojis: scene.bulletEmojis.filter((_, itemIndex) => itemIndex !== index),
       bulletImageUrls: scene.bulletImageUrls.filter((_, itemIndex) => itemIndex !== index),
     });
+  };
+
+  const normalizeChecklistBullets = (value: string) => {
+    const lines = value.split("\n").map((item) => item.trim());
+    return [lines[0] ?? "", lines[1] ?? "", lines[2] ?? ""];
   };
 
   const handleAuthorImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -466,11 +473,12 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
               <span className={labelClassName}>Items</span>
               <textarea
                 value={scene.bullets.join("\n")}
-                rows={6}
-                onChange={(event) => onUpdate(scene.id, { bullets: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean) })}
+                rows={3}
+                onChange={(event) => onUpdate(scene.id, { bullets: normalizeChecklistBullets(event.target.value) })}
                 className={textareaClassName}
                 placeholder="One item per line"
               />
+              <p className="mt-2 text-xs text-slate-500">This checklist always keeps exactly 3 items.</p>
             </label>
           </InspectorSection>
         ) : null}

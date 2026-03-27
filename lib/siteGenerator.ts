@@ -1,5 +1,6 @@
 "use server";
 
+import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset } from "@/lib/sceneDefinitions";
 
 type ScrapedSiteData = {
@@ -179,7 +180,7 @@ function toShortLine(value: string, fallback: string, maxLength: number) {
   return (normalized || fallback).slice(0, maxLength);
 }
 
-function withDuration(scene: Scene, durationSeconds = 3) {
+function withDuration(scene: Scene, durationSeconds = 2.7) {
   return { ...scene, durationSeconds };
 }
 
@@ -249,6 +250,7 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
     );
   } else {
     const generatedBullets = featureBullets.length > 0 ? featureBullets : takeBullets([scraped.headings[1] || "", scraped.headings[2] || "", heroSubtitle], 3);
+    const defaultFeatureIcons = getFeatureAnimatedIcons(generatedBullets.length);
     scenes.push(
       withDuration(
         applyScene(createScene("feature-grid", scenes.length), {
@@ -256,8 +258,8 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
           eyebrow: "Highlights",
           title: `Why ${projectName} stands out`,
           bullets: generatedBullets,
-          bulletEmojis: generatedBullets.map(() => ""),
-          bulletImageUrls: generatedBullets.map(() => ""),
+          bulletEmojis: defaultFeatureIcons.map((icon) => icon.fallbackEmoji),
+          bulletImageUrls: defaultFeatureIcons.map((icon) => icon.imageUrl),
         }),
       ),
     );

@@ -13,6 +13,7 @@ import {
   type SceneTrack,
   type SceneType,
 } from "@/lib/sceneDefinitions";
+import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 
 export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType } from "@/lib/sceneDefinitions";
 export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels } from "@/lib/sceneDefinitions";
@@ -20,6 +21,13 @@ export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
 function normalizeLoadedScene(scene: Scene): Scene {
+  if ((scene as unknown as { type?: string }).type === "checklist") {
+    return {
+      ...scene,
+      bullets: normalizeChecklistBullets(scene.bullets),
+    };
+  }
+
   if ((scene as unknown as { type?: string }).type !== "metrics") return scene;
 
   return {
@@ -29,6 +37,10 @@ function normalizeLoadedScene(scene: Scene): Scene {
     title: scene.title || "Why teams choose it",
     name: scene.name.replace(/metrics/i, "Features"),
   } as Scene;
+}
+
+function normalizeChecklistBullets(bullets: string[]) {
+  return [bullets[0] ?? "", bullets[1] ?? "", bullets[2] ?? ""];
 }
 
 type StudioStore = {
@@ -66,11 +78,17 @@ const sanitizeImageUrl = (value: string | undefined) => {
 };
 
 function normalizeSceneArrays(scene: Scene, updates: SceneUpdates) {
-  const nextBullets = (updates.bullets === undefined ? scene.bullets : updates.bullets).filter(Boolean).slice(0, MAX_BULLETS);
+  const sourceBullets = updates.bullets === undefined ? scene.bullets : updates.bullets;
+  const nextBullets = scene.type === "checklist" ? normalizeChecklistBullets(sourceBullets) : sourceBullets.filter(Boolean).slice(0, MAX_BULLETS);
   const sourceEmojis = updates.bulletEmojis === undefined ? scene.bulletEmojis : updates.bulletEmojis;
   const sourceImages = updates.bulletImageUrls === undefined ? scene.bulletImageUrls : updates.bulletImageUrls;
+  const defaultFeatureIcons = scene.type === "feature-grid" ? getFeatureAnimatedIcons(nextBullets.length) : [];
   const nextBulletEmojis = Array.from({ length: nextBullets.length }, (_, index) => sourceEmojis[index] ?? "");
-  const nextBulletImageUrls = Array.from({ length: nextBullets.length }, (_, index) => sanitizeImageUrl(sourceImages[index]));
+  const nextBulletImageUrls = Array.from({ length: nextBullets.length }, (_, index) => {
+    const normalizedImageUrl = sanitizeImageUrl(sourceImages[index]);
+    if (normalizedImageUrl || nextBulletEmojis[index]?.trim() || scene.type !== "feature-grid") return normalizedImageUrl;
+    return defaultFeatureIcons[index]?.imageUrl ?? "";
+  });
 
   return { nextBullets, nextBulletEmojis, nextBulletImageUrls };
 }
