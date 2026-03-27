@@ -34,6 +34,8 @@ type StudioPreviewProps = {
   isGeneratingFromUrl: boolean;
   cloudStatus: string | null;
   isCloudBusy: boolean;
+  isImageUploading: boolean;
+  imageUploadLabel: string | null;
   onProjectNameChange: (value: string) => void;
   onSourceUrlChange: (value: string) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
@@ -46,6 +48,8 @@ type StudioPreviewProps = {
   onExport: () => void;
   onTogglePlayback: () => void;
   onUpdateScene: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
+  onImageUploadStart: (label: string) => void;
+  onImageUploadEnd: () => void;
 };
 
 export function StudioPreview({
@@ -69,6 +73,8 @@ export function StudioPreview({
   isGeneratingFromUrl,
   cloudStatus,
   isCloudBusy,
+  isImageUploading,
+  imageUploadLabel,
   onProjectNameChange,
   onSourceUrlChange,
   onUpdateSettings,
@@ -81,6 +87,8 @@ export function StudioPreview({
   onExport,
   onTogglePlayback,
   onUpdateScene,
+  onImageUploadStart,
+  onImageUploadEnd,
 }: StudioPreviewProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const highlightInputRef = useRef<HTMLInputElement>(null);
@@ -89,8 +97,15 @@ export function StudioPreview({
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl" | "authorImageUrl", file: File | null) => {
     if (!file) return;
-    const imageUrl = await fileToStoredUrl(file, settings.resolution, profile);
-    onUpdateScene(scene.id, { [field]: imageUrl });
+    onImageUploadStart(
+      field === "logoImageUrl" ? "Uploading logo..." : field === "websiteImageUrl" ? "Uploading screenshot..." : "Uploading author media...",
+    );
+    try {
+      const imageUrl = await fileToStoredUrl(file, settings.resolution, profile);
+      onUpdateScene(scene.id, { [field]: imageUrl });
+    } finally {
+      onImageUploadEnd();
+    }
   };
 
   return (
@@ -223,6 +238,25 @@ export function StudioPreview({
             </button>
           </div>
         </div>
+        {isImageUploading ? (
+          <div className="mt-3">
+            <div className="flex items-center justify-between gap-3 text-xs text-slate-400">
+              <span>{imageUploadLabel ?? "Uploading image..."}</span>
+              <span className="uppercase tracking-[0.18em] text-sky-300">Working</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
+              <div className="relative h-full w-full overflow-hidden rounded-full bg-white/10">
+                <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-sky-400 shadow-[0_0_24px_rgba(56,189,248,0.45)] [animation:upload-slide_1.1s_linear_infinite]" />
+              </div>
+            </div>
+            <style jsx>{`
+              @keyframes upload-slide {
+                0% { transform: translateX(-120%); }
+                100% { transform: translateX(360%); }
+              }
+            `}</style>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex min-h-0 flex-1 items-center justify-center">

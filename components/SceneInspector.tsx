@@ -107,6 +107,8 @@ type SceneInspectorProps = {
   settings: ExportSettings;
   onUpdate: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
+  onImageUploadStart: (label: string) => void;
+  onImageUploadEnd: () => void;
 };
 
 function InspectorSection({ title, description, defaultOpen = false, children }: { title: string; description?: string; defaultOpen?: boolean; children: ReactNode }) {
@@ -126,7 +128,7 @@ function InspectorSection({ title, description, defaultOpen = false, children }:
   );
 }
 
-export const SceneInspector = memo(function SceneInspector({ scene, settings, onUpdate, onUpdateSettings }: SceneInspectorProps) {
+export const SceneInspector = memo(function SceneInspector({ scene, settings, onUpdate, onUpdateSettings, onImageUploadStart, onImageUploadEnd }: SceneInspectorProps) {
   const fieldClassName =
     "w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400";
   const textareaClassName =
@@ -185,21 +187,36 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
   const handleAuthorImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    onUpdate(scene.id, { authorImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
+    onImageUploadStart("Uploading author media...");
+    try {
+      onUpdate(scene.id, { authorImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
+    } finally {
+      onImageUploadEnd();
+    }
     event.target.value = "";
   };
 
   const handleLogoImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    onUpdate(scene.id, { logoImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
+    onImageUploadStart("Uploading logo...");
+    try {
+      onUpdate(scene.id, { logoImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
+    } finally {
+      onImageUploadEnd();
+    }
     event.target.value = "";
   };
 
   const handleWebsiteImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    onUpdate(scene.id, { websiteImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
+    onImageUploadStart("Uploading screenshot...");
+    try {
+      onUpdate(scene.id, { websiteImageUrl: await fileToStoredUrl(file, settings.resolution, settings.profile) });
+    } finally {
+      onImageUploadEnd();
+    }
     event.target.value = "";
   };
 

@@ -54,6 +54,8 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const [isCloudBusy, setIsCloudBusy] = useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
+  const [imageUploadCount, setImageUploadCount] = useState(0);
+  const [imageUploadLabel, setImageUploadLabel] = useState<string | null>(null);
   const didHydrateProject = useRef<string | null | undefined>(undefined);
   const currentTimeRef = useRef(0);
   const undoStackRef = useRef<WorkspaceSnapshot[]>([]);
@@ -76,6 +78,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   );
   const canUndo = undoStackRef.current.length > 0;
   const canRedo = redoStackRef.current.length > 0;
+  const isImageUploading = imageUploadCount > 0;
   const selectedSceneStartTime = useMemo(() => {
     let elapsed = 0;
     for (const scene of scenes) {
@@ -512,6 +515,19 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     void saveCurrentProject("manual");
   };
 
+  const startImageUpload = useCallback((label: string) => {
+    setImageUploadCount((current) => current + 1);
+    setImageUploadLabel(label);
+  }, []);
+
+  const finishImageUpload = useCallback(() => {
+    setImageUploadCount((current) => {
+      const nextCount = Math.max(0, current - 1);
+      if (nextCount === 0) setImageUploadLabel(null);
+      return nextCount;
+    });
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey)) return;
@@ -565,6 +581,8 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               isGeneratingFromUrl={isGeneratingFromUrl}
               cloudStatus={cloudStatus}
               isCloudBusy={isCloudBusy}
+              isImageUploading={isImageUploading}
+              imageUploadLabel={imageUploadLabel}
               onProjectNameChange={handleProjectNameChange}
               onSourceUrlChange={setSourceUrl}
               onUpdateSettings={handleExportSettingsUpdate}
@@ -577,6 +595,8 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               onExport={handleExport}
               onTogglePlayback={togglePlayback}
               onUpdateScene={handlePreviewSceneUpdate}
+              onImageUploadStart={startImageUpload}
+              onImageUploadEnd={finishImageUpload}
             />
             <SceneTimeline
               track={sceneTrack}
@@ -594,6 +614,8 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               settings={exportSettings}
               onUpdate={handleInspectorSceneUpdate}
               onUpdateSettings={handleExportSettingsUpdate}
+              onImageUploadStart={startImageUpload}
+              onImageUploadEnd={finishImageUpload}
             />
         </section>
       </div>
