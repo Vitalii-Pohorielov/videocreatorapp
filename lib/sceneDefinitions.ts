@@ -86,6 +86,7 @@ export type Scene = {
   logoImageUrl: string;
   authorImageUrl: string;
   mediaPosition: "left" | "right" | "bottom";
+  code?: string;
 };
 
 export type SceneTrack = {
@@ -189,6 +190,16 @@ export const sceneDefinitions: SceneDefinition[] = [
       logoImageUrl: "",
       authorImageUrl: "",
       mediaPosition: "right",
+      code: `function animateCode(progress) {
+  const frames = 60;
+  const step = Math.floor(progress * frames);
+
+  for (let i = 0; i < step; i++) {
+    renderFrame(i);
+  }
+
+  return "Animation complete!";
+}`,
     }),
   },
   {

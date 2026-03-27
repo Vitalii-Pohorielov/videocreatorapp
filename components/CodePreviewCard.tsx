@@ -5,6 +5,8 @@ type CodePreviewCardProps = {
   progress?: number;
   compact?: boolean;
   className?: string;
+  editable?: boolean;
+  onChange?: (value: string) => void;
 };
 
 type TokenType = "keyword" | "string" | "number" | "call" | "plain" | "comment" | "paren" | "operator";
@@ -113,7 +115,7 @@ function tokenClassName(type: TokenType) {
   }
 }
 
-export function CodePreviewCard({ code, progress = 1, compact = false, className = "" }: CodePreviewCardProps) {
+export function CodePreviewCard({ code, progress = 1, compact = false, className = "", editable = false, onChange }: CodePreviewCardProps) {
   const lines = code
     .split("\n")
     .filter((line, index, all) => !(line === "" && index === all.length - 1))
@@ -135,20 +137,48 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
           <span className="h-2.5 w-2.5 rounded-full bg-white/35" />
         </div>
 
-        <div className="space-y-[0.48rem] font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-white">
-          {lines.map((line, lineIndex) => (
-            <div key={`${lineIndex}-${line}`} className="flex">
-              <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
-              <div className="min-w-0 flex-1 whitespace-pre">
-                {tokenizeLine(line).map((token, tokenIndex) => (
-                  <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
-                    {token.text}
-                  </span>
-                ))}
-              </div>
+        {editable ? (
+          <div className="relative overflow-hidden">
+            <div className="pointer-events-none space-y-[0.48rem] overflow-x-auto font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-white opacity-85">
+              {lines.map((line, lineIndex) => (
+                <div key={`${lineIndex}-${line}`} className="flex min-w-max">
+                  <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
+                  <div className="min-w-0 flex-1 whitespace-pre">
+                    {tokenizeLine(line).map((token, tokenIndex) => (
+                      <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
+                        {token.text}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <textarea
+              value={code}
+              onChange={(event) => onChange?.(event.target.value)}
+              spellCheck={false}
+              className="absolute inset-0 h-full w-full resize-none rounded-[10px] border-0 bg-transparent px-[0px] py-[0px] font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-transparent outline-none caret-white"
+              style={{
+                textShadow: "0 0 0 rgba(255,255,255,0)",
+              }}
+            />
+          </div>
+        ) : (
+          <div className="space-y-[0.48rem] overflow-x-auto font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-white">
+            {lines.map((line, lineIndex) => (
+              <div key={`${lineIndex}-${line}`} className="flex min-w-max">
+                <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
+                <div className="min-w-0 flex-1 whitespace-pre">
+                  {tokenizeLine(line).map((token, tokenIndex) => (
+                    <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
+                      {token.text}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="mt-6 h-[3px] overflow-hidden rounded-full bg-white/10">
           <div

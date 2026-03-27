@@ -1219,7 +1219,13 @@ export function SceneStage({
 
       {scene.type === "code-preview" && (
         <div className="flex h-full items-center justify-center px-4">
-          <CodePreviewCard code={scene.description} progress={editable ? 1 : progress} compact={compact} />
+          <CodePreviewCard
+            code={scene.code ?? scene.description}
+            progress={editable ? 1 : progress}
+            compact={compact}
+            editable={editable}
+            onChange={(value) => onSceneChange?.({ code: value, description: value })}
+          />
         </div>
       )}
 

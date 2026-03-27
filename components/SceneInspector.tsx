@@ -321,11 +321,12 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
             <label className="block">
               <span className={labelClassName}>Snippet</span>
               <textarea
-                value={scene.description}
+                value={scene.code ?? scene.description}
                 rows={12}
-                onChange={(event) => onUpdate(scene.id, { description: event.target.value })}
+                onChange={(event) => onUpdate(scene.id, { code: event.target.value, description: event.target.value })}
                 className={`${textareaClassName} font-mono text-[13px] leading-6`}
                 placeholder="Paste code here"
+                wrap="off"
                 spellCheck={false}
               />
             </label>
