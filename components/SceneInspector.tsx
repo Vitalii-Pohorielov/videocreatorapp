@@ -316,6 +316,22 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
           </div>
         </InspectorSection>
 
+        {scene.type === "code-preview" ? (
+          <InspectorSection title="Code" description="Edit the snippet shown in the code card." defaultOpen>
+            <label className="block">
+              <span className={labelClassName}>Snippet</span>
+              <textarea
+                value={scene.description}
+                rows={12}
+                onChange={(event) => onUpdate(scene.id, { description: event.target.value })}
+                className={`${textareaClassName} font-mono text-[13px] leading-6`}
+                placeholder="Paste code here"
+                spellCheck={false}
+              />
+            </label>
+          </InspectorSection>
+        ) : null}
+
         {scene.type === "brand-reveal" ? (
           <InspectorSection title="Project logo" description="Upload a PNG or SVG logo for the intro scene.">
             <div className="mt-4 flex flex-wrap items-center gap-3">

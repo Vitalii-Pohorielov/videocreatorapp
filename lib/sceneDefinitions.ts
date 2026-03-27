@@ -50,6 +50,7 @@ export type SceneType =
   | "brand-reveal"
   | "product-showcase"
   | "feature-grid"
+  | "code-preview"
   | "slogan"
   | "description"
   | "website-url"
@@ -225,6 +226,36 @@ export const sceneDefinitions: SceneDefinition[] = [
       description: "",
       bullets: ["Fast setup", "Clear workflow", "Export in browser"],
       bulletEmojis: ["", "", ""],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "code-preview",
+    label: "Code Preview",
+    catalogDescription: "Stylized code card with animated progress line.",
+    createTemplate: () => ({
+      type: "code-preview",
+      durationSeconds: 2.7,
+      transition: "fade",
+      eyebrow: "Code",
+      title: "",
+      subtitle: "",
+      description: `function animateCode(progress) {
+  const frames = 60;
+  const step = Math.floor(progress * frames);
+
+  for (let i = 0; i < step; i++) {
+    renderFrame(i);
+  }
+
+  return "Animation complete!";
+}`,
+      bullets: [],
+      bulletEmojis: [],
       bulletImageUrls: [],
       websiteImageUrl: "",
       logoImageUrl: "",

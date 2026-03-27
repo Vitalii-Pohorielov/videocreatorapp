@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 
+import { CodePreviewCard } from "@/components/CodePreviewCard";
 import { AnimatedIconPlayer } from "@/components/AnimatedIconPlayer";
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
 import { fileToStoredUrl } from "@/lib/imageUpload";
@@ -1213,6 +1214,12 @@ export function SceneStage({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {scene.type === "code-preview" && (
+        <div className="flex h-full items-center justify-center px-4">
+          <CodePreviewCard code={scene.description} progress={editable ? 1 : progress} compact={compact} />
         </div>
       )}
 
