@@ -39,6 +39,10 @@ type StudioPreviewProps = {
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
   onGenerateFromUrl: () => void;
   onSaveProject: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onExport: () => void;
   onTogglePlayback: () => void;
   onUpdateScene: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
@@ -70,6 +74,10 @@ export function StudioPreview({
   onUpdateSettings,
   onGenerateFromUrl,
   onSaveProject,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   onExport,
   onTogglePlayback,
   onUpdateScene,
@@ -105,16 +113,40 @@ export function StudioPreview({
             <input
               value={projectName}
               onChange={(event) => onProjectNameChange(event.target.value)}
-              className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[180px] xl:w-[200px] xl:flex-none"
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[160px] xl:w-[175px] xl:flex-none"
               placeholder="Project name"
             />
             <button
               type="button"
               onClick={onSaveProject}
               disabled={isCloudBusy}
-              className="shrink-0 rounded-2xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-60"
+              className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-60"
             >
               {isCloudBusy ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo}
+              aria-label="Undo"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] disabled:opacity-40"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 14 4 9l5-5" />
+                <path d="M4 9h9a6 6 0 1 1 0 12h-2" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={onRedo}
+              disabled={!canRedo}
+              aria-label="Redo"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] disabled:opacity-40"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 14 20 9l-5-5" />
+                <path d="M20 9h-9a6 6 0 1 0 0 12h2" />
+              </svg>
             </button>
           </div>
 
@@ -122,7 +154,7 @@ export function StudioPreview({
             <input
               value={sourceUrl}
               onChange={(event) => onSourceUrlChange(event.target.value)}
-              className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[220px] xl:w-[280px] xl:flex-none"
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[190px] xl:w-[230px] xl:flex-none"
               placeholder="Paste website URL"
             />
             <button
@@ -130,12 +162,12 @@ export function StudioPreview({
               onClick={onGenerateFromUrl}
               disabled={isGeneratingFromUrl}
               aria-label={isGeneratingFromUrl ? "Generating" : "Generate from URL"}
-              className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
             >
               {isGeneratingFromUrl ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-200/30 border-t-sky-200" aria-hidden="true" />
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-200/30 border-t-sky-200" aria-hidden="true" />
               ) : (
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
                   <path d="M8.6 6.8c0-.9 1-1.46 1.78-.98l7.02 4.37c.73.45.73 1.52 0 1.98l-7.02 4.37c-.78.48-1.78-.08-1.78-.98V6.8Z" />
                 </svg>
               )}
@@ -143,7 +175,7 @@ export function StudioPreview({
           </div>
 
           <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
-            <label className="w-[126px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200">
+            <label className="w-[112px] rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200">
               <select
                 value={settings.profile}
                 onChange={(event) => onUpdateSettings({ profile: event.target.value as ExportProfile })}
@@ -161,7 +193,7 @@ export function StudioPreview({
               <a
                 href={downloadUrl}
                 download={downloadFileName}
-                className="inline-flex w-[132px] items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+                className="inline-flex w-[116px] items-center justify-center gap-2 rounded-xl border border-white/30 bg-white px-3 py-2 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
               >
                 <span aria-hidden="true" className="text-base leading-none">
                   ↓
@@ -172,7 +204,7 @@ export function StudioPreview({
               <button
                 type="button"
                 disabled
-                className="inline-flex w-[132px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-500"
+                className="inline-flex w-[116px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-500"
               >
                 <span aria-hidden="true" className="text-base leading-none">
                   ↓
@@ -185,7 +217,7 @@ export function StudioPreview({
               type="button"
               onClick={onExport}
               disabled={isExporting}
-              className="w-[148px] rounded-2xl bg-sky-400 px-4 py-2.5 text-center text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
+              className="w-[136px] whitespace-nowrap rounded-xl bg-sky-400 px-3 py-2 text-center text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
             >
               {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
             </button>

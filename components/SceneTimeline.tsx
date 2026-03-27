@@ -146,7 +146,7 @@ export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneI
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 2,
+        distance: 12,
       },
     }),
   );

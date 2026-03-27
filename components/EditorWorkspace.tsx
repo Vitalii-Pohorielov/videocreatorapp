@@ -9,10 +9,17 @@ import { StudioPreview } from "@/components/StudioPreview";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
-import { useStore, type Scene, type SceneType } from "@/store/useStore";
+import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneType } from "@/store/useStore";
 
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
+};
+
+type WorkspaceSnapshot = {
+  projectName: string;
+  sceneTrack: SceneTrack;
+  exportSettings: ExportSettings;
+  selectedSceneId: string;
 };
 
 const PREVIEW_FPS = 24;
@@ -34,6 +41,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const selectScene = useStore((state) => state.selectScene);
   const reorderScenes = useStore((state) => state.reorderScenes);
   const updateExportSettings = useStore((state) => state.updateExportSettings);
+  const restoreWorkspaceState = useStore((state) => state.restoreWorkspaceState);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -48,10 +56,26 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
   const didHydrateProject = useRef<string | null | undefined>(undefined);
   const currentTimeRef = useRef(0);
+  const undoStackRef = useRef<WorkspaceSnapshot[]>([]);
+  const redoStackRef = useRef<WorkspaceSnapshot[]>([]);
+  const lastSavedSignatureRef = useRef<string>("");
+  const saveInFlightRef = useRef(false);
+  const queuedSaveReasonRef = useRef<"auto" | "manual" | null>(null);
 
   const scenes = sceneTrack.scenes;
   const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0], [scenes, selectedSceneId]);
   const totalDuration = useMemo(() => scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0), [scenes]);
+  const projectSaveSignature = useMemo(
+    () =>
+      JSON.stringify({
+        projectName,
+        sceneTrack,
+        exportSettings,
+      }),
+    [projectName, sceneTrack, exportSettings],
+  );
+  const canUndo = undoStackRef.current.length > 0;
+  const canRedo = redoStackRef.current.length > 0;
   const selectedSceneStartTime = useMemo(() => {
     let elapsed = 0;
     for (const scene of scenes) {
@@ -148,6 +172,18 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     setCurrentTime(0);
     setCloudStatus(initialProjectId ? `Loading project ${initialProjectId}...` : null);
     setIsCloudBusy(Boolean(initialProjectId));
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+
+    const syncSavedSignature = () => {
+      lastSavedSignatureRef.current = JSON.stringify({
+        projectName: useStore.getState().projectName,
+        sceneTrack: useStore.getState().sceneTrack,
+        exportSettings: useStore.getState().exportSettings,
+      });
+    };
+
+    syncSavedSignature();
 
     if (!initialProjectId) return;
 
@@ -159,6 +195,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
           sceneTrack: project.payload.sceneTrack,
           exportSettings: project.payload.exportSettings,
         });
+        syncSavedSignature();
         setCloudStatus(`Loaded "${project.name}".`);
       })
       .catch((error) => {
@@ -176,6 +213,129 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       setDownloadUrl(null);
     }
   }, [downloadUrl]);
+
+  const captureSnapshot = useCallback(
+    (): WorkspaceSnapshot => ({
+      projectName,
+      sceneTrack,
+      exportSettings,
+      selectedSceneId,
+    }),
+    [exportSettings, projectName, sceneTrack, selectedSceneId],
+  );
+
+  const syncSavedSignature = useCallback(() => {
+    lastSavedSignatureRef.current = JSON.stringify({
+      projectName: useStore.getState().projectName,
+      sceneTrack: useStore.getState().sceneTrack,
+      exportSettings: useStore.getState().exportSettings,
+    });
+  }, []);
+
+  const saveCurrentProject = useCallback(
+    async (reason: "auto" | "manual") => {
+      if (saveInFlightRef.current) {
+        queuedSaveReasonRef.current = queuedSaveReasonRef.current === "manual" || reason === "manual" ? "manual" : "auto";
+        return;
+      }
+
+      saveInFlightRef.current = true;
+      try {
+        const current = useStore.getState();
+        const currentSignature = JSON.stringify({
+          projectName: current.projectName,
+          sceneTrack: current.sceneTrack,
+          exportSettings: current.exportSettings,
+        });
+
+        if (reason === "auto" && currentSignature === lastSavedSignatureRef.current) {
+          return;
+        }
+
+        if (reason === "manual") {
+          setIsCloudBusy(true);
+          setCloudStatus("Saving project...");
+        }
+
+        const project = await saveProject({
+          projectId: current.projectId,
+          projectName: current.projectName,
+          sceneTrack: current.sceneTrack,
+          exportSettings: current.exportSettings,
+        });
+
+        updateProjectMeta({ id: project.id, name: project.name });
+        syncSavedSignature();
+        window.history.replaceState({}, "", `/editor?project=${project.id}`);
+
+        if (reason === "manual") {
+          setCloudStatus(`Saved "${project.name}".`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not save project.";
+        setCloudStatus(message);
+      } finally {
+        saveInFlightRef.current = false;
+        if (reason === "manual") {
+          setIsCloudBusy(false);
+        }
+
+        const queuedReason = queuedSaveReasonRef.current;
+        queuedSaveReasonRef.current = null;
+        if (queuedReason) {
+          void saveCurrentProject(queuedReason);
+        }
+      }
+    },
+    [syncSavedSignature, updateProjectMeta],
+  );
+
+  useEffect(() => {
+    const trimmedSignature = projectSaveSignature;
+    if (trimmedSignature === lastSavedSignatureRef.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void saveCurrentProject("auto");
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [projectSaveSignature, saveCurrentProject]);
+
+  const pushHistorySnapshot = useCallback(() => {
+    undoStackRef.current.push(captureSnapshot());
+    redoStackRef.current = [];
+  }, [captureSnapshot]);
+
+  const applySnapshot = useCallback(
+    (snapshot: WorkspaceSnapshot) => {
+      restoreWorkspaceState(snapshot);
+      setIsPlaying(false);
+      resetDownload();
+
+      let elapsed = 0;
+      for (const timelineScene of snapshot.sceneTrack.scenes) {
+        if (timelineScene.id === snapshot.selectedSceneId) break;
+        elapsed += timelineScene.durationSeconds;
+      }
+      currentTimeRef.current = elapsed;
+      setCurrentTime(elapsed);
+    },
+    [resetDownload, restoreWorkspaceState],
+  );
+
+  const handleUndo = useCallback(() => {
+    const previous = undoStackRef.current.pop();
+    if (!previous) return;
+    redoStackRef.current.push(captureSnapshot());
+    applySnapshot(previous);
+  }, [applySnapshot, captureSnapshot]);
+
+  const handleRedo = useCallback(() => {
+    const next = redoStackRef.current.pop();
+    if (!next) return;
+    undoStackRef.current.push(captureSnapshot());
+    applySnapshot(next);
+  }, [applySnapshot, captureSnapshot]);
 
   const handleExport = async () => {
     try {
@@ -204,6 +364,8 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       currentTimeRef.current = 0;
       setCurrentTime(0);
       resetDownload();
+      undoStackRef.current = [];
+      redoStackRef.current = [];
 
       const response = await fetch("/api/generate-from-url", {
         method: "POST",
@@ -259,18 +421,36 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
   const handlePreviewSceneUpdate = useCallback(
     (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => {
+      pushHistorySnapshot();
       resetDownload();
       updateScene(id, updates);
     },
-    [resetDownload, updateScene],
+    [pushHistorySnapshot, resetDownload, updateScene],
+  );
+
+  const handleProjectNameChange = useCallback(
+    (value: string) => {
+      pushHistorySnapshot();
+      updateProjectMeta({ name: value });
+    },
+    [pushHistorySnapshot, updateProjectMeta],
+  );
+
+  const handleExportSettingsUpdate = useCallback(
+    (updates: Parameters<typeof updateExportSettings>[0]) => {
+      pushHistorySnapshot();
+      updateExportSettings(updates);
+    },
+    [pushHistorySnapshot, updateExportSettings],
   );
 
   const handleInspectorSceneUpdate = useCallback(
     (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => {
+      pushHistorySnapshot();
       resetDownload();
       updateScene(id, updates);
     },
-    [resetDownload, updateScene],
+    [pushHistorySnapshot, resetDownload, updateScene],
   );
 
   const handleTimelineSelect = useCallback(
@@ -290,27 +470,38 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
 
   const handleTimelineDelete = useCallback(
     (id: string) => {
+      pushHistorySnapshot();
       resetDownload();
       deleteScene(id);
     },
-    [deleteScene, resetDownload],
+    [deleteScene, pushHistorySnapshot, resetDownload],
   );
 
   const handleTimelineDuplicate = useCallback(
     (id: string) => {
+      pushHistorySnapshot();
       resetDownload();
       duplicateScene(id);
     },
-    [duplicateScene, resetDownload],
+    [duplicateScene, pushHistorySnapshot, resetDownload],
+  );
+
+  const handleTimelineReorder = useCallback(
+    (fromId: string, toId: string) => {
+      pushHistorySnapshot();
+      reorderScenes(fromId, toId);
+    },
+    [pushHistorySnapshot, reorderScenes],
   );
 
   const handleSceneTypeSelect = useCallback(
     (type: SceneType) => {
+      pushHistorySnapshot();
       addScene(type);
       setIsSceneModalOpen(false);
       resetDownload();
     },
-    [addScene, resetDownload],
+    [addScene, pushHistorySnapshot, resetDownload],
   );
 
   const handleOpenSceneModal = useCallback(() => {
@@ -318,25 +509,35 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   }, []);
 
   const handleSaveProject = async () => {
-    try {
-      setIsCloudBusy(true);
-      setCloudStatus("Saving project...");
-      const project = await saveProject({
-        projectId,
-        projectName,
-        sceneTrack,
-        exportSettings,
-      });
-      updateProjectMeta({ id: project.id, name: project.name });
-      window.history.replaceState({}, "", `/editor?project=${project.id}`);
-      setCloudStatus(`Saved "${project.name}".`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not save project.";
-      setCloudStatus(message);
-    } finally {
-      setIsCloudBusy(false);
-    }
+    void saveCurrentProject("manual");
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      const key = event.key.toLowerCase();
+      const target = event.target as HTMLElement | null;
+      const isEditableTarget =
+        Boolean(target?.closest("[contenteditable='true']")) ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement;
+
+      if (isEditableTarget) return;
+
+      if (key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) handleRedo();
+        else handleUndo();
+      } else if (key === "y") {
+        event.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleRedo, handleUndo]);
 
   return (
     <main className="h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_26%),linear-gradient(180deg,#060b16_0%,#0b1220_42%,#0f172a_100%)] px-4 py-4 text-slate-100">
@@ -364,11 +565,15 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               isGeneratingFromUrl={isGeneratingFromUrl}
               cloudStatus={cloudStatus}
               isCloudBusy={isCloudBusy}
-              onProjectNameChange={(value) => updateProjectMeta({ name: value })}
+              onProjectNameChange={handleProjectNameChange}
               onSourceUrlChange={setSourceUrl}
-              onUpdateSettings={updateExportSettings}
+              onUpdateSettings={handleExportSettingsUpdate}
               onGenerateFromUrl={handleGenerateFromUrl}
               onSaveProject={handleSaveProject}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
               onExport={handleExport}
               onTogglePlayback={togglePlayback}
               onUpdateScene={handlePreviewSceneUpdate}
@@ -380,16 +585,16 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               onDelete={handleTimelineDelete}
               onDuplicate={handleTimelineDuplicate}
               onAddScene={handleOpenSceneModal}
-              onReorder={reorderScenes}
+              onReorder={handleTimelineReorder}
             />
           </div>
 
-          <SceneInspector
-            scene={selectedScene}
-            settings={exportSettings}
-            onUpdate={handleInspectorSceneUpdate}
-            onUpdateSettings={updateExportSettings}
-          />
+            <SceneInspector
+              scene={selectedScene}
+              settings={exportSettings}
+              onUpdate={handleInspectorSceneUpdate}
+              onUpdateSettings={handleExportSettingsUpdate}
+            />
         </section>
       </div>
 

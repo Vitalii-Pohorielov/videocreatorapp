@@ -328,16 +328,44 @@ function IntroLogo({
       <button
         type="button"
         onClick={editable ? onPickImage : undefined}
-        className={`flex items-center justify-center rounded-[24px] px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
+        className={`flex items-center justify-center rounded-[40px] overflow-hidden px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
         style={{
           color: textColor,
           border: `1px solid color-mix(in srgb, ${textColor} 20%, transparent)`,
           backgroundColor: `color-mix(in srgb, ${textColor} 7%, transparent)`,
         }}
       >
-        <img src={logoImageUrl} alt="Project logo" className={compact ? "max-h-12 max-w-[120px] object-contain" : "max-h-20 max-w-[220px] object-contain"} />
+        <AdaptiveLogoImage src={logoImageUrl} compact={compact} />
       </button>
     </div>
+  );
+}
+
+function AdaptiveLogoImage({ src, compact }: { src: string; compact: boolean }) {
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+
+  const maxWidth = compact ? 152 : 256;
+  const maxHeight = compact ? 60 : 96;
+  const fitScale = naturalSize ? Math.min(maxWidth / naturalSize.width, maxHeight / naturalSize.height, 1) : 1;
+  const width = naturalSize ? Math.max(48, Math.round(naturalSize.width * fitScale)) : compact ? 112 : 180;
+  const height = naturalSize ? Math.max(32, Math.round(naturalSize.height * fitScale)) : compact ? 44 : 72;
+
+  return (
+    <img
+      src={src}
+      alt="Project logo"
+      onLoad={(event) => {
+        const image = event.currentTarget;
+        setNaturalSize({ width: image.naturalWidth, height: image.naturalHeight });
+      }}
+      className="block rounded-[24px] object-contain"
+      style={{
+        width: `${width}px`,
+        height: `${height}px`,
+        maxWidth: `${maxWidth}px`,
+        maxHeight: `${maxHeight}px`,
+      }}
+    />
   );
 }
 
@@ -375,7 +403,7 @@ function IntroLogoSlot({
       <button
         type="button"
         onClick={editable ? onPickImage : undefined}
-        className={`flex items-center justify-center rounded-[24px] px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
+        className={`flex items-center justify-center rounded-[40px] overflow-hidden px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
         style={{
           color: textColor,
           border: `1px solid color-mix(in srgb, ${textColor} 20%, transparent)`,
@@ -384,7 +412,7 @@ function IntroLogoSlot({
       >
         <div className="flex flex-col items-center gap-3">
           <div
-            className={`flex items-center justify-center rounded-[22px] border border-dashed ${compact ? "h-12 w-12 text-lg" : "h-20 w-20 text-3xl"}`}
+            className={`flex items-center justify-center rounded-[30px] border border-dashed ${compact ? "h-12 w-12 text-lg" : "h-20 w-20 text-3xl"}`}
             style={{ borderColor: `color-mix(in srgb, ${textColor} 35%, transparent)` }}
           >
             +
@@ -1103,7 +1131,7 @@ export function SceneStage({
             {scene.bullets.map((bullet, index) => {
               const itemIn = editable ? 1 : motion(progress, 0.1 + index * 0.05, 0.24);
               return (
-                <div key={`${bullet}-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: itemIn }}>
+                <div key={`${scene.id}-feature-${index}`} className={`rounded-[22px] border p-4 text-left ${s.card}`} style={{ transform: `translateY(${22 * (1 - itemIn)}px) scale(${0.92 + itemIn * 0.08})`, opacity: itemIn }}>
                   {editable ? (
                     <EditableCardItem
                       text={bullet}
@@ -1378,7 +1406,7 @@ export function SceneStage({
               const itemIn = editable ? 1 : motion(progress, 0.14 + index * 0.09, 0.18);
               return (
                 <div
-                  key={`${bullet}-${index}`}
+                  key={`${scene.id}-checklist-${index}`}
                   className={`grid items-center gap-4 rounded-[22px] px-4 py-5 text-left ${compact ? "grid-cols-[60px_1fr]" : "grid-cols-[88px_1fr]"}`}
                   style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: itemIn }}
                 >

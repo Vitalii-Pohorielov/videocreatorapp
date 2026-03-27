@@ -64,6 +64,12 @@ type StudioStore = {
   selectScene: (id: string) => void;
   reorderScenes: (fromId: string, toId: string) => void;
   updateExportSettings: (updates: Partial<ExportSettings>) => void;
+  restoreWorkspaceState: (state: {
+    projectName: string;
+    sceneTrack: SceneTrack;
+    exportSettings: ExportSettings;
+    selectedSceneId: string;
+  }) => void;
 };
 
 const clampDuration = (value: number) => Math.min(8, Math.max(1.5, value));
@@ -281,5 +287,14 @@ export const useStore = create<StudioStore>((set, get) => ({
         },
       };
     });
+  },
+  restoreWorkspaceState: (nextState) => {
+    set((state) => ({
+      projectId: state.projectId,
+      projectName: nextState.projectName,
+      sceneTrack: nextState.sceneTrack,
+      selectedSceneId: nextState.selectedSceneId,
+      exportSettings: nextState.exportSettings,
+    }));
   },
 }));
