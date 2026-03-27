@@ -295,6 +295,42 @@ function mixHexColors(baseHex: string, mixHex: string, amount: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+type LogoFrameMetrics = {
+  outerWidth: number;
+  outerHeight: number;
+  innerWidth: number;
+  innerHeight: number;
+};
+
+function getLogoFrameMetrics(naturalSize: { width: number; height: number } | null, compact: boolean): LogoFrameMetrics {
+  const outerHeight = compact ? 152 : 208;
+  const fallbackOuterWidth = compact ? 152 : 208;
+  const fallbackInnerSize = compact ? 96 : 120;
+
+  if (!naturalSize) {
+    return {
+      outerWidth: fallbackOuterWidth,
+      outerHeight,
+      innerWidth: fallbackInnerSize,
+      innerHeight: fallbackInnerSize,
+    };
+  }
+
+  const aspect = naturalSize.width / Math.max(1, naturalSize.height);
+  const clampedAspect = clamp(aspect, 1, compact ? 2.0 : 2.15);
+  const outerWidth = Math.round(outerHeight * clampedAspect);
+  const isWide = clampedAspect > 1.18;
+  const innerWidthScale = isWide ? (compact ? 0.76 : 0.78) : (compact ? 0.56 : 0.58);
+  const innerHeightScale = isWide ? (compact ? 0.52 : 0.55) : innerWidthScale;
+
+  return {
+    outerWidth,
+    outerHeight,
+    innerWidth: Math.round(outerWidth * innerWidthScale),
+    innerHeight: Math.round(outerHeight * innerHeightScale),
+  };
+}
+
 function IntroLogo({
   scene,
   entryProgress,
@@ -316,6 +352,8 @@ function IntroLogo({
 }) {
   const logoImageUrl = getRenderableImageUrl(scene.logoImageUrl);
   if (!logoImageUrl) return null;
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const metrics = getLogoFrameMetrics(naturalSize, compact);
 
   return (
     <div
@@ -328,44 +366,56 @@ function IntroLogo({
       <button
         type="button"
         onClick={editable ? onPickImage : undefined}
-        className={`flex items-center justify-center rounded-[40px] overflow-hidden px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
+        className={`flex items-center justify-center rounded-[40px] overflow-hidden ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
         style={{
+          width: `${metrics.outerWidth}px`,
+          height: `${metrics.outerHeight}px`,
+          padding: compact ? "16px" : "20px",
           color: textColor,
           border: `1px solid color-mix(in srgb, ${textColor} 20%, transparent)`,
           backgroundColor: `color-mix(in srgb, ${textColor} 7%, transparent)`,
         }}
       >
-        <AdaptiveLogoImage src={logoImageUrl} compact={compact} />
+        <AdaptiveLogoImage src={logoImageUrl} compact={compact} naturalSize={naturalSize} onLoadSizeChange={setNaturalSize} />
       </button>
     </div>
   );
 }
 
-function AdaptiveLogoImage({ src, compact }: { src: string; compact: boolean }) {
-  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
-
-  const maxWidth = compact ? 152 : 256;
-  const maxHeight = compact ? 60 : 96;
-  const fitScale = naturalSize ? Math.min(maxWidth / naturalSize.width, maxHeight / naturalSize.height, 1) : 1;
-  const width = naturalSize ? Math.max(48, Math.round(naturalSize.width * fitScale)) : compact ? 112 : 180;
-  const height = naturalSize ? Math.max(32, Math.round(naturalSize.height * fitScale)) : compact ? 44 : 72;
+function AdaptiveLogoImage({
+  src,
+  compact,
+  naturalSize,
+  onLoadSizeChange,
+}: {
+  src: string;
+  compact: boolean;
+  naturalSize: { width: number; height: number } | null;
+  onLoadSizeChange: (value: { width: number; height: number }) => void;
+}) {
+  const metrics = getLogoFrameMetrics(naturalSize, compact);
 
   return (
-    <img
-      src={src}
-      alt="Project logo"
-      onLoad={(event) => {
-        const image = event.currentTarget;
-        setNaturalSize({ width: image.naturalWidth, height: image.naturalHeight });
-      }}
-      className="block rounded-[24px] object-contain"
+    <div
+      className="flex items-center justify-center overflow-hidden rounded-[28px]"
       style={{
-        width: `${width}px`,
-        height: `${height}px`,
-        maxWidth: `${maxWidth}px`,
-        maxHeight: `${maxHeight}px`,
+        width: `${metrics.innerWidth}px`,
+        height: `${metrics.innerHeight}px`,
       }}
-    />
+    >
+      <img
+        src={src}
+        alt="Project logo"
+        onLoad={(event) => {
+          const image = event.currentTarget;
+          onLoadSizeChange({ width: image.naturalWidth, height: image.naturalHeight });
+        }}
+        className="block h-full w-full object-contain"
+        style={{
+          borderRadius: compact ? "22px" : "26px",
+        }}
+      />
+    </div>
   );
 }
 
@@ -391,6 +441,7 @@ function IntroLogoSlot({
   if (getRenderableImageUrl(scene.logoImageUrl)) {
     return <IntroLogo scene={scene} entryProgress={entryProgress} outroProgress={outroProgress} compact={compact} editable={editable} onPickImage={onPickImage} lightweightPreview={lightweightPreview} textColor={textColor} />;
   }
+  const placeholderMetrics = getLogoFrameMetrics(null, compact);
 
   return (
     <div
@@ -403,8 +454,11 @@ function IntroLogoSlot({
       <button
         type="button"
         onClick={editable ? onPickImage : undefined}
-        className={`flex items-center justify-center rounded-[40px] overflow-hidden px-6 py-4 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
+        className={`flex items-center justify-center rounded-[40px] overflow-hidden ${lightweightPreview ? "" : "backdrop-blur-sm"} ${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"}`}
         style={{
+          width: `${placeholderMetrics.outerWidth}px`,
+          height: `${placeholderMetrics.outerHeight}px`,
+          padding: compact ? "16px" : "20px",
           color: textColor,
           border: `1px solid color-mix(in srgb, ${textColor} 20%, transparent)`,
           backgroundColor: `color-mix(in srgb, ${textColor} 7%, transparent)`,
