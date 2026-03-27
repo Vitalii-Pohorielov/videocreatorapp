@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 type CodePreviewCardProps = {
   code: string;
   progress?: number;
@@ -87,6 +89,13 @@ function tokenizeLine(line: string): Token[] {
       continue;
     }
 
+    const plainMatch = remaining.match(/^[^(){}[\],;=+\-*/.%'"`<>]+/);
+    if (plainMatch) {
+      tokens.push({ text: plainMatch[0], type: "plain" });
+      remaining = remaining.slice(plainMatch[0].length);
+      continue;
+    }
+
     tokens.push({ text: remaining[0], type: "plain" });
     remaining = remaining.slice(1);
   }
@@ -116,23 +125,55 @@ function tokenClassName(type: TokenType) {
 }
 
 export function CodePreviewCard({ code, progress = 1, compact = false, className = "", editable = false, onClick }: CodePreviewCardProps) {
-  const lines = code
-    .split("\n")
-    .filter((line, index, all) => !(line === "" && index === all.length - 1))
-    .slice(0, compact ? 14 : 18);
+  const lines = useMemo(
+    () =>
+      code
+        .split("\n")
+        .filter((line, index, all) => !(line === "" && index === all.length - 1))
+        .slice(0, compact ? 14 : 18),
+    [code, compact],
+  );
+  const tokenizedLines = useMemo(() => lines.map((line) => tokenizeLine(line)), [lines]);
   const lineProgress = clamp(progress);
+  const windowScale = 0.92 + lineProgress * 0.08;
 
   return (
-    <div
-      className={`relative mx-auto w-full max-w-[920px] overflow-hidden rounded-[16px] border border-white/90 bg-black px-5 py-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)] ${className}`}
-      style={{
-        transform: "rotate(-3deg)",
-        cursor: editable && onClick ? "pointer" : "default",
-      }}
-      onClick={editable ? onClick : undefined}
-    >
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent_34%,rgba(255,255,255,0.015))]" />
-      <div className="relative">
+    <div className={`relative w-full overflow-visible ${className}`}>
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[150%] w-[180vw] -translate-x-1/2 -translate-y-1/2"
+        style={{
+          transform: "translate(-50%, -50%) rotate(-3deg) scale(1.05)",
+          transformOrigin: "center",
+        }}
+      >
+        <svg viewBox="0 0 1600 820" preserveAspectRatio="none" className="h-full w-full" style={{ opacity: 0.4 }}>
+          <g transform="translate(1600 0) scale(-1 1)">
+            <path
+              d="M -420 190 C -160 -10, 140 70, 420 300 S 700 700, 930 620 S 1200 240, 1440 360 S 1740 760, 2020 220"
+              fill="none"
+              stroke="#1f93ff"
+              strokeWidth={compact ? 26 : 36}
+              strokeLinecap="round"
+              style={{
+                filter: "drop-shadow(0 0 22px rgba(31,147,255,0.3))",
+                strokeDasharray: 3000,
+                strokeDashoffset: 3000 * (1 - lineProgress),
+              }}
+            />
+          </g>
+        </svg>
+      </div>
+      <div
+        className="relative z-10 mx-auto w-full max-w-[920px] overflow-hidden rounded-[16px] border border-white/90 bg-black px-5 py-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+        style={{
+          transform: `rotate(-3deg) scale(${windowScale})`,
+          transformOrigin: "center",
+          cursor: editable && onClick ? "pointer" : "default",
+        }}
+        onClick={editable ? onClick : undefined}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent_34%,rgba(255,255,255,0.015))]" />
+        <div className="relative">
         <div className="mb-5 flex items-center gap-2 opacity-85">
           <span className="h-2.5 w-2.5 rounded-full bg-white/80" />
           <span className="h-2.5 w-2.5 rounded-full bg-white/55" />
@@ -144,7 +185,7 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
             <div key={`${lineIndex}-${line}`} className="flex min-w-max">
               <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
               <div className="min-w-0 flex-1 whitespace-pre">
-                {tokenizeLine(line).map((token, tokenIndex) => (
+                {tokenizedLines[lineIndex].map((token, tokenIndex) => (
                   <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
                     {token.text}
                   </span>
@@ -162,6 +203,7 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
               transformOrigin: "left center",
             }}
           />
+        </div>
         </div>
       </div>
     </div>
