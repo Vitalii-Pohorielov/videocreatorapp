@@ -868,7 +868,75 @@ function StageShell({
       {showBackground && !lightweightPreview ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
       {showBackground && !lightweightPreview ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
       {showBackground ? <div className={`absolute bottom-[12%] left-[14%] rotate-12 rounded-[28px] border border-white/10 ${compact ? "h-16 w-16" : "h-24 w-24"}`} style={{ opacity: 0.2, transform: "translate3d(0, 0, 0)" }} /> : null}
+      {showBackground ? <RippleBackdrop textColor={textColor} compact={compact} lightweightPreview={lightweightPreview} /> : null}
       <div className="relative h-full w-full">{children}</div>
+      {showBackground ? (
+        <style jsx>{`
+          @keyframes ripple-expand {
+            0% {
+              transform: translate(-50%, -50%) scale(0.16);
+              opacity: 0;
+            }
+            12% {
+              opacity: 0.28;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.75);
+              opacity: 0;
+            }
+          }
+        `}</style>
+      ) : null}
+    </div>
+  );
+}
+
+function RippleBackdrop({
+  textColor,
+  compact,
+  lightweightPreview,
+}: {
+  textColor: string;
+  compact: boolean;
+  lightweightPreview: boolean;
+}) {
+  const ringColor = lightweightPreview ? `${textColor}18` : `${textColor}24`;
+  const ringGlow = lightweightPreview ? `${textColor}12` : `${textColor}18`;
+  const baseSize = compact ? 170 : 280;
+  const rings = [
+    { size: baseSize, delay: "0s", duration: "6.2s" },
+    { size: Math.round(baseSize * 0.68), delay: "1.8s", duration: "6.2s" },
+    { size: Math.round(baseSize * 0.46), delay: "3.4s", duration: "6.2s" },
+  ];
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {rings.map((ring, index) => (
+        <div
+          key={`${ring.size}-${index}`}
+          className="absolute left-1/2 top-1/2 rounded-full border"
+          style={{
+            width: `${ring.size}px`,
+            height: `${ring.size}px`,
+            borderColor: ringColor,
+            boxShadow: `0 0 0 1px ${ringGlow}, inset 0 0 0 1px ${ringGlow}`,
+            animation: `ripple-expand ${ring.duration} ease-out ${ring.delay} infinite`,
+            transform: "translate(-50%, -50%) scale(0.16)",
+            opacity: 0,
+          }}
+        />
+      ))}
+      <div
+        className="absolute left-1/2 top-1/2 rounded-full"
+        style={{
+          width: `${compact ? 18 : 26}px`,
+          height: `${compact ? 18 : 26}px`,
+          transform: "translate(-50%, -50%)",
+          background: `radial-gradient(circle, ${textColor}70 0%, ${textColor}30 44%, transparent 72%)`,
+          filter: "blur(1px)",
+          opacity: lightweightPreview ? 0.28 : 0.42,
+        }}
+      />
     </div>
   );
 }
