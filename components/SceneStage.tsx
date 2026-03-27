@@ -1225,17 +1225,18 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "code-preview" && (
-        <div className="flex h-full items-center justify-center px-4">
-          <CodePreviewCard
-            code={scene.code ?? scene.description}
-            progress={editable ? 1 : progress}
-            compact={compact}
-            editable={editable}
-            onClick={editable ? () => setIsCodeEditorOpen(true) : undefined}
-          />
-        </div>
-      )}
+        {scene.type === "code-preview" && (
+          <div className="flex h-full items-center justify-center px-4">
+            <CodePreviewCard
+              code={scene.code ?? scene.description}
+              progress={editable ? 1 : progress}
+              compact={compact}
+              editable={editable}
+              accentColor={elevatedAccentColor}
+              onClick={editable ? () => setIsCodeEditorOpen(true) : undefined}
+            />
+          </div>
+        )}
 
       {scene.type === "slogan" && (
         <div className="absolute inset-0 overflow-hidden text-center">

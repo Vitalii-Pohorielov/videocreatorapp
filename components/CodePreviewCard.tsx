@@ -9,6 +9,7 @@ type CodePreviewCardProps = {
   className?: string;
   editable?: boolean;
   onClick?: () => void;
+  accentColor?: string;
 };
 
 type TokenType = "keyword" | "string" | "number" | "call" | "plain" | "comment" | "paren" | "operator";
@@ -27,6 +28,16 @@ const operatorPattern = /^=>|^[=+\-*/.%]/;
 
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value));
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const normalized = hex.trim().replace("#", "");
+  if (normalized.length !== 6) return `rgba(31, 147, 255, ${alpha})`;
+  const value = Number.parseInt(normalized, 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
 function tokenizeLine(line: string): Token[] {
@@ -124,7 +135,7 @@ function tokenClassName(type: TokenType) {
   }
 }
 
-export function CodePreviewCard({ code, progress = 1, compact = false, className = "", editable = false, onClick }: CodePreviewCardProps) {
+export function CodePreviewCard({ code, progress = 1, compact = false, className = "", editable = false, onClick, accentColor = "#1f93ff" }: CodePreviewCardProps) {
   const lines = useMemo(
     () =>
       code
@@ -151,11 +162,11 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
             <path
               d="M -420 190 C -160 -10, 140 70, 420 300 S 700 700, 930 620 S 1200 240, 1440 360 S 1740 760, 2020 220"
               fill="none"
-              stroke="#1f93ff"
+              stroke={accentColor}
               strokeWidth={compact ? 26 : 36}
               strokeLinecap="round"
               style={{
-                filter: "drop-shadow(0 0 22px rgba(31,147,255,0.3))",
+                filter: `drop-shadow(0 0 22px ${hexToRgba(accentColor, 0.3)})`,
                 strokeDasharray: 3000,
                 strokeDashoffset: 3000 * (1 - lineProgress),
               }}
@@ -197,8 +208,10 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
 
         <div className="mt-6 h-[3px] overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-[#1f93ff] shadow-[0_0_20px_rgba(31,147,255,0.75)]"
+            className="h-full rounded-full"
             style={{
+              backgroundColor: accentColor,
+              boxShadow: `0 0 20px ${hexToRgba(accentColor, 0.75)}`,
               width: `${Math.max(14, lineProgress * 100)}%`,
               transformOrigin: "left center",
             }}
