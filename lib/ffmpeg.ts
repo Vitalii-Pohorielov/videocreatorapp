@@ -31,6 +31,7 @@ let renderRoot: ReturnType<ReactClientModule["createRoot"]> | null = null;
 let renderHostSize: { width: number; height: number } | null = null;
 
 const coreBaseUrl = "/ffmpeg";
+const exportMediaReadyTimeoutMs = 3500;
 
 function getVideoSize(settings: ExportSettings) {
   return exportResolutionDimensions[settings.resolution];
@@ -40,27 +41,30 @@ function getExportProfileConfig(settings: ExportSettings) {
   switch (settings.profile) {
     case "draft":
       return {
-        fps: 20,
+        fps: 15,
         frameExtension: "jpg" as const,
         frameMimeType: "image/jpeg",
-        frameQuality: 0.72,
+        frameQuality: 0.7,
         ffmpegPreset: "ultrafast",
+        crf: 28,
       };
     case "high":
-      return {
-        fps: 30,
-        frameExtension: "png" as const,
-        frameMimeType: "image/png",
-        frameQuality: undefined,
-        ffmpegPreset: "medium",
-      };
-    default:
       return {
         fps: 24,
         frameExtension: "jpg" as const,
         frameMimeType: "image/jpeg",
-        frameQuality: 0.84,
+        frameQuality: 0.92,
+        ffmpegPreset: "medium",
+        crf: 21,
+      };
+    default:
+      return {
+        fps: 20,
+        frameExtension: "jpg" as const,
+        frameMimeType: "image/jpeg",
+        frameQuality: 0.82,
         ffmpegPreset: "veryfast",
+        crf: 24,
       };
   }
 }
@@ -114,6 +118,68 @@ function cleanupRenderSurface() {
   renderHostSize = null;
 }
 
+function syncExportHostStyles(host: HTMLDivElement) {
+  const rootStyles = getComputedStyle(document.documentElement);
+  const bodyStyles = getComputedStyle(document.body);
+
+  for (const styles of [rootStyles, bodyStyles]) {
+    for (let index = 0; index < styles.length; index += 1) {
+      const propertyName = styles.item(index);
+      if (!propertyName || !propertyName.startsWith("--")) continue;
+      host.style.setProperty(propertyName, styles.getPropertyValue(propertyName));
+    }
+  }
+
+  host.style.fontFamily = bodyStyles.fontFamily;
+  host.style.color = bodyStyles.color;
+  host.style.backgroundColor = "transparent";
+}
+
+async function waitForImageReady(image: HTMLImageElement) {
+  if (image.complete && image.naturalWidth > 0) {
+    try {
+      if (typeof image.decode === "function") {
+        await image.decode();
+      }
+    } catch {
+      // Some browsers reject decode() for cached images; the element is still usable.
+    }
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const settle = () => resolve();
+    image.addEventListener("load", settle, { once: true });
+    image.addEventListener("error", settle, { once: true });
+  });
+
+  try {
+    if (typeof image.decode === "function") {
+      await image.decode();
+    }
+  } catch {
+    // Ignore decode errors and continue with the rendered element.
+  }
+}
+
+async function waitForExportAssets(node: HTMLElement) {
+  await document.fonts.ready;
+
+  const images = Array.from(node.querySelectorAll("img")) as HTMLImageElement[];
+  await Promise.all(images.map((image) => waitForImageReady(image)));
+
+  const startedAt = performance.now();
+  while (performance.now() - startedAt < exportMediaReadyTimeoutMs) {
+    if (!node.querySelector('[data-lottie-ready="false"]')) {
+      break;
+    }
+    await nextFrame();
+  }
+
+  await nextFrame();
+  await nextFrame();
+}
+
 async function ensureRenderSurface(videoWidth: number, videoHeight: number) {
   const { createRoot } = await getReactRenderer();
 
@@ -135,6 +201,7 @@ async function ensureRenderSurface(videoWidth: number, videoHeight: number) {
     renderHost.style.pointerEvents = "none";
     renderHost.style.zIndex = "-1";
     document.body.appendChild(renderHost);
+    syncExportHostStyles(renderHost);
     renderRoot = createRoot(renderHost);
     renderHostSize = { width: videoWidth, height: videoHeight };
   }
@@ -179,11 +246,10 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
   });
 
   await document.fonts.ready;
-  await nextFrame();
-  await nextFrame();
-
   const node = host.firstElementChild as HTMLElement | null;
   if (!node) throw new Error("Could not render scene preview for export.");
+
+  await waitForExportAssets(node);
 
   try {
     return await toCanvas(node, {
@@ -282,7 +348,7 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
-      else reject(new Error("Could not convert canvas to PNG."));
+      else reject(new Error("Could not convert canvas to an image blob."));
     }, mimeType, quality);
   });
 }
@@ -332,7 +398,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
   await ensureFFmpegLoaded();
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
-  const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset } = getExportProfileConfig(settings);
+  const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset, crf } = getExportProfileConfig(settings);
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
   const totalFrameCount = Math.max(1, getTotalFrameCount(scenes, fps, transitionFrameCount));
@@ -394,7 +460,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
 
     onProgress?.(frameRenderWeight);
     const outputFileName = `output-${Date.now()}.mp4`;
-    await ffmpeg.exec(["-framerate", String(fps), "-i", `frame%04d.${frameExtension}`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", ffmpegPreset, outputFileName]);
+    await ffmpeg.exec(["-framerate", String(fps), "-i", `frame%04d.${frameExtension}`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", ffmpegPreset, "-crf", String(crf), "-movflags", "+faststart", outputFileName]);
     const videoData = (await ffmpeg.readFile(outputFileName, "binary")) as Uint8Array;
     const videoBuffer = videoData.buffer.slice(videoData.byteOffset, videoData.byteOffset + videoData.byteLength) as ArrayBuffer;
     const videoBlob = new Blob([videoBuffer], { type: "video/mp4" });

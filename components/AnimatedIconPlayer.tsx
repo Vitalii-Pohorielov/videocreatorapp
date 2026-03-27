@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import lottie, { type AnimationItem } from "lottie-web";
 
 const animationCache = new Map<string, Promise<unknown>>();
@@ -40,9 +40,16 @@ export function AnimatedIconPlayer({ src, className = "", ariaLabel = "", progre
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<AnimationItem | null>(null);
   const animationDataRef = useRef<unknown>(null);
+  const progressRef = useRef<number | undefined>(progress);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
 
   useEffect(() => {
     let isMounted = true;
+    setIsReady(false);
 
     async function renderAnimation() {
       const container = containerRef.current;
@@ -65,11 +72,13 @@ export function AnimatedIconPlayer({ src, className = "", ariaLabel = "", progre
           },
         });
 
-        if (typeof progress === "number") {
-          animationRef.current.goToAndStop(getLottieFrame(animationData, progress), true);
+        if (typeof progressRef.current === "number") {
+          animationRef.current.goToAndStop(getLottieFrame(animationData, progressRef.current), true);
         }
+        setIsReady(true);
       } catch {
         // Fall back to an empty container if the animation can't be loaded.
+        setIsReady(true);
       }
     }
 
@@ -80,7 +89,7 @@ export function AnimatedIconPlayer({ src, className = "", ariaLabel = "", progre
       animationRef.current?.destroy();
       animationRef.current = null;
     };
-  }, [src, progress]);
+  }, [src]);
 
   useEffect(() => {
     if (typeof progress !== "number") return;
@@ -90,5 +99,5 @@ export function AnimatedIconPlayer({ src, className = "", ariaLabel = "", progre
     animation.goToAndStop(getLottieFrame(animationData, progress), true);
   }, [progress]);
 
-  return <div ref={containerRef} className={className} aria-label={ariaLabel} role={ariaLabel ? "img" : undefined} />;
+  return <div ref={containerRef} className={className} aria-label={ariaLabel} role={ariaLabel ? "img" : undefined} data-lottie-ready={isReady ? "true" : "false"} aria-busy={!isReady} />;
 }
