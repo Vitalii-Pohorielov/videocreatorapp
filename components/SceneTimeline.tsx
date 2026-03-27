@@ -53,7 +53,7 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
           onSelect(scene.id);
         }
       }}
-      className={`group relative flex h-[144px] w-[180px] flex-none cursor-grab flex-col rounded-[22px] border p-4 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 active:cursor-grabbing ${
+      className={`group relative flex h-[124px] w-[168px] flex-none cursor-grab flex-col rounded-[22px] border p-3.5 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 active:cursor-grabbing ${
         dragging
           ? "pointer-events-none opacity-20 shadow-none"
           : active
@@ -106,7 +106,7 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
           <p className="text-[11px] text-slate-500">Scene {index + 1}</p>
           <p className="mt-1 text-xs text-slate-300">{scene.durationSeconds.toFixed(1)}s</p>
         </div>
-        <div className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
+        <div className="rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
           Ready
         </div>
       </div>
@@ -183,10 +183,10 @@ export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneI
   }, [scenes.length]);
 
   return (
-    <section className="shrink-0 px-4 py-3">
+    <section className="shrink-0 px-4 py-2">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <SortableContext items={sceneIds} strategy={horizontalListSortingStrategy}>
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-1">
             {scenes.map((scene, index) => (
               <SortableSceneCard
                 key={scene.id}
@@ -203,7 +203,7 @@ export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneI
               ref={addButtonRef}
               type="button"
               onClick={onAddScene}
-              className="flex h-[144px] w-[180px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-colors duration-150 hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
+              className="flex h-[124px] w-[168px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-colors duration-150 hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
             >
               +
             </button>

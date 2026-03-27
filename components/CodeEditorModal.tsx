@@ -14,7 +14,7 @@ export function CodeEditorModal({ isOpen, title = "Edit code", code, onChange, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-5xl rounded-[28px] border border-white/10 bg-slate-950/96 p-5 text-slate-100 shadow-[0_28px_90px_rgba(2,6,23,0.65)]">
+      <div className="w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/96 p-5 text-slate-100 shadow-[0_28px_90px_rgba(2,6,23,0.65)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Code preview</p>
@@ -36,7 +36,7 @@ export function CodeEditorModal({ isOpen, title = "Edit code", code, onChange, o
             onChange={(event) => onChange(event.target.value)}
             spellCheck={false}
             wrap="off"
-            className="min-h-[420px] w-full resize-y rounded-[18px] border border-white/10 bg-black px-4 py-4 font-mono text-[15px] leading-7 tracking-[-0.02em] text-white outline-none placeholder:text-white/30 focus:border-sky-400"
+            className="min-h-[260px] max-h-[48vh] w-full resize-y rounded-[18px] border border-white/10 bg-black px-4 py-4 font-mono text-[14px] leading-7 tracking-[-0.02em] text-white outline-none placeholder:text-white/30 focus:border-sky-400"
             placeholder="Paste your code here..."
           />
         </div>
