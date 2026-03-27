@@ -53,7 +53,7 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
           onSelect(scene.id);
         }
       }}
-      className={`group relative flex h-[124px] w-[168px] flex-none cursor-grab flex-col rounded-[22px] border p-3.5 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 active:cursor-grabbing ${
+      className={`group relative flex h-[84px] w-[150px] flex-none cursor-grab flex-col rounded-[18px] border p-2.5 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 active:cursor-grabbing ${
         dragging
           ? "pointer-events-none opacity-20 shadow-none"
           : active
@@ -61,10 +61,10 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
             : "border-white/10 bg-white/[0.04] shadow-[0_12px_24px_rgba(2,6,23,0.18)] hover:border-white/20 hover:bg-white/[0.07]"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-1.5">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">{scene.name || `Scene ${index + 1}`}</p>
-          <p className="mt-1 truncate text-[11px] uppercase tracking-[0.18em] text-slate-400">{sceneTypeLabels[scene.type]}</p>
+          <p className="truncate text-[13px] font-semibold text-white">{scene.name || `Scene ${index + 1}`}</p>
+          <p className="mt-0.5 truncate text-[9px] uppercase tracking-[0.16em] text-slate-400">{sceneTypeLabels[scene.type]}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
           <button
@@ -73,10 +73,10 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
               event.stopPropagation();
               onDuplicate(scene.id);
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-slate-200 transition hover:bg-white/[0.12]"
+            className="flex h-[20px] w-[20px] items-center justify-center rounded-md border border-white/10 bg-white/[0.06] text-slate-200 transition hover:bg-white/[0.12]"
             aria-label="Duplicate scene"
           >
-            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.4">
               <rect x="5.25" y="2.75" width="7" height="9" rx="1.25" />
               <path d="M3.75 5.25V11a1.25 1.25 0 0 0 1.25 1.25h4.25" />
             </svg>
@@ -87,10 +87,10 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
               event.stopPropagation();
               onDelete(scene.id);
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-rose-500/25 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500/18 hover:text-rose-300"
+            className="flex h-[20px] w-[20px] items-center justify-center rounded-md border border-rose-500/25 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500/18 hover:text-rose-300"
             aria-label="Delete scene"
           >
-            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3.75 5.25h8.5" />
               <path d="M6.25 2.75h3.5" />
               <path d="M5.25 5.25v6.25" />
@@ -101,12 +101,12 @@ function SceneCard({ scene, index, active, dragging = false, onSelect, onDelete,
           </button>
         </div>
       </div>
-      <div className="mt-auto flex items-end justify-between gap-3">
+      <div className="mt-auto flex items-end justify-between gap-1.5">
         <div>
-          <p className="text-[11px] text-slate-500">Scene {index + 1}</p>
-          <p className="mt-1 text-xs text-slate-300">{scene.durationSeconds.toFixed(1)}s</p>
+          <p className="text-[9px] text-slate-500">Scene {index + 1}</p>
+          <p className="mt-0.5 text-[10px] text-slate-300">{scene.durationSeconds.toFixed(1)}s</p>
         </div>
-        <div className="rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
+        <div className="rounded-full border border-white/10 bg-slate-950/70 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.16em] text-slate-400">
           Ready
         </div>
       </div>
@@ -183,10 +183,10 @@ export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneI
   }, [scenes.length]);
 
   return (
-    <section className="shrink-0 px-4 py-2">
+    <section className="shrink-0 border-t border-white/10 bg-slate-950/90 px-4 py-1 shadow-[0_-12px_32px_rgba(2,6,23,0.35)]">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <SortableContext items={sceneIds} strategy={horizontalListSortingStrategy}>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-2.5 overflow-x-auto pb-0.5">
             {scenes.map((scene, index) => (
               <SortableSceneCard
                 key={scene.id}
@@ -203,7 +203,7 @@ export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneI
               ref={addButtonRef}
               type="button"
               onClick={onAddScene}
-              className="flex h-[124px] w-[168px] flex-none items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-colors duration-150 hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
+              className="flex h-[84px] w-[150px] flex-none items-center justify-center rounded-[18px] border border-dashed border-white/15 bg-white/[0.03] text-3xl text-slate-500 transition-colors duration-150 hover:border-sky-400/40 hover:bg-white/[0.07] hover:text-sky-300"
             >
               +
             </button>

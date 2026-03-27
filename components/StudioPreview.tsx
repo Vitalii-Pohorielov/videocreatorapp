@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SceneStage } from "@/components/SceneStage";
 import { fileToStoredUrl } from "@/lib/imageUpload";
@@ -93,7 +93,30 @@ export function StudioPreview({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const highlightInputRef = useRef<HTMLInputElement>(null);
   const authorInputRef = useRef<HTMLInputElement>(null);
+  const qualityMenuRef = useRef<HTMLDivElement>(null);
+  const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
+  const selectedProfileLabel = exportProfileLabels[settings.profile];
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!qualityMenuRef.current?.contains(event.target as Node)) {
+        setIsQualityMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsQualityMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl" | "authorImageUrl", file: File | null) => {
     if (!file) return;
@@ -190,19 +213,52 @@ export function StudioPreview({
           </div>
 
           <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
-            <label className="w-[112px] rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200">
-              <select
-                value={settings.profile}
-                onChange={(event) => onUpdateSettings({ profile: event.target.value as ExportProfile })}
-                className="w-full bg-transparent outline-none"
+            <div ref={qualityMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setIsQualityMenuOpen((open) => !open)}
+                className="inline-flex h-10 w-[132px] items-center justify-between rounded-xl border border-white/10 bg-slate-950/90 px-3 text-sm text-slate-100 shadow-[0_12px_24px_rgba(2,6,23,0.28)] transition hover:bg-slate-900"
+                aria-haspopup="menu"
+                aria-expanded={isQualityMenuOpen}
               >
-                {profileOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {exportProfileLabels[option]}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <span>{selectedProfileLabel}</span>
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  className={`h-3.5 w-3.5 text-slate-400 transition ${isQualityMenuOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m4 6 4 4 4-4" />
+                </svg>
+              </button>
+              {isQualityMenuOpen ? (
+                <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[220px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_24px_60px_rgba(2,6,23,0.55)]">
+                  {profileOptions.map((option) => {
+                    const active = settings.profile === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => {
+                          onUpdateSettings({ profile: option });
+                          setIsQualityMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition ${
+                          active ? "bg-sky-400/12 text-sky-200" : "text-slate-200 hover:bg-white/[0.06]"
+                        }`}
+                      >
+                        <span>{exportProfileLabels[option]}</span>
+                        {active ? <span className="h-2 w-2 rounded-full bg-sky-400" aria-hidden="true" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
 
             {downloadUrl ? (
               <a

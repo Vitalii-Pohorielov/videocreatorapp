@@ -1297,7 +1297,7 @@ export function SceneStage({
                 value={scene.title}
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ title: value })}
-                className={`${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
+                className={`${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.98] tracking-[-0.07em]`}
                 style={revealStyle(editable ? 1 : motion(progress, 0.18, 0.14), { y: 20, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Line 1"
               />
@@ -1306,7 +1306,7 @@ export function SceneStage({
                 value={scene.subtitle}
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ subtitle: value })}
-                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
+                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.98] tracking-[-0.07em]`}
                 style={revealStyle(editable ? 1 : motion(progress, 0.38, 0.14), { y: 22, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Line 2"
               />
@@ -1315,7 +1315,7 @@ export function SceneStage({
                 value={scene.description}
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ description: value })}
-                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.92] tracking-[-0.07em]`}
+                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.98] tracking-[-0.07em]`}
                 style={revealStyle(editable ? 1 : motion(progress, 0.58, 0.14), { y: 24, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Line 3"
               />
