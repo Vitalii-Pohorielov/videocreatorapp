@@ -24,12 +24,25 @@ function normalizeSingleLineText(value: string) {
   return value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function normalizeSentenceCase(value: string) {
+  const normalized = normalizeSingleLineText(value);
+  if (!normalized) return "";
+  return normalized.replace(/(^|[.!?]\s+)([a-zа-яё])/giu, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`).replace(/^([a-zа-яё])/iu, (letter) => letter.toUpperCase());
+}
+
 function normalizeTextRows(values: string[] | undefined, fallback: string[], count: number) {
   const source = Array.isArray(values) ? values : [];
   return Array.from({ length: count }, (_, index) => normalizeSingleLineText(source[index] ?? fallback[index] ?? ""));
 }
 
 function normalizeLoadedScene(scene: Scene): Scene {
+  if ((scene as unknown as { type?: string }).type === "brand-reveal") {
+    return {
+      ...scene,
+      title: normalizeSentenceCase(scene.title),
+    };
+  }
+
   if ((scene as unknown as { type?: string }).type === "checklist") {
     return {
       ...scene,
@@ -72,7 +85,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "center-text") {
     return {
       ...scene,
-      title: normalizeSingleLineText(scene.title),
+      title: normalizeSentenceCase(scene.title),
     };
   }
 

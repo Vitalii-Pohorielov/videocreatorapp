@@ -75,6 +75,12 @@ function revealStyle(progress: number, options?: { y?: number; x?: number; scale
   };
 }
 
+function toSentenceCase(value: string) {
+  const normalized = value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  return normalized.replace(/(^|[.!?]\s+)([a-zа-яё])/giu, (match, prefix, letter: string) => `${prefix}${letter.toUpperCase()}`).replace(/^([a-zа-яё])/iu, (match) => match.toUpperCase());
+}
+
 function presetStyles(preset: TemplatePreset, lightweight = false) {
   switch (preset) {
     case "white":
@@ -939,11 +945,16 @@ export function SceneStage({
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
   const showcaseImageBottom = scene.mediaPosition === "bottom";
-  const centerTextTitle = scene.title.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  const introTitle = toSentenceCase(scene.title);
+  const centerTextTitle = toSentenceCase(scene.title);
   const centerTextBoxIn = editable ? 1 : motion(progress, 0.06, 0.22);
 
   const updateCenterTextTitle = (value: string) => {
-    onSceneChange?.({ title: value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim() });
+    onSceneChange?.({ title: toSentenceCase(value) });
+  };
+
+  const updateIntroTitle = (value: string) => {
+    onSceneChange?.({ title: toSentenceCase(value) });
   };
 
   useEffect(() => {
@@ -1144,10 +1155,10 @@ export function SceneStage({
           <IntroLogoSlot scene={scene} entryProgress={sharedIn} outroProgress={introLogoOutro} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} textColor={textColor} />
           <EditableText
             as="h2"
-            value={scene.title}
+            value={introTitle}
             editable={editable}
-            onCommit={(value) => onSceneChange?.({ title: value })}
-            className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title}`}
+            onCommit={updateIntroTitle}
+            className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title} normal-case`}
             style={{ transform: `translateY(${40 * (1 - titleIn) - 42 * introTextOutro}px) scale(${0.9 + titleIn * 0.1 + introTextOutro * 0.04})`, opacity: titleIn * (1 - Math.min(1, introTextOutro * 1.6)), filter: `blur(${16 * blurMultiplier * (1 - titleIn) + 18 * introTextOutro}px)` }}
             placeholder="Scene title"
           />
@@ -1459,7 +1470,7 @@ export function SceneStage({
                 value={centerTextTitle}
                 editable={editable}
                 onCommit={updateCenterTextTitle}
-                className={`${compact ? "text-3xl" : "text-5xl md:text-7xl"} ${s.title} whitespace-normal break-normal leading-[0.98] tracking-[-0.055em]`}
+                className={`${compact ? "text-3xl" : "text-5xl md:text-7xl"} ${s.title} normal-case whitespace-normal break-normal leading-[0.98] tracking-[-0.055em]`}
                 style={revealStyle(editable ? 1 : motion(progress, 0.12, 0.18), { y: 18, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
                 placeholder="Bring the message to the center"
               />
