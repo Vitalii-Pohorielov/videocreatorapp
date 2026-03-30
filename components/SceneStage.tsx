@@ -572,14 +572,27 @@ function WebsiteScrollFrame({
         type="button"
         onClick={editable ? onPickImage : undefined}
         className={`relative block w-full overflow-hidden rounded-[22px] border text-left ${editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
-        style={{ height: viewportHeight, borderColor: `color-mix(in srgb, ${textColor} 18%, transparent)`, backgroundColor: `color-mix(in srgb, ${textColor} 8%, transparent)` }}
+        style={{
+          height: viewportHeight,
+          borderColor: `color-mix(in srgb, ${textColor} 18%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${textColor} 8%, transparent)`,
+          contain: "paint",
+        }}
       >
         {websiteImageUrl ? (
           <img
             src={websiteImageUrl}
             alt="Website screenshot"
-            className="block w-full"
-            style={{ transform: `translateY(-${scrollOffset})`, transition: lightweightPreview ? "none" : "transform 80ms linear", willChange: lightweightPreview ? "auto" : "transform" }}
+            className="absolute left-0 top-0 block w-full select-none"
+            draggable={false}
+            decoding="async"
+            loading="eager"
+            style={{
+              transform: `translate3d(0, -${scrollOffset}, 0)`,
+              transition: lightweightPreview ? "none" : "transform 80ms linear",
+              willChange: lightweightPreview ? "auto" : "transform",
+              backfaceVisibility: "hidden",
+            }}
           />
         ) : (
           <div className="p-5">
