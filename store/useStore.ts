@@ -24,6 +24,11 @@ function normalizeSingleLineText(value: string) {
   return value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function normalizeTextRows(values: string[] | undefined, fallback: string[], count: number) {
+  const source = Array.isArray(values) ? values : [];
+  return Array.from({ length: count }, (_, index) => normalizeSingleLineText(source[index] ?? fallback[index] ?? ""));
+}
+
 function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "checklist") {
     return {
@@ -69,6 +74,35 @@ function normalizeLoadedScene(scene: Scene): Scene {
       ...scene,
       title: normalizeSingleLineText(scene.title),
     };
+  }
+
+  if ((scene as unknown as { type?: string }).type === "pricing") {
+    const planTitles = normalizeTextRows((scene as Scene).pricingPlanTitles, ["Starter", "Pro", "Team"], 3);
+    const planDescriptions = normalizeTextRows(
+      (scene as Scene).pricingPlanDescriptions,
+      [
+        "Great for small launches and demos.",
+        "Best balance of speed and polish.",
+        "Everything a growing team needs.",
+      ],
+      3,
+    );
+    return {
+      ...scene,
+      pricingPlanTitles: planTitles,
+      pricingPlanDescriptions: planDescriptions,
+    } as Scene;
+  }
+
+  if ((scene as unknown as { type?: string }).type === "process") {
+    return {
+      ...scene,
+      processStepDescriptions: normalizeTextRows(
+        (scene as Scene).processStepDescriptions,
+        ["Set the direction.", "Build the core scene.", "Export and share."],
+        3,
+      ),
+    } as Scene;
   }
 
   if ((scene as unknown as { type?: string }).type !== "metrics") return scene;

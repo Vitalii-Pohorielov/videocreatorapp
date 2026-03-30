@@ -1357,13 +1357,31 @@ export function SceneStage({
               {scene.bullets.map((bullet, index) => {
                 const itemIn = editable ? 1 : motion(progress, 0.2 + index * 0.08, 0.18);
                 const featured = index === 1;
+                const planTitles = scene.pricingPlanTitles ?? [];
+                const planDescriptions = scene.pricingPlanDescriptions ?? [];
+                const planTitle = planTitles[index] || (index === 0 ? "Starter" : index === 1 ? "Pro" : "Team");
+                const planDescription =
+                  planDescriptions[index] ||
+                  (index === 0 ? "Great for small launches and demos." : index === 1 ? "Best balance of speed and polish." : "Everything a growing team needs.");
                 return (
                   <div
                     key={`${scene.id}-pricing-${index}`}
                     className={`relative rounded-[30px] border p-6 ${featured ? "translate-y-[-8px]" : ""} ${s.card}`}
                     style={{ transform: `translateY(${18 * (1 - itemIn)}px) scale(${0.95 + itemIn * 0.05})`, opacity: itemIn }}
                   >
-                    <p className="text-xs uppercase tracking-[0.24em] opacity-55">{index === 0 ? "Starter" : index === 1 ? "Pro" : "Team"}</p>
+                    <EditableText
+                      as="p"
+                      value={planTitle}
+                      editable={editable}
+                      onCommit={(value) =>
+                        onSceneChange?.({
+                          pricingPlanTitles: planTitles.map((item, planIndex) => (planIndex === index ? value : item)),
+                        })
+                      }
+                      className="text-xs uppercase tracking-[0.24em] opacity-55"
+                      style={revealStyle(itemIn, { y: 8, blur: editable ? 0 : 4, minOpacity: 0 })}
+                      placeholder={index === 0 ? "Starter" : index === 1 ? "Pro" : "Team"}
+                    />
                     <EditableText
                       as="div"
                       value={bullet}
@@ -1374,9 +1392,20 @@ export function SceneStage({
                       placeholder="Plan"
                     />
                     <div className="mt-4 h-1.5 w-20 rounded-full" style={{ backgroundColor: featured ? elevatedAccentColor : accentColor }} />
-                    <p className={`mt-4 ${compact ? "text-sm" : "text-lg"} leading-relaxed opacity-75`}>
-                      {index === 0 ? "Great for small launches and demos." : index === 1 ? "Best balance of speed and polish." : "Everything a growing team needs."}
-                    </p>
+                    <EditableText
+                      as="p"
+                      value={planDescription}
+                      editable={editable}
+                      multiline
+                      onCommit={(value) =>
+                        onSceneChange?.({
+                          pricingPlanDescriptions: planDescriptions.map((item, planIndex) => (planIndex === index ? value : item)),
+                        })
+                      }
+                      className={`mt-4 ${compact ? "text-sm" : "text-lg"} leading-relaxed opacity-75`}
+                      style={revealStyle(itemIn, { y: 8, blur: editable ? 0 : 4, minOpacity: 0 })}
+                      placeholder={index === 0 ? "Great for small launches and demos." : index === 1 ? "Best balance of speed and polish." : "Everything a growing team needs."}
+                    />
                   </div>
                 );
               })}
@@ -1453,6 +1482,10 @@ export function SceneStage({
             <div className="mt-8 grid gap-3 md:grid-cols-3">
               {scene.bullets.map((bullet, index) => {
                 const itemIn = editable ? 1 : motion(progress, 0.18 + index * 0.08, 0.18);
+                const stepDescriptions = scene.processStepDescriptions ?? [];
+                const stepDescription =
+                  stepDescriptions[index] ||
+                  (index === 0 ? "Set the direction." : index === 1 ? "Build the core scene." : "Export and share.");
                 return (
                   <div
                     key={`${scene.id}-process-${index}`}
@@ -1476,9 +1509,20 @@ export function SceneStage({
                       style={revealStyle(itemIn, { y: 10, blur: editable ? 0 : 6, minOpacity: 0 })}
                       placeholder="Step"
                     />
-                    <p className={`mt-3 ${compact ? "text-sm" : "text-base"} leading-relaxed opacity-75`}>
-                      {index === 0 ? "Set the direction." : index === 1 ? "Build the core scene." : "Export and share."}
-                    </p>
+                    <EditableText
+                      as="p"
+                      value={stepDescription}
+                      editable={editable}
+                      multiline
+                      onCommit={(value) =>
+                        onSceneChange?.({
+                          processStepDescriptions: stepDescriptions.map((item, stepIndex) => (stepIndex === index ? value : item)),
+                        })
+                      }
+                      className={`mt-3 ${compact ? "text-sm" : "text-base"} leading-relaxed opacity-75`}
+                      style={revealStyle(itemIn, { y: 8, blur: editable ? 0 : 4, minOpacity: 0 })}
+                      placeholder={index === 0 ? "Set the direction." : index === 1 ? "Build the core scene." : "Export and share."}
+                    />
                   </div>
                 );
               })}

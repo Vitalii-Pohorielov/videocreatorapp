@@ -82,6 +82,9 @@ export type Scene = {
   subtitle: string;
   description: string;
   bullets: string[];
+  pricingPlanTitles?: string[];
+  pricingPlanDescriptions?: string[];
+  processStepDescriptions?: string[];
   bulletEmojis: string[];
   bulletImageUrls: string[];
   websiteImageUrl: string;
@@ -331,6 +334,12 @@ export const sceneDefinitions: SceneDefinition[] = [
       subtitle: "Simple tiers that feel easy to compare.",
       description: "",
       bullets: ["Starter - $19", "Pro - $49", "Team - $99"],
+      pricingPlanTitles: ["Starter", "Pro", "Team"],
+      pricingPlanDescriptions: [
+        "Great for small launches and demos.",
+        "Best balance of speed and polish.",
+        "Everything a growing team needs.",
+      ],
       bulletEmojis: ["", "", ""],
       bulletImageUrls: [],
       websiteImageUrl: "",
@@ -352,6 +361,7 @@ export const sceneDefinitions: SceneDefinition[] = [
       subtitle: "Three simple steps from idea to export.",
       description: "",
       bullets: ["Plan", "Create", "Export"],
+      processStepDescriptions: ["Set the direction.", "Build the core scene.", "Export and share."],
       bulletEmojis: ["", "", ""],
       bulletImageUrls: [],
       websiteImageUrl: "",

@@ -502,18 +502,38 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
         ) : null}
 
         {scene.type === "pricing" ? (
-          <InspectorSection title="Plans" description="One pricing plan per line.">
+          <InspectorSection title="Plans" description="Edit plan names, prices, and descriptions separately.">
             <label className="block">
-              <span className={labelClassName}>Plans</span>
+              <span className={labelClassName}>Prices</span>
               <textarea
                 value={scene.bullets.join("\n")}
                 rows={3}
                 onChange={(event) => onUpdate(scene.id, { bullets: normalizeFixedBullets(event.target.value, 3) })}
                 className={textareaClassName}
-                placeholder="Starter - $19"
+                placeholder="$19"
               />
-              <p className="mt-2 text-xs text-slate-500">This pricing scene keeps 3 plans.</p>
             </label>
+            <label className="block mt-4">
+              <span className={labelClassName}>Plan names</span>
+              <textarea
+                value={(scene.pricingPlanTitles ?? []).join("\n")}
+                rows={3}
+                onChange={(event) => onUpdate(scene.id, { pricingPlanTitles: normalizeFixedBullets(event.target.value, 3) })}
+                className={textareaClassName}
+                placeholder="Starter"
+              />
+            </label>
+            <label className="block mt-4">
+              <span className={labelClassName}>Descriptions</span>
+              <textarea
+                value={(scene.pricingPlanDescriptions ?? []).join("\n")}
+                rows={3}
+                onChange={(event) => onUpdate(scene.id, { pricingPlanDescriptions: normalizeFixedBullets(event.target.value, 3) })}
+                className={textareaClassName}
+                placeholder="Great for small launches and demos."
+              />
+            </label>
+            <p className="mt-2 text-xs text-slate-500">This pricing scene keeps 3 plans.</p>
           </InspectorSection>
         ) : null}
 
@@ -543,6 +563,16 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
                 placeholder="Plan"
               />
               <p className="mt-2 text-xs text-slate-500">This process scene keeps 3 steps.</p>
+            </label>
+            <label className="block mt-4">
+              <span className={labelClassName}>Descriptions</span>
+              <textarea
+                value={(scene.processStepDescriptions ?? []).join("\n")}
+                rows={3}
+                onChange={(event) => onUpdate(scene.id, { processStepDescriptions: normalizeFixedBullets(event.target.value, 3) })}
+                className={textareaClassName}
+                placeholder="Set the direction."
+              />
             </label>
           </InspectorSection>
         ) : null}
