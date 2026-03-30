@@ -144,3 +144,23 @@ export async function deleteProject(projectId: string) {
     throw new Error("Project delete did not complete. Apply the updated schema from lib/projectSchema.sql first.");
   }
 }
+
+export async function deleteProjects(projectIds: string[]) {
+  if (projectIds.length === 0) return;
+
+  const { supabase } = await getAuthenticatedSupabase();
+  const { data, error } = await supabase
+    .from(PROJECTS_TABLE)
+    .update({ deleted: true })
+    .in("id", projectIds)
+    .select("id")
+    .returns<{ id: string }[]>();
+
+  if (error) {
+    throw new Error(`Project delete failed: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error("Project delete did not complete. Apply the updated schema from lib/projectSchema.sql first.");
+  }
+}

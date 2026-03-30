@@ -23,6 +23,14 @@ body {
   color: #e2e8f0;
 }
 
+input[type="search"]::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+input[type="search"]::-webkit-search-decoration {
+  cursor: pointer;
+}
+
 .website-scroll-image {
   display: block;
   width: 100%;
