@@ -728,7 +728,7 @@ function ShowcaseImageSlot({
                 event.stopPropagation();
                 onChangeMediaPosition(button.value);
               }}
-              className={`absolute z-10 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${placementClassName} ${
+              className={`absolute z-50 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${placementClassName} ${
                 active
                   ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
                   : "border-white/20 bg-black/45 text-white hover:bg-black/65"
@@ -926,6 +926,13 @@ export function SceneStage({
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
   const showcaseImageBottom = scene.mediaPosition === "bottom";
+  const centerTextTitle = scene.title.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  const centerTextBoxIn = editable ? 1 : motion(progress, 0.06, 0.22);
+
+  const updateCenterTextTitle = (value: string) => {
+    onSceneChange?.({ title: value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim() });
+  };
+
   useEffect(() => {
     if (!isCodeEditorOpen) {
       setCodeDraft(scene.code ?? scene.description);
@@ -1110,7 +1117,7 @@ export function SceneStage({
           />
         </>
       ) : null}
-      <div className={compact ? "relative h-full w-full px-4 py-4" : "relative h-full w-full px-8 py-8"}>
+      <div className={compact ? "relative h-full w-full px-4 py-4" : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`}>
       {showSceneContent ? (
         <div
           className="relative h-full w-full"
@@ -1147,8 +1154,7 @@ export function SceneStage({
             >
               <div className="mb-3 flex gap-2"><span className="h-2.5 w-2.5 rounded-full bg-white/60" /><span className="h-2.5 w-2.5 rounded-full bg-white/40" /><span className="h-2.5 w-2.5 rounded-full bg-white/25" /></div>
               <div className={`overflow-hidden rounded-[22px] border border-white/10 bg-black/10 ${compact ? "h-[170px]" : "h-[430px]"}`}>
-                <div className={compact ? "translate-y-2" : "translate-y-8"}>
-                  <ShowcaseImageSlot
+                <ShowcaseImageSlot
                   scene={scene}
                   compact={compact}
                   editable={editable}
@@ -1158,7 +1164,6 @@ export function SceneStage({
                   textColor={textColor}
                 />
               </div>
-            </div>
             </div>
           </div>
         ) : (
@@ -1324,6 +1329,164 @@ export function SceneStage({
         </div>
       )}
 
+      {scene.type === "pricing" && (
+        <div className="flex h-full items-center justify-center px-6">
+          <div className="w-full max-w-6xl">
+            <div className="text-center">
+              <EditableText
+                as="h2"
+                value={scene.title}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ title: value })}
+                className={`${compact ? "text-3xl" : "text-6xl md:text-7xl"} ${s.title} leading-[0.94] tracking-[-0.06em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.1, 0.14), { y: 18, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Pricing"
+              />
+              <EditableText
+                as="p"
+                value={scene.subtitle}
+                editable={editable}
+                multiline
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mx-auto mt-4 max-w-3xl ${midSize} opacity-[0.82]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.22, 0.14), { y: 16, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Simple pricing"
+              />
+            </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {scene.bullets.map((bullet, index) => {
+                const itemIn = editable ? 1 : motion(progress, 0.2 + index * 0.08, 0.18);
+                const featured = index === 1;
+                return (
+                  <div
+                    key={`${scene.id}-pricing-${index}`}
+                    className={`relative rounded-[30px] border p-6 ${featured ? "translate-y-[-8px]" : ""} ${s.card}`}
+                    style={{ transform: `translateY(${18 * (1 - itemIn)}px) scale(${0.95 + itemIn * 0.05})`, opacity: itemIn }}
+                  >
+                    <p className="text-xs uppercase tracking-[0.24em] opacity-55">{index === 0 ? "Starter" : index === 1 ? "Pro" : "Team"}</p>
+                    <EditableText
+                      as="div"
+                      value={bullet}
+                      editable={editable}
+                      onCommit={(value) => updateBullet(index, value)}
+                      className={`mt-4 ${compact ? "text-2xl" : "text-5xl"} font-semibold leading-[0.92] tracking-[-0.07em] ${s.title}`}
+                      style={revealStyle(itemIn, { y: 10, blur: editable ? 0 : 6, minOpacity: 0 })}
+                      placeholder="Plan"
+                    />
+                    <div className="mt-4 h-1.5 w-20 rounded-full" style={{ backgroundColor: featured ? elevatedAccentColor : accentColor }} />
+                    <p className={`mt-4 ${compact ? "text-sm" : "text-lg"} leading-relaxed opacity-75`}>
+                      {index === 0 ? "Great for small launches and demos." : index === 1 ? "Best balance of speed and polish." : "Everything a growing team needs."}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {scene.type === "center-text" && (
+        <div className="relative flex h-full items-center justify-center overflow-hidden px-6">
+          <div className="absolute inset-0 overflow-hidden">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+                backgroundSize: "72px 72px",
+                transform: `translate3d(${(motion(progress, 0.12, 0.18) - 0.5) * 18}px, ${(motion(progress, 0.28, 0.18) - 0.5) * 14}px, 0)`,
+                opacity: 0.14,
+              }}
+            />
+          </div>
+          <div className="relative z-10 w-full max-w-4xl text-center">
+            <div
+              className={`relative mx-auto w-full rounded-[36px] border ${compact ? "px-8 py-8" : "px-12 py-10"}`}
+              style={{
+                maxWidth: compact ? "34rem" : "46rem",
+                borderColor: `color-mix(in srgb, ${accentColor} 26%, transparent)`,
+                background: `linear-gradient(180deg, color-mix(in srgb, ${accentColor} 24%, transparent), color-mix(in srgb, ${elevatedAccentColor} 14%, transparent))`,
+                boxShadow: `0 0 0 1px color-mix(in srgb, ${accentColor} 12%, transparent), 0 18px 60px rgba(0,0,0,0.18)`,
+                backdropFilter: "blur(10px)",
+                transform: `translate3d(0, ${(motion(progress, 0.22, 0.28) - 0.5) * 6}px, 0) scale(${0.96 + centerTextBoxIn * 0.04})`,
+                opacity: 0.12 + centerTextBoxIn * 0.8,
+              }}
+            >
+              <EditableText
+                as="h2"
+                value={centerTextTitle}
+                editable={editable}
+                onCommit={updateCenterTextTitle}
+                className={`${compact ? "text-3xl" : "text-5xl md:text-7xl"} ${s.title} whitespace-normal break-normal leading-[0.98] tracking-[-0.055em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.12, 0.18), { y: 18, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Bring the message to the center"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {scene.type === "process" && (
+        <div className="flex h-full items-center justify-center px-6">
+          <div className="w-full max-w-6xl">
+            <div className="text-center">
+              <EditableText
+                as="h2"
+                value={scene.title}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ title: value })}
+                className={`${compact ? "text-3xl" : "text-6xl md:text-7xl"} ${s.title} leading-[0.94] tracking-[-0.06em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.1, 0.14), { y: 18, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Process"
+              />
+              <EditableText
+                as="p"
+                value={scene.subtitle}
+                editable={editable}
+                multiline
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mx-auto mt-4 max-w-3xl ${midSize} opacity-[0.82]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.22, 0.14), { y: 16, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Three steps"
+              />
+            </div>
+            <div className="mt-8 grid gap-3 md:grid-cols-3">
+              {scene.bullets.map((bullet, index) => {
+                const itemIn = editable ? 1 : motion(progress, 0.18 + index * 0.08, 0.18);
+                return (
+                  <div
+                    key={`${scene.id}-process-${index}`}
+                    className={`rounded-[26px] border p-5 ${s.card}`}
+                    style={{ transform: `translateY(${18 * (1 - itemIn)}px) scale(${0.95 + itemIn * 0.05})`, opacity: itemIn }}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full border text-sm font-semibold" style={{ borderColor: `color-mix(in srgb, ${textColor} 22%, transparent)`, color: textColor }}>
+                        {index + 1}
+                      </div>
+                      <div className="h-1 flex-1 rounded-full bg-white/10">
+                        <div className="h-full rounded-full" style={{ width: `${100 - index * 14}%`, backgroundColor: index === 1 ? elevatedAccentColor : accentColor }} />
+                      </div>
+                    </div>
+                    <EditableText
+                      as="div"
+                      value={bullet}
+                      editable={editable}
+                      onCommit={(value) => updateBullet(index, value)}
+                      className={`mt-5 ${compact ? "text-xl" : "text-4xl"} font-semibold leading-[0.96] tracking-[-0.06em] ${s.title}`}
+                      style={revealStyle(itemIn, { y: 10, blur: editable ? 0 : 6, minOpacity: 0 })}
+                      placeholder="Step"
+                    />
+                    <p className={`mt-3 ${compact ? "text-sm" : "text-base"} leading-relaxed opacity-75`}>
+                      {index === 0 ? "Set the direction." : index === 1 ? "Build the core scene." : "Export and share."}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {scene.type === "website-url" && (
         <div className={`flex h-full items-center justify-center overflow-hidden text-center ${compact ? "-mx-4 -my-4" : "-mx-8 -my-8"}`}>
           <div
@@ -1470,40 +1633,6 @@ export function SceneStage({
                 placeholder="Author"
               />
             ) : null}
-          </div>
-        </div>
-      )}
-
-      {scene.type === "checklist" && (
-        <div className="flex h-full flex-col justify-center">
-          <EditableText as="h2" value={scene.title} editable={editable} onCommit={(value) => onSceneChange?.({ title: value })} className={`mt-4 text-center leading-tight ${compact ? "text-2xl" : "text-6xl"} ${s.title}`} placeholder="Title" />
-          <div className="mx-auto mt-8 grid w-full max-w-3xl gap-3">
-            {scene.bullets.map((bullet, index) => {
-              const itemIn = editable ? 1 : motion(progress, 0.14 + index * 0.09, 0.18);
-              return (
-                <div
-                  key={`${scene.id}-checklist-${index}`}
-                  className={`grid items-center gap-4 rounded-[22px] px-4 py-5 text-left ${compact ? "grid-cols-[60px_1fr]" : "grid-cols-[88px_1fr]"}`}
-                  style={{ transform: `translateX(${-24 * (1 - itemIn)}px)`, opacity: itemIn }}
-                >
-                  <div className="flex items-center justify-center">
-                    <div className={`flex items-center justify-center rounded-full border border-white/10 bg-white/10 ${compact ? "h-12 w-12 text-base" : "h-16 w-16 text-xl"} font-semibold`}>
-                      {index + 1}
-                    </div>
-                  </div>
-                  <EditableText
-                    as="p"
-                    value={bullet}
-                    editable={editable}
-                    multiline
-                    onCommit={(value) => updateBullet(index, value)}
-                    className={compact ? "text-lg font-semibold leading-snug" : "text-3xl font-semibold leading-tight"}
-                    style={revealStyle(itemIn, { x: -10, y: 0, blur: 6, minOpacity: 0 })}
-                    placeholder={`Item ${index + 1}`}
-                  />
-                </div>
-              );
-            })}
           </div>
         </div>
       )}

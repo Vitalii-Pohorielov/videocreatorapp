@@ -179,9 +179,9 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
     });
   };
 
-  const normalizeChecklistBullets = (value: string) => {
+  const normalizeFixedBullets = (value: string, count: number) => {
     const lines = value.split("\n").map((item) => item.trim());
-    return [lines[0] ?? "", lines[1] ?? "", lines[2] ?? ""];
+    return Array.from({ length: count }, (_, index) => lines[index] ?? "");
   };
 
   const handleAuthorImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -501,18 +501,48 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
           </InspectorSection>
         ) : null}
 
-        {scene.type === "checklist" ? (
-          <InspectorSection title="Items" description="One checklist item per line.">
+        {scene.type === "pricing" ? (
+          <InspectorSection title="Plans" description="One pricing plan per line.">
             <label className="block">
-              <span className={labelClassName}>Items</span>
+              <span className={labelClassName}>Plans</span>
               <textarea
                 value={scene.bullets.join("\n")}
                 rows={3}
-                onChange={(event) => onUpdate(scene.id, { bullets: normalizeChecklistBullets(event.target.value) })}
+                onChange={(event) => onUpdate(scene.id, { bullets: normalizeFixedBullets(event.target.value, 3) })}
                 className={textareaClassName}
-                placeholder="One item per line"
+                placeholder="Starter - $19"
               />
-              <p className="mt-2 text-xs text-slate-500">This checklist always keeps exactly 3 items.</p>
+              <p className="mt-2 text-xs text-slate-500">This pricing scene keeps 3 plans.</p>
+            </label>
+          </InspectorSection>
+        ) : null}
+
+        {scene.type === "center-text" ? (
+          <InspectorSection title="Copy" description="Centered message with a short supporting line.">
+            <label className="block">
+              <span className={labelClassName}>Title</span>
+              <input
+                value={scene.title}
+                onChange={(event) => onUpdate(scene.id, { title: event.target.value })}
+                className={fieldClassName}
+                placeholder="Bring the message to the center"
+              />
+            </label>
+          </InspectorSection>
+        ) : null}
+
+        {scene.type === "process" ? (
+          <InspectorSection title="Steps" description="One process step per line.">
+            <label className="block">
+              <span className={labelClassName}>Steps</span>
+              <textarea
+                value={scene.bullets.join("\n")}
+                rows={3}
+                onChange={(event) => onUpdate(scene.id, { bullets: normalizeFixedBullets(event.target.value, 3) })}
+                className={textareaClassName}
+                placeholder="Plan"
+              />
+              <p className="mt-2 text-xs text-slate-500">This process scene keeps 3 steps.</p>
             </label>
           </InspectorSection>
         ) : null}

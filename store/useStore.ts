@@ -20,11 +20,54 @@ export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
+function normalizeSingleLineText(value: string) {
+  return value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "checklist") {
     return {
       ...scene,
-      bullets: normalizeChecklistBullets(scene.bullets),
+      type: "process",
+      name: scene.name.replace(/checklist/i, "Process"),
+      bullets: normalizeFixedBullets(scene.bullets, 3),
+    };
+  }
+
+  if ((scene as unknown as { type?: string }).type === "faq") {
+    return {
+      ...scene,
+      type: "center-text",
+      name: scene.name.replace(/faq/i, "Center Text"),
+      eyebrow: scene.eyebrow || "Focus",
+      title: scene.title || "Common questions",
+      subtitle: scene.subtitle || "Short answers that clear up hesitation.",
+      description: scene.description || scene.bullets.join(" "),
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+    } as Scene;
+  }
+
+  if ((scene as unknown as { type?: string }).type === "testimonial-wall") {
+    return {
+      ...scene,
+      type: "center-text",
+      name: scene.name.replace(/testimonial-wall/i, "Center Text"),
+      eyebrow: scene.eyebrow || "Social proof",
+      title: scene.title || "Loved by teams",
+      subtitle: scene.subtitle || scene.bullets[0] || "Quick quotes from people using it.",
+      description: scene.bullets.slice(1).join(" "),
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+    } as Scene;
+  }
+
+  if ((scene as unknown as { type?: string }).type === "center-text") {
+    return {
+      ...scene,
+      title: normalizeSingleLineText(scene.title),
     };
   }
 
@@ -39,8 +82,8 @@ function normalizeLoadedScene(scene: Scene): Scene {
   } as Scene;
 }
 
-function normalizeChecklistBullets(bullets: string[]) {
-  return [bullets[0] ?? "", bullets[1] ?? "", bullets[2] ?? ""];
+function normalizeFixedBullets(bullets: string[], count: number) {
+  return Array.from({ length: count }, (_, index) => bullets[index] ?? "");
 }
 
 type StudioStore = {
@@ -76,6 +119,7 @@ const clampDuration = (value: number) => Math.min(8, Math.max(1.5, value));
 const DEFAULT_FPS = 30;
 const DEFAULT_TRANSITION_SECONDS = 0.8;
 const MAX_BULLETS = 6;
+const MAX_SCENES = 15;
 const sanitizeImageUrl = (value: string | undefined) => {
   const trimmed = value?.trim() ?? "";
   if (!trimmed || trimmed === "." || trimmed === "/") return "";
@@ -85,7 +129,7 @@ const sanitizeImageUrl = (value: string | undefined) => {
 
 function normalizeSceneArrays(scene: Scene, updates: SceneUpdates) {
   const sourceBullets = updates.bullets === undefined ? scene.bullets : updates.bullets;
-  const nextBullets = scene.type === "checklist" ? normalizeChecklistBullets(sourceBullets) : sourceBullets.filter(Boolean).slice(0, MAX_BULLETS);
+  const nextBullets = sourceBullets.filter(Boolean).slice(0, MAX_BULLETS);
   const sourceEmojis = updates.bulletEmojis === undefined ? scene.bulletEmojis : updates.bulletEmojis;
   const sourceImages = updates.bulletImageUrls === undefined ? scene.bulletImageUrls : updates.bulletImageUrls;
   const defaultFeatureIcons = scene.type === "feature-grid" ? getFeatureAnimatedIcons(nextBullets.length) : [];
@@ -168,7 +212,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     })),
   addScene: (type) => {
     const { sceneTrack } = get();
-    if (sceneTrack.scenes.length >= 10) return;
+    if (sceneTrack.scenes.length >= MAX_SCENES) return;
     const nextScene = createScene(type, sceneTrack.scenes.length);
     set({
       sceneTrack: { ...sceneTrack, scenes: [...sceneTrack.scenes, nextScene] },
@@ -177,7 +221,7 @@ export const useStore = create<StudioStore>((set, get) => ({
   },
   duplicateScene: (id) => {
     const { sceneTrack } = get();
-    if (sceneTrack.scenes.length >= 10) return;
+    if (sceneTrack.scenes.length >= MAX_SCENES) return;
 
     const sceneIndex = sceneTrack.scenes.findIndex((scene) => scene.id === id);
     if (sceneIndex < 0) return;

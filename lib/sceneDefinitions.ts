@@ -53,10 +53,12 @@ export type SceneType =
   | "code-preview"
   | "slogan"
   | "description"
+  | "pricing"
+  | "process"
+  | "center-text"
   | "website-url"
   | "website-scroll"
   | "quote"
-  | "checklist"
   | "cta";
 
 export type ExportSettings = {
@@ -317,6 +319,69 @@ export const sceneDefinitions: SceneDefinition[] = [
     }),
   },
   {
+    type: "pricing",
+    label: "Pricing",
+    catalogDescription: "Three-plan pricing layout with a clear featured option.",
+    createTemplate: () => ({
+      type: "pricing",
+      durationSeconds: 2.7,
+      transition: "fade",
+      eyebrow: "Pricing",
+      title: "Pick a plan",
+      subtitle: "Simple tiers that feel easy to compare.",
+      description: "",
+      bullets: ["Starter - $19", "Pro - $49", "Team - $99"],
+      bulletEmojis: ["", "", ""],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "process",
+    label: "Process",
+    catalogDescription: "Three-step workflow or onboarding flow.",
+    createTemplate: () => ({
+      type: "process",
+      durationSeconds: 2.7,
+      transition: "fade",
+      eyebrow: "Process",
+      title: "How it works",
+      subtitle: "Three simple steps from idea to export.",
+      description: "",
+      bullets: ["Plan", "Create", "Export"],
+      bulletEmojis: ["", "", ""],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "center-text",
+    label: "Center Text",
+    catalogDescription: "Centered copy with animated atmospheric background.",
+    createTemplate: () => ({
+      type: "center-text",
+      durationSeconds: 2.7,
+      transition: "fade",
+      eyebrow: "",
+      title: "Bring the message to the center",
+      subtitle: "",
+      description: "",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
     type: "website-url",
     label: "URL",
     catalogDescription: "Large domain text with click-and-launch motion.",
@@ -380,27 +445,6 @@ export const sceneDefinitions: SceneDefinition[] = [
     }),
   },
   {
-    type: "checklist",
-    label: "Checklist",
-    catalogDescription: "Checklist or step list.",
-    createTemplate: () => ({
-      type: "checklist",
-      durationSeconds: 2.7,
-      transition: "fade",
-      eyebrow: "What you get",
-      title: "Everything in one workflow",
-      subtitle: "",
-      description: "",
-      bullets: ["Capture", "Edit", "Export"],
-      bulletEmojis: [],
-      bulletImageUrls: [],
-      websiteImageUrl: "",
-      logoImageUrl: "",
-      authorImageUrl: "",
-      mediaPosition: "right",
-    }),
-  },
-  {
     type: "cta",
     label: "CTA",
     catalogDescription: "Final call to action.",
@@ -454,7 +498,7 @@ export function createScene(type: SceneType, index: number) {
 }
 
 export function createInitialSceneTrack(): SceneTrack {
-  const sceneTypes: SceneType[] = ["brand-reveal", "product-showcase", "feature-grid", "checklist", "cta"];
+  const sceneTypes: SceneType[] = ["brand-reveal", "product-showcase", "feature-grid", "center-text", "cta"];
 
   return {
     id: "main-track",
