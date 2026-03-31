@@ -3,6 +3,22 @@
 This file is meant to be a fast entry point for the next agent or developer.  
 The project already includes a scene editor, cloud persistence, browser-based video export, and draft generation from a URL.
 
+## Stable baseline
+
+Treat the current `main` branch HEAD as the recovery baseline when future work breaks the app.
+
+- If a new change causes regressions, compare against this baseline first.
+- Do not rewrite history for this point unless explicitly requested.
+- Before large refactors, create a new branch and keep this baseline easy to restore.
+- If you are the next agent or developer, prefer additive changes and verify build stability before replacing core editor/export logic.
+
+### Baseline policy for the next agent or developer
+
+1. Start by checking what changed after this baseline.
+2. If the editor, autosave, export, or URL generation breaks, use this commit as the known working reference.
+3. When unsure whether a regression is old or new, assume this baseline is the last trusted state and diff from here.
+4. Keep `TECHNICAL_README.md` updated when the next trusted baseline is intentionally promoted.
+
 ## What this project is
 
 This is a Next.js 16 app for assembling short promo videos from a set of scenes.  
