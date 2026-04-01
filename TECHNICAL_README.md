@@ -93,6 +93,22 @@ Important:
 - Actual store reset behavior currently seeds one `announcement-hero` scene.
 - If this changes, update both the modal copy and this README together.
 
+### Isolation rule between promo and announcement
+
+Treat `promo` and `announcement` as two separate editing branches inside one app.
+
+- If you change announcement video behavior, keep the change scoped to announcement flow only.
+- If you change promo video behavior, keep the change scoped to promo flow only.
+- Do not assume a scene/layout/control added for one mode should automatically appear in the other mode.
+- Do not unify scene catalogs, editor controls, transitions, or startup flows unless that is an explicit product decision.
+
+In practice this means:
+
+- `announcement` has its own scene set and its own editor flow.
+- `promo` has its own scene set and its own editor flow.
+- mode-specific changes should be guarded in scene definitions, modal filtering, editor workspace logic, inspector controls, preview behavior, and export behavior where needed.
+- before shipping a change, verify whether it affects only the intended mode or both modes.
+
 ## Data model
 
 ### Scene
@@ -170,6 +186,12 @@ Important catalog behavior:
 - `slogan` still exists in definitions, but [components/SceneTypeModal.tsx](/d:/VideoCreatorApp/components/SceneTypeModal.tsx) hides it from the add-scene modal.
 - Announcement workspaces only expose `announcement-hero` and `split-slogan`.
 - Promo workspaces hide `announcement-hero` and `split-slogan`.
+
+Mode isolation reminder:
+
+- Announcement-only scenes must stay announcement-only unless product requirements change.
+- Promo scene changes should not silently alter announcement scenes.
+- When adding a new scene type, decide explicitly whether it belongs to `promo`, `announcement`, or both.
 
 ### Scene-by-scene notes
 
@@ -298,6 +320,11 @@ Announcement mode has a fast generator in [components/EditorWorkspace.tsx](/d:/V
 - It preserves an existing `announcement-hero` if one already exists.
 - It then generates one `split-slogan` scene per valid line.
 - The resulting scene track becomes `[announcement-hero, ...split-slogan-scenes]`.
+
+Important:
+
+- `Express Create` is part of the announcement workflow, not the promo workflow.
+- Changes to this flow should not change promo project creation or promo scene generation.
 
 ### Preview editing
 
@@ -470,6 +497,14 @@ Current behavior:
 - URL generation - [lib/siteGenerator.ts](/d:/VideoCreatorApp/lib/siteGenerator.ts)
 - export - [lib/ffmpeg.ts](/d:/VideoCreatorApp/lib/ffmpeg.ts)
 
+Before changing any of the files above, first decide:
+
+- is this a `promo` change;
+- is this an `announcement` change;
+- or is this truly shared behavior that should affect both modes.
+
+If the answer is not clearly "shared", keep the implementation scoped to one mode.
+
 ## Known risks
 
 - [components/SceneStage.tsx](/d:/VideoCreatorApp/components/SceneStage.tsx) is large and easy to break with broad edits.
@@ -489,3 +524,5 @@ Current behavior:
 6. If you change creation-mode behavior, update both UI copy and this README.
 7. For image-based scenes, preserve aspect ratio handling.
 8. After meaningful UI or export changes, run `npm run build`.
+9. If you are editing announcement video logic, keep the change inside the announcement branch unless expanding promo is explicitly intended.
+10. If you are editing promo video logic, keep the change inside the promo branch unless expanding announcement is explicitly intended.

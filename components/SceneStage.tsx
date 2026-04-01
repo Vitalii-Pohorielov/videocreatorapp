@@ -14,7 +14,7 @@ type SceneStageProps = {
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
-  performanceMode?: "full" | "light";
+  performanceMode?: "full" | "light" | "announcement-export";
   renderLayer?: "full" | "background" | "content";
   progress?: number;
   compact?: boolean;
@@ -996,9 +996,10 @@ export function SceneStage({
 }: SceneStageProps) {
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState(scene.code ?? scene.description);
-  const lightweightPreview = performanceMode === "light";
-  const optimizedLightRender = lightweightPreview && !editable;
-  const blurMultiplier = optimizedLightRender ? 0.08 : lightweightPreview ? 0.2 : 1;
+  const lightweightPreview = performanceMode !== "full";
+  const flatAnnouncementRender = performanceMode === "announcement-export";
+  const optimizedLightRender = (lightweightPreview && !editable) || flatAnnouncementRender;
+  const blurMultiplier = flatAnnouncementRender ? 0 : optimizedLightRender ? 0.08 : lightweightPreview ? 0.2 : 1;
   const showSceneBackground = renderLayer !== "content";
   const showSceneContent = renderLayer !== "background";
   const sharedIn = editable ? 1 : motion(progress, 0.06, 0.24);
@@ -1007,7 +1008,7 @@ export function SceneStage({
   const subIn = sharedIn;
   const cardIn = sharedIn;
   const outroFade = editable ? 1 : 1 - outroMotion(progress, 0.72, 0.28);
-  const announcementLogoCount = scene.type === "announcement-hero" ? scene.projectCount ?? 8 : 0;
+  const announcementLogoCount = scene.type === "announcement-hero" ? Math.min(scene.projectCount ?? 8, flatAnnouncementRender ? 9 : 25) : 0;
   const announcementLastTileDelay = announcementLogoCount > 0 ? 0.04 + Math.max(0, announcementLogoCount - 1) * 0.035 : 0.04;
   const announcementOutroDelay = Math.min(0.9, announcementLastTileDelay + 0.2);
   const announcementOutroFade = editable ? 1 : 1 - outroMotion(progress, announcementOutroDelay, 0.1);
@@ -1260,7 +1261,9 @@ export function SceneStage({
           style={{
             opacity: isAnnouncementScene ? sceneOutroFade : promoLayerOpacity,
             transform: isAnnouncementScene
-              ? `translateY(${-10 * (1 - sceneOutroFade)}px)`
+              ? flatAnnouncementRender
+                ? "none"
+                : `translateY(${-10 * (1 - sceneOutroFade)}px)`
               : `translateY(${-28 * promoOutroProgress}px) scale(${1 - promoOutroProgress * 0.035})`,
             filter: isAnnouncementScene ? undefined : optimizedLightRender ? "none" : `blur(${8 * promoOutroProgress}px)`,
           }}
@@ -1274,16 +1277,22 @@ export function SceneStage({
                 background: "linear-gradient(90deg, #4f6dff 0%, #9a68df 52%, #f05bb8 100%)",
               }}
             />
-            <div className="absolute inset-0 bg-[#090d18]/42" />
-            {Array.from({ length: scene.projectCount ?? 8 }, (_, index) => {
-              const totalProjects = scene.projectCount ?? 8;
+            <div className={`absolute inset-0 ${flatAnnouncementRender ? "bg-[#090d18]/30" : "bg-[#090d18]/42"}`} />
+            {Array.from({ length: announcementLogoCount }, (_, index) => {
+              const totalProjects = announcementLogoCount;
               const shuffledIndexMap = getAnnouncementShuffledIndexMap(totalProjects);
               const sourceIndex = shuffledIndexMap[index] ?? index;
               const imageUrl = getRenderableImageUrl(scene.projectImageUrls?.[sourceIndex]);
               const { x, y, cellWidth, rowHeight } = getAnnouncementScatterPosition(index, totalProjects, compact);
               const baseCardSize = Math.min(cellWidth, rowHeight) * (compact ? 0.62 : 0.58);
-              const cardSize = index % 3 === 0 ? baseCardSize * 0.95 : index % 3 === 2 ? baseCardSize * 1.05 : baseCardSize;
-              const tileIn = editable ? 1 : motion(progress, 0.04 + index * 0.035, 0.18);
+              const cardSize = flatAnnouncementRender
+                ? baseCardSize * 0.88
+                : index % 3 === 0
+                  ? baseCardSize * 0.95
+                  : index % 3 === 2
+                    ? baseCardSize * 1.05
+                    : baseCardSize;
+              const tileIn = editable || flatAnnouncementRender ? 1 : motion(progress, 0.04 + index * 0.035, 0.18);
 
               return (
                 <div
@@ -1294,19 +1303,19 @@ export function SceneStage({
                     top: `${y + (rowHeight - cardSize) / 2}%`,
                     width: `${cardSize}%`,
                     aspectRatio: "1 / 1",
-                    transform: `translateY(${18 * (1 - tileIn)}px) rotate(10deg) scale(${tileIn})`,
-                    opacity: tileIn * 0.85,
+                    transform: flatAnnouncementRender ? "none" : `translateY(${18 * (1 - tileIn)}px) rotate(10deg) scale(${tileIn})`,
+                    opacity: flatAnnouncementRender ? 0.68 : tileIn * 0.85,
                   }}
                 >
                   <div
-                    className={`h-full w-full overflow-hidden ${compact ? "rounded-[22px]" : "rounded-[24px]"} ${imageUrl ? "" : `border ${lightweightPreview ? "" : "backdrop-blur-sm"} ${compact ? "p-3" : "p-4"}`}`}
+                    className={`h-full w-full overflow-hidden ${compact ? "rounded-[22px]" : "rounded-[24px]"} ${imageUrl ? "" : `border ${lightweightPreview || flatAnnouncementRender ? "" : "backdrop-blur-sm"} ${compact ? "p-3" : "p-4"}`}`}
                     style={
                       imageUrl
                         ? undefined
                         : {
-                            background: "rgba(15, 23, 42, 0.72)",
+                            background: flatAnnouncementRender ? "rgba(15, 23, 42, 0.52)" : "rgba(15, 23, 42, 0.72)",
                             borderColor: "rgba(255,255,255,0.1)",
-                            boxShadow: "0 18px 44px rgba(0,0,0,0.28)",
+                            boxShadow: flatAnnouncementRender ? "none" : "0 18px 44px rgba(0,0,0,0.28)",
                           }
                     }
                   >
@@ -1323,26 +1332,26 @@ export function SceneStage({
                 </div>
               );
             })}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.14)_0%,rgba(15,23,42,0.32)_100%)]" />
-            <div className="absolute inset-0 bg-black/22" />
+            <div className={`absolute inset-0 ${flatAnnouncementRender ? "bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.18)_100%)]" : "bg-[linear-gradient(180deg,rgba(15,23,42,0.14)_0%,rgba(15,23,42,0.32)_100%)]"}`} />
+            <div className={`absolute inset-0 ${flatAnnouncementRender ? "bg-black/12" : "bg-black/22"}`} />
           </div>
 
           <div className="relative z-10 w-full max-w-5xl">
             <div
               className={`mx-auto ${compact ? "rounded-[30px] px-10 py-[3.25rem]" : "rounded-[38px] px-20 py-[5.5rem]"}`}
               style={{
-                maxWidth: compact ? "47rem" : "58rem",
-                background: "rgba(0, 0, 0, 0.87)",
-                boxShadow: "0 24px 80px rgba(0,0,0,0.42)",
-                transform: `translateY(${-18 * (1 - announcementOutroFade)}px) scale(${1 + (1 - announcementOutroFade) * 0.04})`,
-                opacity: announcementOutroFade,
+                maxWidth: flatAnnouncementRender ? (compact ? "44rem" : "52rem") : compact ? "47rem" : "58rem",
+                background: flatAnnouncementRender ? "rgba(0, 0, 0, 0.78)" : "rgba(0, 0, 0, 0.87)",
+                boxShadow: flatAnnouncementRender ? "none" : "0 24px 80px rgba(0,0,0,0.42)",
+                transform: flatAnnouncementRender ? "none" : `translateY(${-18 * (1 - announcementOutroFade)}px) scale(${1 + (1 - announcementOutroFade) * 0.04})`,
+                opacity: flatAnnouncementRender ? 1 : announcementOutroFade,
               }}
             >
               <div className="text-center">
                 <div
                   style={{
-                    transform: `translateY(${-14 * (1 - announcementOutroFade)}px) scale(${1 + (1 - announcementOutroFade) * 0.02})`,
-                    opacity: announcementOutroFade,
+                    transform: flatAnnouncementRender ? "none" : `translateY(${-14 * (1 - announcementOutroFade)}px) scale(${1 + (1 - announcementOutroFade) * 0.02})`,
+                    opacity: flatAnnouncementRender ? 1 : announcementOutroFade,
                   }}
                   className={compact ? "space-y-1" : "space-y-2"}
                 >
@@ -1525,55 +1534,57 @@ export function SceneStage({
       {scene.type === "split-slogan" && (
         <div className="absolute inset-0 overflow-hidden text-center" style={{ background: sloganPalette.background }}>
           <div className="relative z-10 flex h-full items-center justify-center">
-            <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center">
-              <div className="relative min-h-[12rem] w-full">
+            {flatAnnouncementRender ? (
+              <div className="mx-auto flex w-[84%] max-w-5xl flex-col items-center justify-center text-center">
                 {scene.subtitle ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <p
-                      className={`${compact ? "text-6xl" : "text-8xl md:text-[6.25rem]"} w-full text-center font-black leading-[1.04] tracking-[0.01em]`}
-                      style={{
-                        color: sloganPalette.text,
-                        transform: `translateY(${-24 * projectTitleExit}px) scale(${1 - projectTitleExit * 0.06})`,
-                        opacity: projectTitleEnter * (1 - projectTitleExit),
-                      }}
-                    >
-                      {scene.subtitle}
-                    </p>
-                  </div>
+                  <p
+                    className={`${compact ? "mb-6 text-4xl" : "mb-8 text-6xl"} w-full text-center font-black leading-[1.04] tracking-[0.01em]`}
+                    style={{ color: sloganPalette.text, opacity: 0.92 }}
+                  >
+                    {scene.subtitle}
+                  </p>
                 ) : null}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
-                    {sloganFirstLines.map((line, index) => {
-                      const lineIn = editable ? 1 : motion(progress, 0.34 + index * 0.08, 0.08);
-                      return (
-                        <p
-                          key={`split-slogan-first-${index}`}
-                          className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
-                          style={{
-                            color: sloganPalette.text,
-                            transform: `translateY(${18 * (1 - lineIn) - 20 * sloganFirstExit}px)`,
-                            opacity: lineIn * (1 - sloganFirstExit),
-                          }}
-                        >
-                          {line}
-                        </p>
-                      );
-                    })}
-                  </div>
+                <div className="space-y-2">
+                  {[...sloganFirstLines, ...sloganSecondLines].filter(Boolean).map((line, index) => (
+                    <p
+                      key={`split-slogan-flat-${index}`}
+                      className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
+                      style={{ color: sloganPalette.text }}
+                    >
+                      {line}
+                    </p>
+                  ))}
                 </div>
-                {sloganSecondPart ? (
+              </div>
+            ) : (
+              <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center">
+                <div className="relative min-h-[12rem] w-full">
+                  {scene.subtitle ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <p
+                        className={`${compact ? "text-6xl" : "text-8xl md:text-[6.25rem]"} w-full text-center font-black leading-[1.04] tracking-[0.01em]`}
+                        style={{
+                          color: sloganPalette.text,
+                          transform: `translateY(${-24 * projectTitleExit}px) scale(${1 - projectTitleExit * 0.06})`,
+                          opacity: projectTitleEnter * (1 - projectTitleExit),
+                        }}
+                      >
+                        {scene.subtitle}
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
-                      {sloganSecondLines.map((line, index) => {
-                        const lineIn = editable ? 1 : motion(progress, 0.68 + index * 0.08, 0.08);
+                      {sloganFirstLines.map((line, index) => {
+                        const lineIn = editable ? 1 : motion(progress, 0.34 + index * 0.08, 0.08);
                         return (
                           <p
-                            key={`split-slogan-second-${index}`}
+                            key={`split-slogan-first-${index}`}
                             className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
                             style={{
                               color: sloganPalette.text,
-                              transform: `translateY(${18 * (1 - lineIn) - 20 * sloganSecondExit}px)`,
-                              opacity: lineIn * (1 - sloganSecondExit),
+                              transform: `translateY(${18 * (1 - lineIn) - 20 * sloganFirstExit}px)`,
+                              opacity: lineIn * (1 - sloganFirstExit),
                             }}
                           >
                             {line}
@@ -1582,9 +1593,31 @@ export function SceneStage({
                       })}
                     </div>
                   </div>
-                ) : null}
+                  {sloganSecondPart ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
+                        {sloganSecondLines.map((line, index) => {
+                          const lineIn = editable ? 1 : motion(progress, 0.68 + index * 0.08, 0.08);
+                          return (
+                            <p
+                              key={`split-slogan-second-${index}`}
+                              className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
+                              style={{
+                                color: sloganPalette.text,
+                                transform: `translateY(${18 * (1 - lineIn) - 20 * sloganSecondExit}px)`,
+                                opacity: lineIn * (1 - sloganSecondExit),
+                              }}
+                            >
+                              {line}
+                            </p>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
