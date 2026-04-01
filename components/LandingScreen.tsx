@@ -21,12 +21,18 @@ export function LandingScreen() {
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
             Minimal video creation for product stories, launches, and explainers.
           </p>
-          <div className="mt-10 flex justify-center">
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link
               href="/editor"
               className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
             >
-              Create video
+              Create promo video
+            </Link>
+            <Link
+              href="/editor?videoType=announcement"
+              className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+            >
+              Create announcement video
             </Link>
           </div>
         </div>

@@ -4,14 +4,19 @@ import { sceneDefinitions, type SceneType } from "@/store/useStore";
 
 type SceneTypeModalProps = {
   isOpen: boolean;
+  isAnnouncementWorkspace: boolean;
   onClose: () => void;
   onSelect: (type: SceneType) => void;
 };
 
-export function SceneTypeModal({ isOpen, onClose, onSelect }: SceneTypeModalProps) {
+export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSelect }: SceneTypeModalProps) {
   if (!isOpen) return null;
 
-  const availableSceneDefinitions = sceneDefinitions.filter((definition) => definition.type !== "slogan");
+  const availableSceneDefinitions = sceneDefinitions.filter((definition) => {
+    if (definition.type === "slogan") return false;
+    if (isAnnouncementWorkspace) return definition.type === "announcement-hero" || definition.type === "split-slogan";
+    return definition.type !== "announcement-hero" && definition.type !== "split-slogan";
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">

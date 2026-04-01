@@ -1,6 +1,8 @@
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 
-export type TransitionType = "fade";
+import { getDefaultTransition } from "@/lib/sceneTransitions";
+
+export type TransitionType = "fade" | "slide-left" | "slide-right" | "slide-up" | "slide-down" | "zoom-in" | "zoom-out";
 
 export type TemplatePreset =
   | "white"
@@ -45,13 +47,16 @@ const templatePresets = [
 
 export type ExportResolution = "480p" | "540p" | "720p";
 export type ExportProfile = "draft" | "standard" | "high";
+export type VideoType = "promo" | "announcement";
 
 export type SceneType =
+  | "announcement-hero"
   | "brand-reveal"
   | "product-showcase"
   | "feature-grid"
   | "code-preview"
   | "slogan"
+  | "split-slogan"
   | "description"
   | "pricing"
   | "process"
@@ -82,6 +87,8 @@ export type Scene = {
   subtitle: string;
   description: string;
   bullets: string[];
+  projectCount?: number;
+  projectImageUrls?: string[];
   pricingPlanTitles?: string[];
   pricingPlanDescriptions?: string[];
   processStepDescriptions?: string[];
@@ -98,6 +105,11 @@ export type SceneTrack = {
   id: "main-track";
   name: string;
   scenes: Scene[];
+};
+
+export const videoTypeLabels: Record<VideoType, string> = {
+  promo: "Promo video",
+  announcement: "Announcement video",
 };
 
 type SceneTemplate = Omit<Scene, "id" | "name">;
@@ -177,13 +189,36 @@ export const exportResolutionDimensions: Record<ExportResolution, { width: numbe
 
 export const sceneDefinitions: SceneDefinition[] = [
   {
+    type: "announcement-hero",
+    label: "Announcement Hero",
+    catalogDescription: "Centered announcement title over a wall of uploaded project logos.",
+    createTemplate: () => ({
+      type: "announcement-hero",
+      durationSeconds: 3.2,
+      transition: getDefaultTransition(0, "announcement-hero"),
+      eyebrow: "This week on",
+      title: "DevHunt",
+      subtitle: "",
+      description: "",
+      bullets: [],
+      projectCount: 8,
+      projectImageUrls: Array.from({ length: 8 }, () => ""),
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
     type: "brand-reveal",
     label: "Intro",
     catalogDescription: "Hero intro scene.",
     createTemplate: () => ({
       type: "brand-reveal",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(1, "brand-reveal"),
       eyebrow: "Intro",
       title: "Omnara",
       subtitle: "Command center for AI workflows",
@@ -214,7 +249,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "product-showcase",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(2, "product-showcase"),
       eyebrow: "Highlight",
       title: "Your product, clearly explained",
       subtitle: "Use this scene for the main value proposition",
@@ -235,7 +270,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "feature-grid",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(3, "feature-grid"),
       eyebrow: "Features",
       title: "Why teams choose it",
       subtitle: "",
@@ -256,7 +291,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "code-preview",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(4, "code-preview"),
       eyebrow: "Code",
       title: "",
       subtitle: "",
@@ -286,10 +321,31 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "slogan",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(5, "slogan"),
       eyebrow: "Message",
       title: "Built to move fast.",
       subtitle: "",
+      description: "",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "split-slogan",
+    label: "Split Slogan",
+    catalogDescription: "A slogan that exits in one phrase and reveals the second phrase after it.",
+    createTemplate: () => ({
+      type: "split-slogan",
+      durationSeconds: 7,
+      transition: getDefaultTransition(6, "split-slogan"),
+      eyebrow: "Message",
+      title: "On-demand security assessments for web applications",
+      subtitle: "VaultScan",
       description: "",
       bullets: [],
       bulletEmojis: [],
@@ -307,7 +363,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "description",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(7, "description"),
       eyebrow: "Details",
       title: "Real-world",
       subtitle: "design inspiration",
@@ -328,7 +384,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "pricing",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(8, "pricing"),
       eyebrow: "Pricing",
       title: "Pick a plan",
       subtitle: "Simple tiers that feel easy to compare.",
@@ -355,7 +411,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "process",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(9, "process"),
       eyebrow: "Process",
       title: "How it works",
       subtitle: "Three simple steps from idea to export.",
@@ -377,7 +433,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "center-text",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(10, "center-text"),
       eyebrow: "",
       title: "Bring the message to the center",
       subtitle: "",
@@ -398,7 +454,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "website-url",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(11, "website-url"),
       eyebrow: "Website",
       title: "screensdesign.com",
       subtitle: "",
@@ -418,8 +474,8 @@ export const sceneDefinitions: SceneDefinition[] = [
     catalogDescription: "Scroll a manually uploaded website screenshot.",
     createTemplate: () => ({
       type: "website-scroll",
-      durationSeconds: 2.7,
-      transition: "fade",
+      durationSeconds: 4,
+      transition: getDefaultTransition(12, "website-scroll"),
       eyebrow: "Website",
       title: "Show the product page in motion",
       subtitle: "Upload a tall screenshot and the scene will auto-scroll it",
@@ -440,7 +496,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "quote",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(13, "quote"),
       eyebrow: "Social proof",
       title: '"This changed our workflow overnight."',
       subtitle: "Team lead, Product Ops",
@@ -461,7 +517,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "cta",
       durationSeconds: 2.7,
-      transition: "fade",
+      transition: getDefaultTransition(14, "cta"),
       eyebrow: "Call to action",
       title: "Launch your next promo today",
       subtitle: "Start with one scene and build the full story",
@@ -502,17 +558,27 @@ export function createScene(type: SceneType, index: number) {
     id: crypto.randomUUID(),
     name: `${definition.label} ${index + 1}`,
     ...template,
+    transition: getDefaultTransition(index, type),
     bulletEmojis: type === "feature-grid" ? defaultFeatureIcons.map((icon) => icon.fallbackEmoji) : template.bulletEmojis,
     bulletImageUrls: type === "feature-grid" ? defaultFeatureIcons.map((icon) => icon.imageUrl) : template.bulletImageUrls,
   } satisfies Scene;
 }
 
 export function createInitialSceneTrack(): SceneTrack {
-  const sceneTypes: SceneType[] = ["brand-reveal", "product-showcase", "feature-grid", "center-text", "cta"];
+  return createInitialSceneTrackForVideoType("promo");
+}
+
+export function createInitialSceneTrackForVideoType(videoType: VideoType): SceneTrack {
+  const sceneTypes: SceneType[] =
+    videoType === "announcement" ? ["announcement-hero"] : ["brand-reveal", "product-showcase", "feature-grid", "center-text", "cta"];
 
   return {
     id: "main-track",
     name: "Scene Track",
     scenes: sceneTypes.map((type, index) => createScene(type, index)),
   };
+}
+
+export function getDefaultProjectName(videoType: VideoType) {
+  return videoType === "announcement" ? "Untitled announcement" : "Untitled project";
 }

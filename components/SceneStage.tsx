@@ -303,6 +303,89 @@ function mixHexColors(baseHex: string, mixHex: string, amount: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function getAnnouncementShuffledIndexMap(count: number) {
+  const indices = Array.from({ length: count }, (_, index) => index);
+  for (let index = 0; index < count; index += 1) {
+    const swapIndex = (index * 7 + 3) % Math.max(1, count);
+    [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
+  }
+  return indices;
+}
+
+function getStableVariantIndex(value: string, mod: number) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return mod > 0 ? hash % mod : 0;
+}
+
+function splitSloganText(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return { firstPart: "", secondPart: "" };
+  const words = normalized.split(" ");
+  if (words.length <= 3) return { firstPart: normalized, secondPart: "" };
+  const splitIndex = Math.max(1, Math.ceil(words.length / 2));
+  return {
+    firstPart: words.slice(0, splitIndex).join(" "),
+    secondPart: words.slice(splitIndex).join(" "),
+  };
+}
+
+function splitTextIntoLines(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  const words = normalized.split(" ");
+  if (words.length <= 3) return [normalized];
+  const splitIndex = Math.ceil(words.length / 2);
+  return [words.slice(0, splitIndex).join(" "), words.slice(splitIndex).join(" ")].filter(Boolean);
+}
+
+function getAnnouncementScatterPosition(index: number, total: number, compact: boolean) {
+  const longRowCount = compact ? 4 : 5;
+  const shortRowCount = Math.max(1, longRowCount - 1);
+  const pattern = [longRowCount, shortRowCount];
+  const rows: number[] = [];
+  let remaining = total;
+
+  while (remaining > 0) {
+    for (const size of pattern) {
+      if (remaining <= 0) break;
+      const nextRowSize = Math.min(size, remaining);
+      rows.push(nextRowSize);
+      remaining -= nextRowSize;
+    }
+  }
+
+  let offset = 0;
+  let row = 0;
+  let column = 0;
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const rowSize = rows[rowIndex];
+    if (index < offset + rowSize) {
+      row = rowIndex;
+      column = index - offset;
+      break;
+    }
+    offset += rowSize;
+  }
+
+  const horizontalPadding = compact ? -2 : -3;
+  const verticalPadding = compact ? 1.5 : 1;
+  const usableWidth = 100 - horizontalPadding * 2;
+  const usableHeight = 100 - verticalPadding * 2;
+  const rowHeight = usableHeight / Math.max(1, rows.length);
+  const cellWidth = usableWidth / longRowCount;
+  const rowSize = rows[row] ?? longRowCount;
+  const rowOffset = rowSize === shortRowCount ? cellWidth * 0 : 0;
+  const usedRowWidth = rowSize * cellWidth;
+  const rowStart = horizontalPadding + (usableWidth - usedRowWidth) / 2 + rowOffset;
+  const x = rowStart + column * cellWidth;
+  const y = verticalPadding + row * rowHeight;
+
+  return { x, y, cellWidth, rowHeight };
+}
+
 type LogoFrameMetrics = {
   outerWidth: number;
   outerHeight: number;
@@ -823,6 +906,7 @@ function EditableText({
   style,
   placeholder,
   onCommit,
+  unstyledWhenEditable = false,
 }: {
   as: ElementType;
   value: string;
@@ -832,6 +916,7 @@ function EditableText({
   style?: CSSProperties;
   placeholder?: string;
   onCommit?: (value: string) => void;
+  unstyledWhenEditable?: boolean;
 }) {
   const Tag = as;
 
@@ -855,7 +940,7 @@ function EditableText({
       spellCheck={false}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      className={`${className ?? ""} ${editable ? "cursor-text rounded-xl outline-none focus:ring-2 focus:ring-sky-400/60" : ""}`}
+      className={`${className ?? ""} ${editable ? (unstyledWhenEditable ? "cursor-text outline-none" : "cursor-text rounded-xl outline-none focus:ring-2 focus:ring-sky-400/60") : ""}`}
       style={style}
       data-placeholder={placeholder}
     >
@@ -922,6 +1007,14 @@ export function SceneStage({
   const subIn = sharedIn;
   const cardIn = sharedIn;
   const outroFade = editable ? 1 : 1 - outroMotion(progress, 0.72, 0.28);
+  const announcementLogoCount = scene.type === "announcement-hero" ? scene.projectCount ?? 8 : 0;
+  const announcementLastTileDelay = announcementLogoCount > 0 ? 0.04 + Math.max(0, announcementLogoCount - 1) * 0.035 : 0.04;
+  const announcementOutroDelay = Math.min(0.9, announcementLastTileDelay + 0.2);
+  const announcementOutroFade = editable ? 1 : 1 - outroMotion(progress, announcementOutroDelay, 0.1);
+  const isAnnouncementScene = scene.type === "announcement-hero" || scene.type === "split-slogan";
+  const promoOutroProgress = editable || isAnnouncementScene ? 0 : outroMotion(progress, 0.78, 0.18);
+  const sceneOutroFade = scene.type === "announcement-hero" ? announcementOutroFade : isAnnouncementScene ? outroFade : 1;
+  const promoLayerOpacity = renderLayer === "background" ? 1 : 1 - promoOutroProgress;
   const s = presetStyles(preset, lightweightPreview);
   const accentColor = presetAccentColor(preset);
   const elevatedAccentColor = mixHexColors(accentColor, "#000000", preset === "black" ? 0.08 : 0.16);
@@ -948,6 +1041,25 @@ export function SceneStage({
   const introTitle = toSentenceCase(scene.title);
   const centerTextTitle = toSentenceCase(scene.title);
   const centerTextBoxIn = editable ? 1 : motion(progress, 0.06, 0.22);
+  const sloganVariantIndex = scene.type === "split-slogan" ? getStableVariantIndex(scene.id || scene.name || scene.title, 8) : 0;
+  const sloganPalette = [
+    { background: "linear-gradient(135deg, #1d4ed8 0%, #7c3aed 52%, #ec4899 100%)", text: "#f8fafc" },
+    { background: "linear-gradient(135deg, #0f766e 0%, #14b8a6 45%, #99f6e4 100%)", text: "#062a26" },
+    { background: "linear-gradient(135deg, #f97316 0%, #fb7185 48%, #facc15 100%)", text: "#fff7ed" },
+    { background: "linear-gradient(135deg, #4f46e5 0%, #06b6d4 46%, #67e8f9 100%)", text: "#ecfeff" },
+    { background: "linear-gradient(135deg, #be123c 0%, #7c2d12 50%, #fb7185 100%)", text: "#fff1f2" },
+    { background: "linear-gradient(135deg, #84cc16 0%, #22c55e 42%, #bef264 100%)", text: "#10230f" },
+    { background: "linear-gradient(135deg, #111827 0%, #7c3aed 44%, #22d3ee 100%)", text: "#f9fafb" },
+    { background: "linear-gradient(135deg, #fde047 0%, #fb7185 44%, #f97316 100%)", text: "#3b0a00" },
+  ][sloganVariantIndex];
+  const splitSloganSource = scene.type === "split-slogan" ? scene.title.toLowerCase() : scene.title;
+  const { firstPart: sloganFirstPart, secondPart: sloganSecondPart } = splitSloganText(splitSloganSource);
+  const sloganFirstLines = splitTextIntoLines(sloganSecondPart ? `${sloganFirstPart} ...` : sloganFirstPart);
+  const sloganSecondLines = splitTextIntoLines(sloganSecondPart ? `... ${sloganSecondPart}` : "");
+  const projectTitleEnter = editable ? 1 : motion(progress, 0.04, 0.08);
+  const projectTitleExit = editable ? 0 : outroMotion(progress, 0.22, 0.08);
+  const sloganFirstExit = editable ? 0 : outroMotion(progress, 0.54, 0.08);
+  const sloganSecondExit = editable ? 0 : outroMotion(progress, 0.88, 0.08);
 
   const updateCenterTextTitle = (value: string) => {
     onSceneChange?.({ title: toSentenceCase(value) });
@@ -1141,15 +1253,131 @@ export function SceneStage({
           />
         </>
       ) : null}
-      <div className={compact ? "relative h-full w-full px-4 py-4" : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`}>
+      <div className={scene.type === "announcement-hero" || scene.type === "split-slogan" ? "relative h-full w-full" : compact ? "relative h-full w-full px-4 py-4" : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`}>
       {showSceneContent ? (
         <div
           className="relative h-full w-full"
           style={{
-            opacity: outroFade,
-            transform: `translateY(${-10 * (1 - outroFade)}px)`,
+            opacity: isAnnouncementScene ? sceneOutroFade : promoLayerOpacity,
+            transform: isAnnouncementScene
+              ? `translateY(${-10 * (1 - sceneOutroFade)}px)`
+              : `translateY(${-28 * promoOutroProgress}px) scale(${1 - promoOutroProgress * 0.035})`,
+            filter: isAnnouncementScene ? undefined : optimizedLightRender ? "none" : `blur(${8 * promoOutroProgress}px)`,
           }}
         >
+      {scene.type === "announcement-hero" && (
+        <div className="relative flex h-full items-center justify-center overflow-hidden">
+          <div className="absolute inset-0">
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(90deg, #4f6dff 0%, #9a68df 52%, #f05bb8 100%)",
+              }}
+            />
+            <div className="absolute inset-0 bg-[#090d18]/42" />
+            {Array.from({ length: scene.projectCount ?? 8 }, (_, index) => {
+              const totalProjects = scene.projectCount ?? 8;
+              const shuffledIndexMap = getAnnouncementShuffledIndexMap(totalProjects);
+              const sourceIndex = shuffledIndexMap[index] ?? index;
+              const imageUrl = getRenderableImageUrl(scene.projectImageUrls?.[sourceIndex]);
+              const { x, y, cellWidth, rowHeight } = getAnnouncementScatterPosition(index, totalProjects, compact);
+              const baseCardSize = Math.min(cellWidth, rowHeight) * (compact ? 0.62 : 0.58);
+              const cardSize = index % 3 === 0 ? baseCardSize * 0.95 : index % 3 === 2 ? baseCardSize * 1.05 : baseCardSize;
+              const tileIn = editable ? 1 : motion(progress, 0.04 + index * 0.035, 0.18);
+
+              return (
+                <div
+                  key={`${scene.id}-announcement-project-${index}`}
+                  className="absolute"
+                  style={{
+                    left: `${x + (cellWidth - cardSize) / 2}%`,
+                    top: `${y + (rowHeight - cardSize) / 2}%`,
+                    width: `${cardSize}%`,
+                    aspectRatio: "1 / 1",
+                    transform: `translateY(${18 * (1 - tileIn)}px) rotate(10deg) scale(${tileIn})`,
+                    opacity: tileIn * 0.85,
+                  }}
+                >
+                  <div
+                    className={`h-full w-full overflow-hidden ${compact ? "rounded-[22px]" : "rounded-[24px]"} ${imageUrl ? "" : `border ${lightweightPreview ? "" : "backdrop-blur-sm"} ${compact ? "p-3" : "p-4"}`}`}
+                    style={
+                      imageUrl
+                        ? undefined
+                        : {
+                            background: "rgba(15, 23, 42, 0.72)",
+                            borderColor: "rgba(255,255,255,0.1)",
+                            boxShadow: "0 18px 44px rgba(0,0,0,0.28)",
+                          }
+                    }
+                  >
+                    <div className={`flex h-full w-full items-center justify-center overflow-hidden ${imageUrl ? "" : "rounded-[18px] bg-white/6"}`}>
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={`Project logo ${sourceIndex + 1}`} className="h-full w-full rounded-[24px] object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-center text-[10px] uppercase tracking-[0.18em] text-white/35">
+                          Project {index + 1}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.14)_0%,rgba(15,23,42,0.32)_100%)]" />
+            <div className="absolute inset-0 bg-black/22" />
+          </div>
+
+          <div className="relative z-10 w-full max-w-5xl">
+            <div
+              className={`mx-auto ${compact ? "rounded-[30px] px-10 py-[3.25rem]" : "rounded-[38px] px-20 py-[5.5rem]"}`}
+              style={{
+                maxWidth: compact ? "47rem" : "58rem",
+                background: "rgba(0, 0, 0, 0.87)",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.42)",
+                transform: `translateY(${-18 * (1 - announcementOutroFade)}px) scale(${1 + (1 - announcementOutroFade) * 0.04})`,
+                opacity: announcementOutroFade,
+              }}
+            >
+              <div className="text-center">
+                <div
+                  style={{
+                    transform: `translateY(${-14 * (1 - announcementOutroFade)}px) scale(${1 + (1 - announcementOutroFade) * 0.02})`,
+                    opacity: announcementOutroFade,
+                  }}
+                  className={compact ? "space-y-1" : "space-y-2"}
+                >
+                  <EditableText
+                    as="div"
+                    value={scene.eyebrow}
+                    editable={editable}
+                    onCommit={(value) => onSceneChange?.({ eyebrow: value })}
+                    className={`${compact ? "text-5xl" : "text-[5.25rem]"} font-black leading-[1.04] tracking-[-0.035em] text-white`}
+                    style={{ wordSpacing: "0.08em" }}
+                    placeholder="This week on"
+                  />
+                  <div className="flex items-end justify-center gap-2">
+                    <EditableText
+                      as="div"
+                      value={scene.title}
+                      editable={editable}
+                      onCommit={(value) => onSceneChange?.({ title: value })}
+                      className={`${compact ? "text-5xl" : "text-[5.25rem]"} font-black leading-[1.04] tracking-[-0.035em] text-white`}
+                      style={{ wordSpacing: "0.08em" }}
+                      placeholder="DevHunt"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={`mb-[0.12em] inline-block ${compact ? "h-1.5 w-10" : "h-2 w-14"}`}
+                      style={{ backgroundColor: "#ff5c00" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {scene.type === "brand-reveal" && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <IntroLogoSlot scene={scene} entryProgress={sharedIn} outroProgress={introLogoOutro} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} textColor={textColor} />
@@ -1290,6 +1518,73 @@ export function SceneStage({
               }}
               placeholder="Title"
             />
+          </div>
+        </div>
+      )}
+
+      {scene.type === "split-slogan" && (
+        <div className="absolute inset-0 overflow-hidden text-center" style={{ background: sloganPalette.background }}>
+          <div className="relative z-10 flex h-full items-center justify-center">
+            <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center">
+              <div className="relative min-h-[12rem] w-full">
+                {scene.subtitle ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <p
+                      className={`${compact ? "text-6xl" : "text-8xl md:text-[6.25rem]"} w-full text-center font-black leading-[1.04] tracking-[0.01em]`}
+                      style={{
+                        color: sloganPalette.text,
+                        transform: `translateY(${-24 * projectTitleExit}px) scale(${1 - projectTitleExit * 0.06})`,
+                        opacity: projectTitleEnter * (1 - projectTitleExit),
+                      }}
+                    >
+                      {scene.subtitle}
+                    </p>
+                  </div>
+                ) : null}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
+                    {sloganFirstLines.map((line, index) => {
+                      const lineIn = editable ? 1 : motion(progress, 0.34 + index * 0.08, 0.08);
+                      return (
+                        <p
+                          key={`split-slogan-first-${index}`}
+                          className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
+                          style={{
+                            color: sloganPalette.text,
+                            transform: `translateY(${18 * (1 - lineIn) - 20 * sloganFirstExit}px)`,
+                            opacity: lineIn * (1 - sloganFirstExit),
+                          }}
+                        >
+                          {line}
+                        </p>
+                      );
+                    })}
+                  </div>
+                </div>
+                {sloganSecondPart ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
+                      {sloganSecondLines.map((line, index) => {
+                        const lineIn = editable ? 1 : motion(progress, 0.68 + index * 0.08, 0.08);
+                        return (
+                          <p
+                            key={`split-slogan-second-${index}`}
+                            className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
+                            style={{
+                              color: sloganPalette.text,
+                              transform: `translateY(${18 * (1 - lineIn) - 20 * sloganSecondExit}px)`,
+                              opacity: lineIn * (1 - sloganSecondExit),
+                            }}
+                          >
+                            {line}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       )}

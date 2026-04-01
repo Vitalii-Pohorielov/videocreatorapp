@@ -1,28 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
+import { ExpressCreateModal } from "@/components/ExpressCreateModal";
 import { SceneStage } from "@/components/SceneStage";
 import { fileToStoredUrl } from "@/lib/imageUpload";
+import { getTransitionFrameMotion } from "@/lib/sceneTransitions";
 import {
   exportProfileLabels,
   type ExportProfile,
   type ExportSettings,
   type Scene,
   type TemplatePreset,
+  type TransitionType,
 } from "@/store/useStore";
 
 type StudioPreviewProps = {
   projectId: string | null;
   projectName: string;
+  isAnnouncementWorkspace: boolean;
   settings: ExportSettings;
-  scene: Scene;
+  scene: Scene | null;
   backgroundColor: string;
   textColor: string;
   preset: TemplatePreset;
   profile: ExportProfile;
   sceneProgress: number;
+  transitionScene: Scene | null;
+  transitionProgress: number;
   isPlaying: boolean;
   currentTime: number;
   totalDuration: number;
@@ -31,6 +37,7 @@ type StudioPreviewProps = {
   downloadUrl: string | null;
   downloadFileName: string;
   sourceUrl: string;
+  expressCreatePrompt: string;
   isGeneratingFromUrl: boolean;
   cloudStatus: string | null;
   isCloudBusy: boolean;
@@ -38,8 +45,10 @@ type StudioPreviewProps = {
   imageUploadLabel: string | null;
   onProjectNameChange: (value: string) => void;
   onSourceUrlChange: (value: string) => void;
+  onExpressCreatePromptChange: (value: string) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
   onGenerateFromUrl: () => void;
+  onExpressCreate: () => void;
   onSaveProject: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -55,6 +64,7 @@ type StudioPreviewProps = {
 export function StudioPreview({
   projectId,
   projectName,
+  isAnnouncementWorkspace,
   settings,
   scene,
   backgroundColor,
@@ -62,6 +72,8 @@ export function StudioPreview({
   preset,
   profile,
   sceneProgress,
+  transitionScene,
+  transitionProgress,
   isPlaying,
   currentTime,
   totalDuration,
@@ -70,6 +82,7 @@ export function StudioPreview({
   downloadUrl,
   downloadFileName,
   sourceUrl,
+  expressCreatePrompt,
   isGeneratingFromUrl,
   cloudStatus,
   isCloudBusy,
@@ -77,8 +90,10 @@ export function StudioPreview({
   imageUploadLabel,
   onProjectNameChange,
   onSourceUrlChange,
+  onExpressCreatePromptChange,
   onUpdateSettings,
   onGenerateFromUrl,
+  onExpressCreate,
   onSaveProject,
   onUndo,
   onRedo,
@@ -95,8 +110,14 @@ export function StudioPreview({
   const authorInputRef = useRef<HTMLInputElement>(null);
   const qualityMenuRef = useRef<HTMLDivElement>(null);
   const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
+  const [isExpressCreateModalOpen, setIsExpressCreateModalOpen] = useState(false);
   const profileOptions: ExportProfile[] = ["draft", "standard", "high"];
   const selectedProfileLabel = exportProfileLabels[settings.profile];
+  const hasScene = Boolean(scene);
+  const isTransitioning = Boolean(scene && transitionScene && transitionProgress > 0);
+
+  void projectId;
+  void cloudStatus;
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -119,7 +140,7 @@ export function StudioPreview({
   }, []);
 
   const applyImageUpload = async (field: "logoImageUrl" | "websiteImageUrl" | "authorImageUrl", file: File | null) => {
-    if (!file) return;
+    if (!file || !scene) return;
     onImageUploadStart(
       field === "logoImageUrl" ? "Uploading logo..." : field === "websiteImageUrl" ? "Uploading screenshot..." : "Uploading author media...",
     );
@@ -129,6 +150,18 @@ export function StudioPreview({
     } finally {
       onImageUploadEnd();
     }
+  };
+
+  const getTransitionLayerStyle = (type: TransitionType, phase: "current" | "next", progress: number): CSSProperties => {
+    const motion = getTransitionFrameMotion(type, progress, 100, 100);
+    const x = phase === "current" ? motion.currentX : motion.nextX;
+    const y = phase === "current" ? motion.currentY : motion.nextY;
+    const scale = phase === "current" ? motion.currentScale : motion.nextScale;
+    const opacity = phase === "current" ? motion.currentOpacity : motion.nextOpacity;
+    return {
+      transform: `translate(${x}%, ${y}%) scale(${scale})`,
+      opacity,
+    };
   };
 
   return (
@@ -189,27 +222,39 @@ export function StudioPreview({
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center gap-2 xl:flex-[0_0_auto] xl:flex-nowrap xl:justify-center">
-            <input
-              value={sourceUrl}
-              onChange={(event) => onSourceUrlChange(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[190px] xl:w-[230px] xl:flex-none"
-              placeholder="Paste website URL"
-            />
-            <button
-              type="button"
-              onClick={onGenerateFromUrl}
-              disabled={isGeneratingFromUrl}
-              aria-label={isGeneratingFromUrl ? "Generating" : "Generate from URL"}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
-            >
-              {isGeneratingFromUrl ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-200/30 border-t-sky-200" aria-hidden="true" />
-              ) : (
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-                  <path d="M8.6 6.8c0-.9 1-1.46 1.78-.98l7.02 4.37c.73.45.73 1.52 0 1.98l-7.02 4.37c-.78.48-1.78-.08-1.78-.98V6.8Z" />
-                </svg>
-              )}
-            </button>
+            {isAnnouncementWorkspace ? (
+              <button
+                type="button"
+                onClick={() => setIsExpressCreateModalOpen(true)}
+                className="rounded-xl border border-emerald-400/25 bg-emerald-400/12 px-3.5 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-400/18"
+              >
+                Express Create
+              </button>
+            ) : (
+              <>
+                <input
+                  value={sourceUrl}
+                  onChange={(event) => onSourceUrlChange(event.target.value)}
+                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[190px] xl:w-[230px] xl:flex-none"
+                  placeholder="Paste website URL"
+                />
+                <button
+                  type="button"
+                  onClick={onGenerateFromUrl}
+                  disabled={isGeneratingFromUrl}
+                  aria-label={isGeneratingFromUrl ? "Generating" : "Generate from URL"}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
+                >
+                  {isGeneratingFromUrl ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-200/30 border-t-sky-200" aria-hidden="true" />
+                  ) : (
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                      <path d="M8.6 6.8c0-.9 1-1.46 1.78-.98l7.02 4.37c.73.45.73 1.52 0 1.98l-7.02 4.37c-.78.48-1.78-.08-1.78-.98V6.8Z" />
+                    </svg>
+                  )}
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
@@ -287,7 +332,7 @@ export function StudioPreview({
             <button
               type="button"
               onClick={onExport}
-              disabled={isExporting}
+              disabled={isExporting || !hasScene}
               className="w-[136px] whitespace-nowrap rounded-xl bg-sky-400 px-3 py-2 text-center text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
             >
               {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
@@ -314,6 +359,20 @@ export function StudioPreview({
           </div>
         ) : null}
       </div>
+
+      {isAnnouncementWorkspace ? (
+        <ExpressCreateModal
+          isOpen={isExpressCreateModalOpen}
+          value={expressCreatePrompt}
+          isBusy={isCloudBusy}
+          onChange={onExpressCreatePromptChange}
+          onClose={() => setIsExpressCreateModalOpen(false)}
+          onSubmit={() => {
+            onExpressCreate();
+            setIsExpressCreateModalOpen(false);
+          }}
+        />
+      ) : null}
 
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <input
@@ -349,49 +408,128 @@ export function StudioPreview({
         <div className="flex h-full w-full max-w-6xl flex-col rounded-[28px] border border-white/10 bg-slate-950 shadow-[0_16px_40px_rgba(2,6,23,0.45)]">
           <div className="flex flex-1 items-center justify-center overflow-hidden bg-black">
             <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden bg-black">
-              <div className="absolute inset-0 scale-[0.94] origin-center">
-              <div className="absolute inset-0">
-                <SceneStage
-                  scene={scene}
-                  backgroundColor={backgroundColor}
-                  textColor={textColor}
-                  preset={preset}
-                  performanceMode="light"
-                  renderLayer="background"
-                  progress={1}
-                  uploadResolution={settings.resolution}
-                  uploadProfile={profile}
-                />
-              </div>
-              <div className="absolute inset-0">
-                <SceneStage
-                  scene={scene}
-                  backgroundColor={backgroundColor}
-                  textColor={textColor}
-                  preset={preset}
-                  performanceMode="light"
-                  renderLayer="content"
-                  progress={sceneProgress}
-                  editable={!isPlaying}
-                  onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
-                  onRequestLogoUpload={() => logoInputRef.current?.click()}
-                  onRequestHighlightUpload={() => highlightInputRef.current?.click()}
-                  onRequestAuthorUpload={() => authorInputRef.current?.click()}
-                  uploadResolution={settings.resolution}
-                  uploadProfile={profile}
-                />
-              </div>
-              {isPlaying ? (
-                <button type="button" onClick={onTogglePlayback} className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-slate-900 shadow-lg transition hover:scale-105">
-                  II
-                </button>
-              ) : null}
-              </div>
+              {scene ? (
+                <div className="absolute inset-0 scale-[0.94] origin-center">
+                  {isTransitioning && transitionScene ? (
+                    <>
+                      <div className="absolute inset-0" style={getTransitionLayerStyle(scene.transition, "current", transitionProgress)}>
+                        <div className="absolute inset-0">
+                          <SceneStage
+                            scene={scene}
+                            backgroundColor={backgroundColor}
+                            textColor={textColor}
+                            preset={preset}
+                            performanceMode="light"
+                            renderLayer="background"
+                            progress={1}
+                            uploadResolution={settings.resolution}
+                            uploadProfile={profile}
+                          />
+                        </div>
+                        <div className="absolute inset-0">
+                          <SceneStage
+                            scene={scene}
+                            backgroundColor={backgroundColor}
+                            textColor={textColor}
+                            preset={preset}
+                            performanceMode="light"
+                            renderLayer="content"
+                            progress={1}
+                            uploadResolution={settings.resolution}
+                            uploadProfile={profile}
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0" style={getTransitionLayerStyle(scene.transition, "next", transitionProgress)}>
+                        <div className="absolute inset-0">
+                          <SceneStage
+                            scene={transitionScene}
+                            backgroundColor={backgroundColor}
+                            textColor={textColor}
+                            preset={preset}
+                            performanceMode="light"
+                            renderLayer="background"
+                            progress={1}
+                            uploadResolution={settings.resolution}
+                            uploadProfile={profile}
+                          />
+                        </div>
+                        <div className="absolute inset-0">
+                          <SceneStage
+                            scene={transitionScene}
+                            backgroundColor={backgroundColor}
+                            textColor={textColor}
+                            preset={preset}
+                            performanceMode="light"
+                            renderLayer="content"
+                            progress={0}
+                            uploadResolution={settings.resolution}
+                            uploadProfile={profile}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="absolute inset-0">
+                        <SceneStage
+                          scene={scene}
+                          backgroundColor={backgroundColor}
+                          textColor={textColor}
+                          preset={preset}
+                          performanceMode="light"
+                          renderLayer="background"
+                          progress={1}
+                          uploadResolution={settings.resolution}
+                          uploadProfile={profile}
+                        />
+                      </div>
+                      <div className="absolute inset-0">
+                        <SceneStage
+                          scene={scene}
+                          backgroundColor={backgroundColor}
+                          textColor={textColor}
+                          preset={preset}
+                          performanceMode="light"
+                          renderLayer="content"
+                          progress={sceneProgress}
+                          editable={!isPlaying}
+                          onSceneChange={(updates) => onUpdateScene(scene.id, updates)}
+                          onRequestLogoUpload={() => logoInputRef.current?.click()}
+                          onRequestHighlightUpload={() => highlightInputRef.current?.click()}
+                          onRequestAuthorUpload={() => authorInputRef.current?.click()}
+                          uploadResolution={settings.resolution}
+                          uploadProfile={profile}
+                        />
+                      </div>
+                    </>
+                  )}
+                  {isPlaying ? (
+                    <button
+                      type="button"
+                      onClick={onTogglePlayback}
+                      className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-slate-900 shadow-lg transition hover:scale-105"
+                    >
+                      II
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex h-full items-center justify-center px-8 text-center">
+                  <div className="max-w-md">
+                    <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Announcement draft</p>
+                    <h3 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-white">Empty editor, ready for your first scene.</h3>
+                    <p className="mt-4 text-sm leading-7 text-slate-400">
+                      This video starts blank on purpose. Add a scene from the timeline below or use Express Create to build slogan scenes from pasted lines.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mt-2 flex shrink-0 items-center gap-3">
-            <button type="button" onClick={onTogglePlayback} className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">
+            <button type="button" onClick={onTogglePlayback} disabled={!hasScene} className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50">
               {isPlaying ? "Pause" : "Play"}
             </button>
             <div className="flex-1">

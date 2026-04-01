@@ -2,21 +2,25 @@ import { create } from "zustand";
 
 import {
   createInitialSceneTrack,
+  createInitialSceneTrackForVideoType,
   createScene,
   exportProfileLabels,
   exportResolutionDimensions,
   exportResolutionLabels,
+  getDefaultProjectName,
   normalizeTemplatePreset,
   presetDefaults,
   type ExportSettings,
   type Scene,
   type SceneTrack,
   type SceneType,
+  type VideoType,
 } from "@/lib/sceneDefinitions";
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
+import { getDefaultTransition } from "@/lib/sceneTransitions";
 
-export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType } from "@/lib/sceneDefinitions";
-export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels } from "@/lib/sceneDefinitions";
+export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType, VideoType } from "@/lib/sceneDefinitions";
+export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels, videoTypeLabels } from "@/lib/sceneDefinitions";
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
@@ -35,10 +39,18 @@ function normalizeTextRows(values: string[] | undefined, fallback: string[], cou
   return Array.from({ length: count }, (_, index) => normalizeSingleLineText(source[index] ?? fallback[index] ?? ""));
 }
 
+function normalizeProjectImageUrls(values: string[] | undefined, count: number) {
+  const source = Array.isArray(values) ? values : [];
+  return Array.from({ length: count }, (_, index) => sanitizeImageUrl(source[index]));
+}
+
 function normalizeLoadedScene(scene: Scene): Scene {
+  const normalizedTransition = scene.transition ?? getDefaultTransition(0);
+
   if ((scene as unknown as { type?: string }).type === "brand-reveal") {
     return {
       ...scene,
+      transition: normalizedTransition,
       title: normalizeSentenceCase(scene.title),
     };
   }
@@ -46,6 +58,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "checklist") {
     return {
       ...scene,
+      transition: normalizedTransition,
       type: "process",
       name: scene.name.replace(/checklist/i, "Process"),
       bullets: normalizeFixedBullets(scene.bullets, 3),
@@ -55,6 +68,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "faq") {
     return {
       ...scene,
+      transition: normalizedTransition,
       type: "center-text",
       name: scene.name.replace(/faq/i, "Center Text"),
       eyebrow: scene.eyebrow || "Focus",
@@ -70,6 +84,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "testimonial-wall") {
     return {
       ...scene,
+      transition: normalizedTransition,
       type: "center-text",
       name: scene.name.replace(/testimonial-wall/i, "Center Text"),
       eyebrow: scene.eyebrow || "Social proof",
@@ -85,6 +100,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "center-text") {
     return {
       ...scene,
+      transition: normalizedTransition,
       title: normalizeSentenceCase(scene.title),
     };
   }
@@ -102,6 +118,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
     );
     return {
       ...scene,
+      transition: normalizedTransition,
       pricingPlanTitles: planTitles,
       pricingPlanDescriptions: planDescriptions,
     } as Scene;
@@ -110,6 +127,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
   if ((scene as unknown as { type?: string }).type === "process") {
     return {
       ...scene,
+      transition: normalizedTransition,
       processStepDescriptions: normalizeTextRows(
         (scene as Scene).processStepDescriptions,
         ["Set the direction.", "Build the core scene.", "Export and share."],
@@ -118,10 +136,21 @@ function normalizeLoadedScene(scene: Scene): Scene {
     } as Scene;
   }
 
-  if ((scene as unknown as { type?: string }).type !== "metrics") return scene;
+  if ((scene as unknown as { type?: string }).type === "announcement-hero") {
+    const nextProjectCount = Math.min(25, Math.max(1, Number((scene as Scene).projectCount ?? 8)));
+    return {
+      ...scene,
+      transition: normalizedTransition,
+      projectCount: nextProjectCount,
+      projectImageUrls: normalizeProjectImageUrls((scene as Scene).projectImageUrls, nextProjectCount),
+    } as Scene;
+  }
+
+  if ((scene as unknown as { type?: string }).type !== "metrics") return { ...scene, transition: normalizedTransition };
 
   return {
     ...scene,
+    transition: normalizedTransition,
     type: "feature-grid",
     eyebrow: scene.eyebrow || "Highlights",
     title: scene.title || "Why teams choose it",
@@ -139,7 +168,7 @@ type StudioStore = {
   sceneTrack: SceneTrack;
   selectedSceneId: string;
   exportSettings: ExportSettings;
-  resetProject: () => void;
+  resetProject: (videoType?: VideoType) => void;
   hydrateProject: (project: {
     id: string | null;
     name: string;
@@ -190,13 +219,23 @@ function normalizeSceneArrays(scene: Scene, updates: SceneUpdates) {
   return { nextBullets, nextBulletEmojis, nextBulletImageUrls };
 }
 
+function normalizeAnnouncementProjectImages(scene: Scene, updates: SceneUpdates) {
+  const sourceProjectCount = updates.projectCount === undefined ? scene.projectCount : updates.projectCount;
+  const nextProjectCount = Math.min(25, Math.max(1, Number(sourceProjectCount ?? 8)));
+  const sourceProjectImages = updates.projectImageUrls === undefined ? scene.projectImageUrls : updates.projectImageUrls;
+  const nextProjectImageUrls = normalizeProjectImageUrls(sourceProjectImages, nextProjectCount);
+
+  return { nextProjectCount, nextProjectImageUrls };
+}
+
 const initialSceneTrack = createInitialSceneTrack();
+const defaultInitialProjectName = getDefaultProjectName("promo");
 
 export const useStore = create<StudioStore>((set, get) => ({
   projectId: null,
-  projectName: "Untitled project",
+  projectName: defaultInitialProjectName,
   sceneTrack: initialSceneTrack,
-  selectedSceneId: initialSceneTrack.scenes[0].id,
+  selectedSceneId: initialSceneTrack.scenes[0]?.id ?? "",
   exportSettings: {
     fps: DEFAULT_FPS,
     transitionSeconds: DEFAULT_TRANSITION_SECONDS,
@@ -206,13 +245,13 @@ export const useStore = create<StudioStore>((set, get) => ({
     resolution: "720p",
     profile: "standard",
   },
-  resetProject: () => {
-    const nextTrack = createInitialSceneTrack();
+  resetProject: (videoType = "promo") => {
+    const nextTrack = createInitialSceneTrackForVideoType(videoType);
     set({
       projectId: null,
-      projectName: "Untitled project",
+      projectName: getDefaultProjectName(videoType),
       sceneTrack: nextTrack,
-      selectedSceneId: nextTrack.scenes[0].id,
+      selectedSceneId: nextTrack.scenes[0]?.id ?? "",
       exportSettings: {
         fps: DEFAULT_FPS,
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
@@ -225,22 +264,19 @@ export const useStore = create<StudioStore>((set, get) => ({
     });
   },
   hydrateProject: (project) => {
-    const nextScenes =
-      project.sceneTrack.scenes.length > 0
-        ? project.sceneTrack.scenes.map((scene) => normalizeLoadedScene(scene))
-        : createInitialSceneTrack().scenes;
+    const nextScenes = project.sceneTrack.scenes.map((scene) => normalizeLoadedScene(scene));
     const normalizedPreset = normalizeTemplatePreset(project.exportSettings.preset);
     const normalizedDefaults = presetDefaults[normalizedPreset];
     set({
       projectId: project.id,
-      projectName: project.name.trim() || "Untitled project",
+      projectName: project.name.trim() || getDefaultProjectName("promo"),
       sceneTrack: {
         ...project.sceneTrack,
         id: "main-track",
         name: project.sceneTrack.name || "Scene Track",
         scenes: nextScenes,
       },
-      selectedSceneId: nextScenes[0]?.id ?? crypto.randomUUID(),
+      selectedSceneId: nextScenes[0]?.id ?? "",
       exportSettings: {
         fps: DEFAULT_FPS,
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
@@ -279,6 +315,7 @@ export const useStore = create<StudioStore>((set, get) => ({
       id: crypto.randomUUID(),
       name: `${sourceScene.name} Copy`,
       bullets: [...sourceScene.bullets],
+      projectImageUrls: [...(sourceScene.projectImageUrls ?? [])],
       bulletEmojis: [...sourceScene.bulletEmojis],
       bulletImageUrls: [...sourceScene.bulletImageUrls],
     };
@@ -299,12 +336,15 @@ export const useStore = create<StudioStore>((set, get) => ({
           scene.id === id
             ? (() => {
                 const { nextBullets, nextBulletEmojis, nextBulletImageUrls } = normalizeSceneArrays(scene, updates);
+                const { nextProjectCount, nextProjectImageUrls } = normalizeAnnouncementProjectImages(scene, updates);
                 return {
                   ...scene,
                   ...updates,
-                  transition: "fade",
+                  transition: updates.transition ?? scene.transition,
                   durationSeconds: updates.durationSeconds === undefined ? scene.durationSeconds : clampDuration(updates.durationSeconds),
                   bullets: nextBullets,
+                  projectCount: scene.type === "announcement-hero" ? nextProjectCount : scene.projectCount,
+                  projectImageUrls: scene.type === "announcement-hero" ? nextProjectImageUrls : scene.projectImageUrls,
                   bulletEmojis: nextBulletEmojis,
                   bulletImageUrls: nextBulletImageUrls,
                   logoImageUrl: updates.logoImageUrl === undefined ? scene.logoImageUrl : sanitizeImageUrl(updates.logoImageUrl),
@@ -328,7 +368,7 @@ export const useStore = create<StudioStore>((set, get) => ({
 
     set({
       sceneTrack: { ...sceneTrack, scenes: nextScenes },
-      selectedSceneId: nextSelectedId,
+      selectedSceneId: nextSelectedId ?? "",
     });
   },
   selectScene: (id) => set({ selectedSceneId: id }),

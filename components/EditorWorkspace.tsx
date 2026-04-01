@@ -9,10 +9,13 @@ import { StudioPreview } from "@/components/StudioPreview";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
-import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneType } from "@/store/useStore";
+import { createScene } from "@/lib/sceneDefinitions";
+import { isAnnouncementScene } from "@/lib/sceneTransitions";
+import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneType, type VideoType } from "@/store/useStore";
 
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
+  initialVideoType?: VideoType;
 };
 
 type WorkspaceSnapshot = {
@@ -25,7 +28,30 @@ type WorkspaceSnapshot = {
 const PREVIEW_FPS = 24;
 const PREVIEW_FRAME_SECONDS = 1 / PREVIEW_FPS;
 
-export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProps) {
+type ExpressCreateEntry = {
+  projectName: string;
+  slogan: string;
+};
+
+function parseExpressCreatePrompt(prompt: string): ExpressCreateEntry[] {
+  return prompt
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separatorIndex = line.indexOf("**");
+      if (separatorIndex < 0) return null;
+
+      const projectName = line.slice(0, separatorIndex).trim();
+      const slogan = line.slice(separatorIndex + 2).trim();
+      if (!projectName || !slogan) return null;
+
+      return { projectName, slogan };
+    })
+    .filter((entry): entry is ExpressCreateEntry => Boolean(entry));
+}
+
+export function EditorWorkspace({ initialProjectId = null, initialVideoType = "promo" }: EditorWorkspaceProps) {
   const projectId = useStore((state) => state.projectId);
   const projectName = useStore((state) => state.projectName);
   const sceneTrack = useStore((state) => state.sceneTrack);
@@ -50,6 +76,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [expressCreatePrompt, setExpressCreatePrompt] = useState("");
   const [isGeneratingFromUrl, setIsGeneratingFromUrl] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const [isCloudBusy, setIsCloudBusy] = useState(false);
@@ -65,8 +92,22 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const queuedSaveReasonRef = useRef<"auto" | "manual" | null>(null);
 
   const scenes = sceneTrack.scenes;
-  const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0], [scenes, selectedSceneId]);
-  const totalDuration = useMemo(() => scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0), [scenes]);
+  const isAnnouncementWorkspace = useMemo(
+    () =>
+      initialVideoType === "announcement" ||
+      scenes.some((scene) => scene.type === "announcement-hero" || scene.type === "split-slogan"),
+    [initialVideoType, scenes],
+  );
+  const hasAnnouncementTransitions = useMemo(() => scenes.some((scene) => isAnnouncementScene(scene)), [scenes]);
+  const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0] ?? null, [scenes, selectedSceneId]);
+  const totalDuration = useMemo(
+    () =>
+      scenes.reduce(
+        (sum, scene, index) => sum + scene.durationSeconds + (hasAnnouncementTransitions && index < scenes.length - 1 ? exportSettings.transitionSeconds : 0),
+        0,
+      ),
+    [exportSettings.transitionSeconds, hasAnnouncementTransitions, scenes],
+  );
   const projectSaveSignature = useMemo(
     () =>
       JSON.stringify({
@@ -81,26 +122,45 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   const isImageUploading = imageUploadCount > 0;
   const selectedSceneStartTime = useMemo(() => {
     let elapsed = 0;
-    for (const scene of scenes) {
+    for (const [index, scene] of scenes.entries()) {
       if (scene.id === selectedSceneId) return elapsed;
-      elapsed += scene.durationSeconds;
+      elapsed += scene.durationSeconds + (hasAnnouncementTransitions && index < scenes.length - 1 ? exportSettings.transitionSeconds : 0);
     }
     return 0;
-  }, [scenes, selectedSceneId]);
+  }, [exportSettings.transitionSeconds, hasAnnouncementTransitions, scenes, selectedSceneId]);
 
   const playbackState = useMemo(() => {
-    if (!isPlaying) return { scene: selectedScene, progress: 1 };
+    if (!isPlaying) return { scene: selectedScene, progress: 1, nextScene: null, transitionProgress: 0 };
     let elapsed = 0;
-    for (const scene of scenes) {
+    for (const [index, scene] of scenes.entries()) {
       const start = elapsed;
-      const end = elapsed + scene.durationSeconds;
-      if (currentTime <= end) {
-        return { scene, progress: scene.durationSeconds > 0 ? Math.min(1, Math.max(0, (currentTime - start) / scene.durationSeconds)) : 1 };
+      const stillEnd = elapsed + scene.durationSeconds;
+      const nextScene = scenes[index + 1] ?? null;
+      const canAnimateTransition = hasAnnouncementTransitions && Boolean(nextScene);
+      const transitionEnd = stillEnd + (canAnimateTransition ? exportSettings.transitionSeconds : 0);
+
+      if (currentTime <= stillEnd) {
+        return {
+          scene,
+          progress: scene.durationSeconds > 0 ? Math.min(1, Math.max(0, (currentTime - start) / scene.durationSeconds)) : 1,
+          nextScene: null,
+          transitionProgress: 0,
+        };
       }
-      elapsed = end;
+
+      if (canAnimateTransition && nextScene && currentTime <= transitionEnd) {
+        return {
+          scene,
+          progress: 1,
+          nextScene,
+          transitionProgress:
+            exportSettings.transitionSeconds > 0 ? Math.min(1, Math.max(0, (currentTime - stillEnd) / exportSettings.transitionSeconds)) : 1,
+        };
+      }
+      elapsed = transitionEnd;
     }
-    return { scene: scenes[scenes.length - 1] ?? selectedScene, progress: 1 };
-  }, [currentTime, isPlaying, scenes, selectedScene]);
+    return { scene: scenes[scenes.length - 1] ?? selectedScene, progress: 1, nextScene: null, transitionProgress: 0 };
+  }, [currentTime, exportSettings.transitionSeconds, hasAnnouncementTransitions, isPlaying, scenes, selectedScene]);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -155,21 +215,22 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       if (!(event.reason instanceof Event)) return;
       event.preventDefault();
+      event.stopImmediatePropagation();
       const target = event.reason.target;
       const tagName = target instanceof Element ? target.tagName.toLowerCase() : "unknown";
       const source = target instanceof HTMLImageElement ? target.currentSrc || target.src : target instanceof HTMLSourceElement ? target.src : "";
       console.warn(`Ignored resource loading event from <${tagName}>${source ? `: ${source}` : ""}.`, event.reason);
     };
 
-    window.addEventListener("unhandledrejection", handleUnhandledRejection);
-    return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection, { capture: true });
+    return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection, { capture: true });
   }, []);
 
   useEffect(() => {
     if (didHydrateProject.current === initialProjectId) return;
     didHydrateProject.current = initialProjectId;
 
-    resetProject();
+    resetProject(initialVideoType);
     setIsPlaying(false);
     currentTimeRef.current = 0;
     setCurrentTime(0);
@@ -208,7 +269,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       .finally(() => {
         setIsCloudBusy(false);
       });
-  }, [hydrateProject, initialProjectId, resetProject]);
+  }, [hydrateProject, initialProjectId, initialVideoType, resetProject]);
 
   const resetDownload = useCallback(() => {
     if (downloadUrl) {
@@ -314,11 +375,14 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       restoreWorkspaceState(snapshot);
       setIsPlaying(false);
       resetDownload();
-
       let elapsed = 0;
-      for (const timelineScene of snapshot.sceneTrack.scenes) {
+      for (const [index, timelineScene] of snapshot.sceneTrack.scenes.entries()) {
         if (timelineScene.id === snapshot.selectedSceneId) break;
-        elapsed += timelineScene.durationSeconds;
+        elapsed +=
+          timelineScene.durationSeconds +
+          (snapshot.sceneTrack.scenes.some((scene) => isAnnouncementScene(scene)) && index < snapshot.sceneTrack.scenes.length - 1
+            ? snapshot.exportSettings.transitionSeconds
+            : 0);
       }
       currentTimeRef.current = elapsed;
       setCurrentTime(elapsed);
@@ -341,6 +405,11 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
   }, [applySnapshot, captureSnapshot]);
 
   const handleExport = async () => {
+    if (scenes.length === 0) {
+      setCloudStatus("Add at least one scene before export.");
+      return;
+    }
+
     try {
       setIsExporting(true);
       setExportProgress(0);
@@ -413,14 +482,65 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
     setIsGenerateConfirmOpen(true);
   }, [sourceUrl]);
 
+  const handleExpressCreate = useCallback(() => {
+    const trimmedPrompt = expressCreatePrompt.trim();
+    if (!trimmedPrompt) {
+      setCloudStatus("Add text for express creation first.");
+      return;
+    }
+
+    const entries = parseExpressCreatePrompt(trimmedPrompt);
+    if (entries.length === 0) {
+      setCloudStatus("Use one line per scene in the format Name**Slogan.");
+      return;
+    }
+
+    const currentScenes = useStore.getState().sceneTrack.scenes;
+    const announcementHero =
+      currentScenes.find((scene) => scene.type === "announcement-hero") ??
+      createScene("announcement-hero", 0);
+
+    const splitSloganScenes = entries.map((entry, index) => {
+      const scene = createScene("split-slogan", index + 1);
+      return {
+        ...scene,
+        subtitle: entry.projectName,
+        title: entry.slogan,
+        name: `${entry.projectName} slogan`,
+      };
+    });
+
+    const nextScenes = [announcementHero, ...splitSloganScenes];
+    const nextSceneTrack: SceneTrack = {
+      id: "main-track",
+      name: sceneTrack.name,
+      scenes: nextScenes,
+    };
+
+    pushHistorySnapshot();
+    resetDownload();
+    setIsPlaying(false);
+    currentTimeRef.current = 0;
+    setCurrentTime(0);
+    restoreWorkspaceState({
+      projectName,
+      sceneTrack: nextSceneTrack,
+      exportSettings,
+      selectedSceneId: nextScenes[0]?.id ?? "",
+    });
+    redoStackRef.current = [];
+    setCloudStatus(`Created ${splitSloganScenes.length} announcement scenes.`);
+  }, [expressCreatePrompt, exportSettings, projectName, pushHistorySnapshot, resetDownload, restoreWorkspaceState, sceneTrack.name]);
+
   const togglePlayback = useCallback(() => {
+    if (!selectedScene || totalDuration <= 0) return;
     setIsPlaying((prev) => {
       if (prev) return false;
       currentTimeRef.current = selectedSceneStartTime;
       setCurrentTime(selectedSceneStartTime);
       return true;
     });
-  }, [selectedSceneStartTime]);
+  }, [selectedScene, selectedSceneStartTime, totalDuration]);
 
   const handlePreviewSceneUpdate = useCallback(
     (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => {
@@ -461,14 +581,14 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
       setIsPlaying(false);
       selectScene(id);
       let elapsed = 0;
-      for (const timelineScene of sceneTrack.scenes) {
+      for (const [index, timelineScene] of sceneTrack.scenes.entries()) {
         if (timelineScene.id === id) break;
-        elapsed += timelineScene.durationSeconds;
+        elapsed += timelineScene.durationSeconds + (hasAnnouncementTransitions && index < sceneTrack.scenes.length - 1 ? exportSettings.transitionSeconds : 0);
       }
       currentTimeRef.current = elapsed;
       setCurrentTime(elapsed);
     },
-    [sceneTrack.scenes, selectScene],
+    [exportSettings.transitionSeconds, hasAnnouncementTransitions, sceneTrack.scenes, selectScene],
   );
 
   const handleTimelineDelete = useCallback(
@@ -563,13 +683,16 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
             <StudioPreview
               projectId={projectId}
               projectName={projectName}
+              isAnnouncementWorkspace={isAnnouncementWorkspace}
               settings={exportSettings}
-              scene={playbackState.scene}
+              scene={playbackState.scene ?? null}
               backgroundColor={exportSettings.backgroundColor}
               textColor={exportSettings.textColor}
               preset={exportSettings.preset}
               profile={exportSettings.profile}
               sceneProgress={playbackState.progress}
+              transitionScene={playbackState.nextScene}
+              transitionProgress={playbackState.transitionProgress}
               isPlaying={isPlaying}
               currentTime={currentTime}
               totalDuration={totalDuration}
@@ -578,6 +701,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               downloadUrl={downloadUrl}
               downloadFileName={downloadFileName}
               sourceUrl={sourceUrl}
+              expressCreatePrompt={expressCreatePrompt}
               isGeneratingFromUrl={isGeneratingFromUrl}
               cloudStatus={cloudStatus}
               isCloudBusy={isCloudBusy}
@@ -585,8 +709,10 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
               imageUploadLabel={imageUploadLabel}
               onProjectNameChange={handleProjectNameChange}
               onSourceUrlChange={setSourceUrl}
+              onExpressCreatePromptChange={setExpressCreatePrompt}
               onUpdateSettings={handleExportSettingsUpdate}
               onGenerateFromUrl={handleGenerateFromUrl}
+              onExpressCreate={handleExpressCreate}
               onSaveProject={handleSaveProject}
               onUndo={handleUndo}
               onRedo={handleRedo}
@@ -600,7 +726,7 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
             />
             <SceneTimeline
               track={sceneTrack}
-              selectedSceneId={selectedScene.id}
+              selectedSceneId={selectedScene?.id ?? ""}
               onSelect={handleTimelineSelect}
               onDelete={handleTimelineDelete}
               onDuplicate={handleTimelineDuplicate}
@@ -609,19 +735,20 @@ export function EditorWorkspace({ initialProjectId = null }: EditorWorkspaceProp
             />
           </div>
 
-            <SceneInspector
-              scene={selectedScene}
-              settings={exportSettings}
-              onUpdate={handleInspectorSceneUpdate}
-              onUpdateSettings={handleExportSettingsUpdate}
-              onImageUploadStart={startImageUpload}
-              onImageUploadEnd={finishImageUpload}
-            />
+          <SceneInspector
+            scene={selectedScene}
+            settings={exportSettings}
+            onUpdate={handleInspectorSceneUpdate}
+            onUpdateSettings={handleExportSettingsUpdate}
+            onImageUploadStart={startImageUpload}
+            onImageUploadEnd={finishImageUpload}
+          />
         </section>
       </div>
 
       <SceneTypeModal
         isOpen={isSceneModalOpen}
+        isAnnouncementWorkspace={isAnnouncementWorkspace}
         onClose={() => setIsSceneModalOpen(false)}
         onSelect={handleSceneTypeSelect}
       />

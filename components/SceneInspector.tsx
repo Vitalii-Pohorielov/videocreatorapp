@@ -1,9 +1,10 @@
 "use client";
 
-import { memo, type ChangeEvent, type ReactNode } from "react";
+import { memo, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
+import { isAnnouncementScene, transitionTypeLabels } from "@/lib/sceneTransitions";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = [
@@ -103,7 +104,7 @@ const presetChipStyles: Record<TemplatePreset, { idle: string; active: string }>
 };
 
 type SceneInspectorProps = {
-  scene: Scene;
+  scene: Scene | null;
   settings: ExportSettings;
   onUpdate: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
@@ -137,6 +138,24 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
     "rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-slate-200 transition hover:bg-white/[0.1]";
   const panelClassName = "mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70";
   const labelClassName = "mb-2 block text-sm text-slate-400";
+
+  if (!scene) {
+    return (
+      <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
+        <div className="mb-4 shrink-0">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Inspector</p>
+          <h2 className="mt-1 text-lg font-semibold text-white">No scene selected</h2>
+          <p className="mt-1 text-sm text-slate-400">Announcement videos can start from a blank editor.</p>
+        </div>
+        <div className="flex min-h-0 flex-1 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-6 text-center">
+          <div>
+            <p className="text-sm font-medium text-white">Add your first scene to begin editing.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">Use the + button in the timeline to pick a scene type, then the scene controls will appear here.</p>
+          </div>
+        </div>
+      </aside>
+    );
+  }
 
   const normalizeColorInput = (value: string) => {
     const trimmed = value.trim();
@@ -220,6 +239,43 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
     event.target.value = "";
   };
 
+  const handleAnnouncementProjectImageChange =
+    (index: number) =>
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      onImageUploadStart(`Uploading project image ${index + 1}...`);
+      try {
+        const projectImageUrls = Array.from({ length: scene.projectCount ?? 8 }, (_, itemIndex) => scene.projectImageUrls?.[itemIndex] ?? "");
+        projectImageUrls[index] = await fileToStoredUrl(file, settings.resolution, settings.profile);
+        onUpdate(scene.id, { projectImageUrls });
+      } finally {
+        onImageUploadEnd();
+      }
+      event.target.value = "";
+    };
+
+  const handleAnnouncementProjectBatchUpload = async (files: FileList | File[]) => {
+    const nextFiles = Array.from(files).filter((file) => file.type.startsWith("image/")).slice(0, 25);
+    if (nextFiles.length === 0) return;
+
+    const targetCount = Math.min(25, Math.max(scene.projectCount ?? 8, nextFiles.length));
+    onImageUploadStart(`Uploading ${nextFiles.length} project images...`);
+    try {
+      const uploadedUrls = await Promise.all(nextFiles.map((file) => fileToStoredUrl(file, settings.resolution, settings.profile)));
+      const projectImageUrls = Array.from({ length: targetCount }, (_, itemIndex) => uploadedUrls[itemIndex] ?? scene.projectImageUrls?.[itemIndex] ?? "");
+      onUpdate(scene.id, { projectCount: targetCount, projectImageUrls });
+    } finally {
+      onImageUploadEnd();
+    }
+  };
+
+  const handleAnnouncementProjectDrop = async (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    if (!event.dataTransfer.files?.length) return;
+    await handleAnnouncementProjectBatchUpload(event.dataTransfer.files);
+  };
+
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
       <div className="mb-4 shrink-0">
@@ -298,12 +354,12 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
               <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
             </label>
             <label className="block">
-              <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : "Title"}</span>
+              <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : scene.type === "announcement-hero" ? "Main title" : "Title"}</span>
               <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
             </label>
-            {scene.type !== "website-url" ? (
+            {scene.type !== "website-url" && scene.type !== "announcement-hero" ? (
               <label className="block">
-                <span className={labelClassName}>{scene.type === "description" ? "Line 2" : "Subtitle"}</span>
+                <span className={labelClassName}>{scene.type === "description" ? "Line 2" : scene.type === "split-slogan" ? "Project name" : "Subtitle"}</span>
                 <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
               </label>
             ) : null}
@@ -354,6 +410,88 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
               ) : (
                 <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No logo uploaded yet.</div>
               )}
+            </div>
+          </InspectorSection>
+        ) : null}
+
+        {scene.type === "announcement-hero" ? (
+          <InspectorSection title="Project wall" description="Choose how many project logos appear behind the main announcement title.">
+            <label className="block">
+              <span className={labelClassName}>Top line</span>
+              <input
+                value={scene.eyebrow}
+                onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })}
+                className={fieldClassName}
+                placeholder="This week on"
+              />
+            </label>
+            <label className="block">
+              <span className={labelClassName}>Projects in background</span>
+              <input
+                type="range"
+                min="1"
+                max="25"
+                step="1"
+                value={scene.projectCount ?? 8}
+                onChange={(event) => onUpdate(scene.id, { projectCount: Number(event.target.value) })}
+                className="w-full accent-sky-500"
+              />
+              <p className="mt-2 text-xs text-slate-500">{scene.projectCount ?? 8} project logos</p>
+            </label>
+            <label
+              className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-6 text-center transition hover:border-sky-400/40 hover:bg-white/[0.06]"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => void handleAnnouncementProjectDrop(event)}
+            >
+              <span className="text-sm font-medium text-white">Drop multiple logos here</span>
+              <span className="mt-2 text-sm leading-6 text-slate-400">Drop or choose up to 25 images and the editor will place them into the announcement layout automatically.</span>
+              <span className="mt-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-2 text-sm text-slate-200">Choose images</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="sr-only"
+                onChange={(event) => {
+                  if (!event.target.files?.length) return;
+                  void handleAnnouncementProjectBatchUpload(event.target.files);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            <div className="mt-4 grid gap-3 2xl:grid-cols-2">
+              {Array.from({ length: scene.projectCount ?? 8 }, (_, index) => {
+                const imageUrl = scene.projectImageUrls?.[index] ?? "";
+                return (
+                  <div key={`${scene.id}-project-image-${index}`} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-white">Project {index + 1}</p>
+                        <p className="mt-1 text-xs text-slate-500">Upload a logo or mockup tile for this slot.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
+                          Upload
+                          <input type="file" accept="image/*" onChange={handleAnnouncementProjectImageChange(index)} className="sr-only" />
+                        </label>
+                        {imageUrl ? (
+                          <button type="button" onClick={() => onUpdate(scene.id, { projectImageUrls: (scene.projectImageUrls ?? []).map((item, itemIndex) => (itemIndex === index ? "" : item)) })} className={ghostButtonClassName}>
+                            Clear
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className={panelClassName}>
+                      {imageUrl ? (
+                        <div className="flex aspect-square items-center justify-center p-3">
+                          <img src={imageUrl} alt={`Project ${index + 1}`} className="h-full w-full rounded-2xl object-contain" />
+                        </div>
+                      ) : (
+                        <div className="flex aspect-square items-center justify-center px-4 text-center text-sm text-slate-400">No image uploaded for this project yet.</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </InspectorSection>
         ) : null}
@@ -583,6 +721,22 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
             <input type="range" min="1.5" max="8" step="0.5" value={scene.durationSeconds} onChange={(event) => onUpdate(scene.id, { durationSeconds: Number(event.target.value) })} className="w-full accent-sky-500" />
             <p className="mt-2 text-xs text-slate-500">{scene.durationSeconds.toFixed(1)}s</p>
           </label>
+          {isAnnouncementScene(scene) ? (
+            <label className="mt-4 block">
+              <span className={labelClassName}>Scene transition</span>
+              <select
+                value={scene.transition}
+                onChange={(event) => onUpdate(scene.id, { transition: event.target.value as Scene["transition"] })}
+                className={fieldClassName}
+              >
+                {Object.entries(transitionTypeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </InspectorSection>
       </div>
     </aside>

@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useEffect, useState } from "react";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { ProjectTypeModal } from "@/components/ProjectTypeModal";
 import { deleteProject, deleteProjects, listProjects } from "@/lib/projectPersistence";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
+import type { VideoType } from "@/store/useStore";
 
 type ProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
 
@@ -25,6 +28,7 @@ function formatRelativeDate(value?: string) {
 }
 
 export function ProjectsWorkspace() {
+  const router = useRouter();
   const { user } = useAuthSession();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +37,7 @@ export function ProjectsWorkspace() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isProjectTypeModalOpen, setIsProjectTypeModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -100,6 +105,12 @@ export function ProjectsWorkspace() {
     }
   };
 
+  const handleCreateProject = (videoType: VideoType) => {
+    setIsProjectTypeModalOpen(false);
+    const query = videoType === "announcement" ? "?videoType=announcement" : "";
+    router.push(`/editor${query}`);
+  };
+
   return (
     <main className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.16),transparent_32%),linear-gradient(180deg,#060b16_0%,#0b1220_44%,#0f172a_100%)] px-4 py-6 text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -119,12 +130,13 @@ export function ProjectsWorkspace() {
                   {user.email}
                 </span>
               ) : null}
-              <Link
-                href="/editor"
+              <button
+                type="button"
+                onClick={() => setIsProjectTypeModalOpen(true)}
                 className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
               >
                 New project
-              </Link>
+              </button>
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -229,6 +241,11 @@ export function ProjectsWorkspace() {
           if (!pendingDelete) return;
           void handleDeleteProject(pendingDelete.id, pendingDelete.name);
         }}
+      />
+      <ProjectTypeModal
+        isOpen={isProjectTypeModalOpen}
+        onClose={() => setIsProjectTypeModalOpen(false)}
+        onSelect={handleCreateProject}
       />
     </main>
   );

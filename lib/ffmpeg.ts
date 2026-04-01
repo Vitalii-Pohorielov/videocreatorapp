@@ -1,6 +1,7 @@
 import { toCanvas } from "html-to-image";
 
 import { SceneStage } from "@/components/SceneStage";
+import { getTransitionFrameMotion, isAnnouncementScene } from "@/lib/sceneTransitions";
 import { exportResolutionDimensions } from "@/store/useStore";
 import type { ExportSettings, Scene } from "@/store/useStore";
 
@@ -69,10 +70,6 @@ function getExportProfileConfig(settings: ExportSettings) {
   }
 }
 
-function easeInOut(value: number) {
-  return 0.5 - Math.cos(Math.min(1, Math.max(0, value)) * Math.PI) / 2;
-}
-
 function createCanvas(videoWidth: number, videoHeight: number) {
   const canvas = document.createElement("canvas");
   canvas.width = videoWidth;
@@ -91,10 +88,11 @@ function clampProgress(value: number) {
 }
 
 function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: number) {
+  const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
   return scenes.reduce((total, scene, sceneIndex) => {
     const nextScene = scenes[sceneIndex + 1];
     const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
-    return total + stillFrameCount + (nextScene ? transitionFrameCount : 0);
+    return total + stillFrameCount + (hasAnnouncementScenes && nextScene ? transitionFrameCount : 0);
   }, 0);
 }
 
@@ -332,6 +330,30 @@ function getFrameProgress(frameIndex: number, frameCount: number) {
   return Math.min(1, Math.max(0, frameIndex / (frameCount - 1)));
 }
 
+async function renderSceneCompositeCanvasCached(
+  scene: Scene,
+  settings: ExportSettings,
+  progress: number,
+  cache: Map<string, HTMLCanvasElement>,
+  allowCache: boolean,
+  assetReadinessCache?: Map<string, Promise<void>>,
+) {
+  const cacheKey = `${getRenderCacheKey(scene, settings, progress)}::composite`;
+  const cached = allowCache ? cache.get(cacheKey) : null;
+  if (cached) return cached;
+
+  const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
+  const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
+  const backgroundCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "background", assetReadinessCache);
+  const contentCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "content", assetReadinessCache);
+
+  ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
+  ctx.drawImage(contentCanvas, 0, 0, videoWidth, videoHeight);
+
+  if (allowCache) cache.set(cacheKey, canvas);
+  return canvas;
+}
+
 async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, settings: ExportSettings, progress: number, cache: Map<string, HTMLCanvasElement>, assetReadinessCache: Map<string, Promise<void>>) {
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
@@ -340,25 +362,25 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   // These renders must stay sequential because all export captures share one
   // offscreen React root. Parallel rendering causes layers to overwrite each
   // other and can produce empty/black transition frames.
-  const currentBackgroundCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "background", assetReadinessCache);
-  const nextBackgroundCanvas = await renderSceneLayerToCanvas(nextScene, settings, normalizedNextProgress, "background", assetReadinessCache);
-  const currentContentCanvas = await renderSceneLayerToCanvas(currentScene, settings, normalizedCurrentProgress, "content", assetReadinessCache);
+  const currentCanvas = await renderSceneCompositeCanvasCached(currentScene, settings, normalizedCurrentProgress, cache, false, assetReadinessCache);
+  const nextCanvas = await renderSceneCompositeCanvasCached(nextScene, settings, normalizedNextProgress, cache, false, assetReadinessCache);
+  const motion = getTransitionFrameMotion(currentScene.transition, progress, videoWidth, videoHeight);
 
-  ctx.drawImage(currentBackgroundCanvas, 0, 0, videoWidth, videoHeight);
-
-  const backgroundBlend = easeInOut(progress);
-  if (backgroundBlend > 0.001) {
+  if (currentCanvas && motion.currentOpacity > 0.001) {
+    const currentWidth = videoWidth * motion.currentScale;
+    const currentHeight = videoHeight * motion.currentScale;
     ctx.save();
-    ctx.globalAlpha = backgroundBlend;
-    ctx.drawImage(nextBackgroundCanvas, 0, 0, videoWidth, videoHeight);
+    ctx.globalAlpha = motion.currentOpacity;
+    ctx.drawImage(currentCanvas, motion.currentX - (currentWidth - videoWidth) / 2, motion.currentY - (currentHeight - videoHeight) / 2, currentWidth, currentHeight);
     ctx.restore();
   }
 
-  const currentOpacity = 1 - easeInOut(Math.min(1, progress / 0.72));
-  if (currentOpacity > 0.001) {
+  if (nextCanvas && motion.nextOpacity > 0.001) {
+    const nextWidth = videoWidth * motion.nextScale;
+    const nextHeight = videoHeight * motion.nextScale;
     ctx.save();
-    ctx.globalAlpha = currentOpacity;
-    ctx.drawImage(currentContentCanvas, 0, 0, videoWidth, videoHeight);
+    ctx.globalAlpha = motion.nextOpacity;
+    ctx.drawImage(nextCanvas, motion.nextX - (nextWidth - videoWidth) / 2, motion.nextY - (nextHeight - videoHeight) / 2, nextWidth, nextHeight);
     ctx.restore();
   }
 
@@ -419,6 +441,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
   await ensureFFmpegLoaded();
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
+  const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
   const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset, crf } = getExportProfileConfig(settings);
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
@@ -461,14 +484,16 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       for (let repeat = 0; repeat < stillFrameCount; repeat += 1) {
         const sceneProgress = getFrameProgress(repeat, totalSceneFrameCount);
         const normalizedSceneProgress = normalizeSceneProgress(scene, sceneProgress);
-        const sceneCanvas = await renderSceneCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true, exportAssetReadinessCache);
+        const sceneCanvas = hasAnnouncementScenes
+          ? await renderSceneCompositeCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true, exportAssetReadinessCache)
+          : await renderSceneCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true, exportAssetReadinessCache);
         await writeCanvasFrame(frameIndex, sceneCanvas, frameExtension, frameMimeType, frameQuality);
         renderedFrameCount += 1;
         reportFrameProgress();
         frameIndex += 1;
       }
 
-      if (nextScene) {
+      if (hasAnnouncementScenes && nextScene) {
         for (let transitionStep = 0; transitionStep < transitionFrameCount; transitionStep += 1) {
           const progress = (transitionStep + 1) / transitionFrameCount;
           const transitionCanvas = await renderTransitionFrame(scene, nextScene, settings, progress, renderCache, exportAssetReadinessCache);
