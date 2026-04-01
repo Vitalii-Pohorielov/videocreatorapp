@@ -33,7 +33,6 @@ let renderHostSize: { width: number; height: number } | null = null;
 
 const coreBaseUrl = "/ffmpeg";
 const exportMediaReadyTimeoutMs = 3500;
-type ExportRenderMode = "light" | "announcement-export";
 
 function getVideoSize(settings: ExportSettings) {
   return exportResolutionDimensions[settings.resolution];
@@ -71,38 +70,6 @@ function getExportProfileConfig(settings: ExportSettings) {
   }
 }
 
-function getAnnouncementExportProfileConfig(settings: ExportSettings) {
-  switch (settings.profile) {
-    case "draft":
-      return {
-        fps: 12,
-        frameExtension: "jpg" as const,
-        frameMimeType: "image/jpeg",
-        frameQuality: 0.66,
-        ffmpegPreset: "ultrafast",
-        crf: 30,
-      };
-    case "high":
-      return {
-        fps: 20,
-        frameExtension: "jpg" as const,
-        frameMimeType: "image/jpeg",
-        frameQuality: 0.86,
-        ffmpegPreset: "veryfast",
-        crf: 24,
-      };
-    default:
-      return {
-        fps: 16,
-        frameExtension: "jpg" as const,
-        frameMimeType: "image/jpeg",
-        frameQuality: 0.76,
-        ffmpegPreset: "ultrafast",
-        crf: 27,
-      };
-  }
-}
-
 function createCanvas(videoWidth: number, videoHeight: number) {
   const canvas = document.createElement("canvas");
   canvas.width = videoWidth;
@@ -120,11 +87,12 @@ function clampProgress(value: number) {
   return Math.min(1, Math.max(0, value));
 }
 
-function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: number, includeTransitions: boolean) {
+function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: number) {
+  const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
   return scenes.reduce((total, scene, sceneIndex) => {
     const nextScene = scenes[sceneIndex + 1];
     const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
-    return total + stillFrameCount + (includeTransitions && nextScene ? transitionFrameCount : 0);
+    return total + stillFrameCount + (hasAnnouncementScenes && nextScene ? transitionFrameCount : 0);
   }, 0);
 }
 
@@ -210,11 +178,10 @@ async function waitForExportAssets(node: HTMLElement) {
   await nextFrame();
 }
 
-function getExportAssetKey(scene: Scene, renderLayer: "full" | "background" | "content", renderMode: ExportRenderMode) {
+function getExportAssetKey(scene: Scene, renderLayer: "full" | "background" | "content") {
   return [
     scene.id,
     renderLayer,
-    renderMode,
     scene.websiteImageUrl,
     scene.logoImageUrl,
     scene.authorImageUrl,
@@ -255,24 +222,11 @@ async function ensureRenderSurface(videoWidth: number, videoHeight: number) {
   return { host: renderHost, root: renderRoot };
 }
 
-async function renderSceneDomToCanvas(
-  scene: Scene,
-  settings: ExportSettings,
-  progress: number,
-  renderMode: ExportRenderMode,
-  assetReadinessCache?: Map<string, Promise<void>>,
-) {
-  return renderSceneLayerToCanvas(scene, settings, progress, "full", renderMode, assetReadinessCache);
+async function renderSceneDomToCanvas(scene: Scene, settings: ExportSettings, progress: number, assetReadinessCache?: Map<string, Promise<void>>) {
+  return renderSceneLayerToCanvas(scene, settings, progress, "full", assetReadinessCache);
 }
 
-async function renderSceneLayerToCanvas(
-  scene: Scene,
-  settings: ExportSettings,
-  progress: number,
-  renderLayer: "full" | "background" | "content",
-  renderMode: ExportRenderMode,
-  assetReadinessCache?: Map<string, Promise<void>>,
-) {
+async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, progress: number, renderLayer: "full" | "background" | "content", assetReadinessCache?: Map<string, Promise<void>>) {
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { host, root } = await ensureRenderSurface(videoWidth, videoHeight);
   const { flushSync, React } = await getReactRenderer();
@@ -292,7 +246,7 @@ async function renderSceneLayerToCanvas(
           backgroundColor: settings.backgroundColor,
           textColor: settings.textColor,
           preset: settings.preset,
-          performanceMode: renderMode,
+          performanceMode: "light",
           renderLayer,
           progress,
         }),
@@ -304,7 +258,7 @@ async function renderSceneLayerToCanvas(
   const node = host.firstElementChild as HTMLElement | null;
   if (!node) throw new Error("Could not render scene preview for export.");
 
-  const assetKey = getExportAssetKey(scene, renderLayer, renderMode);
+  const assetKey = getExportAssetKey(scene, renderLayer);
   if (assetReadinessCache) {
     let readinessPromise = assetReadinessCache.get(assetKey);
     if (!readinessPromise) {
@@ -338,11 +292,10 @@ function normalizeSceneProgress(scene: Scene, progress: number) {
   return Number(clamped.toFixed(3));
 }
 
-function getRenderCacheKey(scene: Scene, settings: ExportSettings, progress: number, renderMode: ExportRenderMode) {
+function getRenderCacheKey(scene: Scene, settings: ExportSettings, progress: number) {
   return [
     scene.id,
     scene.type,
-    renderMode,
     settings.resolution,
     settings.preset,
     settings.backgroundColor,
@@ -362,20 +315,12 @@ function getRenderCacheKey(scene: Scene, settings: ExportSettings, progress: num
   ].join("::");
 }
 
-async function renderSceneCanvasCached(
-  scene: Scene,
-  settings: ExportSettings,
-  progress: number,
-  cache: Map<string, HTMLCanvasElement>,
-  allowCache: boolean,
-  renderMode: ExportRenderMode,
-  assetReadinessCache?: Map<string, Promise<void>>,
-) {
-  if (!allowCache) return renderSceneDomToCanvas(scene, settings, progress, renderMode, assetReadinessCache);
-  const cacheKey = getRenderCacheKey(scene, settings, progress, renderMode);
+async function renderSceneCanvasCached(scene: Scene, settings: ExportSettings, progress: number, cache: Map<string, HTMLCanvasElement>, allowCache: boolean, assetReadinessCache?: Map<string, Promise<void>>) {
+  if (!allowCache) return renderSceneDomToCanvas(scene, settings, progress, assetReadinessCache);
+  const cacheKey = getRenderCacheKey(scene, settings, progress);
   const cached = cache.get(cacheKey);
   if (cached) return cached;
-  const rendered = await renderSceneDomToCanvas(scene, settings, progress, renderMode, assetReadinessCache);
+  const rendered = await renderSceneDomToCanvas(scene, settings, progress, assetReadinessCache);
   cache.set(cacheKey, rendered);
   return rendered;
 }
@@ -391,17 +336,16 @@ async function renderSceneCompositeCanvasCached(
   progress: number,
   cache: Map<string, HTMLCanvasElement>,
   allowCache: boolean,
-  renderMode: ExportRenderMode,
   assetReadinessCache?: Map<string, Promise<void>>,
 ) {
-  const cacheKey = `${getRenderCacheKey(scene, settings, progress, renderMode)}::composite`;
+  const cacheKey = `${getRenderCacheKey(scene, settings, progress)}::composite`;
   const cached = allowCache ? cache.get(cacheKey) : null;
   if (cached) return cached;
 
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
-  const backgroundCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "background", renderMode, assetReadinessCache);
-  const contentCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "content", renderMode, assetReadinessCache);
+  const backgroundCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "background", assetReadinessCache);
+  const contentCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "content", assetReadinessCache);
 
   ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
   ctx.drawImage(contentCanvas, 0, 0, videoWidth, videoHeight);
@@ -418,8 +362,8 @@ async function renderTransitionFrame(currentScene: Scene, nextScene: Scene, sett
   // These renders must stay sequential because all export captures share one
   // offscreen React root. Parallel rendering causes layers to overwrite each
   // other and can produce empty/black transition frames.
-  const currentCanvas = await renderSceneCompositeCanvasCached(currentScene, settings, normalizedCurrentProgress, cache, false, "light", assetReadinessCache);
-  const nextCanvas = await renderSceneCompositeCanvasCached(nextScene, settings, normalizedNextProgress, cache, false, "light", assetReadinessCache);
+  const currentCanvas = await renderSceneCompositeCanvasCached(currentScene, settings, normalizedCurrentProgress, cache, false, assetReadinessCache);
+  const nextCanvas = await renderSceneCompositeCanvasCached(nextScene, settings, normalizedNextProgress, cache, false, assetReadinessCache);
   const motion = getTransitionFrameMotion(currentScene.transition, progress, videoWidth, videoHeight);
 
   if (currentCanvas && motion.currentOpacity > 0.001) {
@@ -491,17 +435,6 @@ function toSafeVideoFileName(projectName?: string) {
   return `${baseName || "video-project"}.mp4`;
 }
 
-function optimizeSceneForAnnouncementExport(scene: Scene): Scene {
-  if (scene.type !== "announcement-hero") return scene;
-
-  const projectCount = Math.min(scene.projectCount ?? 8, 9);
-  return {
-    ...scene,
-    projectCount,
-    projectImageUrls: Array.from({ length: projectCount }, (_, index) => scene.projectImageUrls?.[index] ?? ""),
-  };
-}
-
 export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSettings, onProgress?: (value: number) => void, projectName?: string) {
   if (scenes.length === 0) throw new Error("Add at least one scene before exporting.");
   onProgress?.(0.02);
@@ -509,15 +442,10 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
   const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
-  const exportMode: ExportRenderMode = hasAnnouncementScenes ? "announcement-export" : "light";
-  const includeTransitions = !hasAnnouncementScenes;
-  const scenesForExport = hasAnnouncementScenes ? scenes.map((scene) => optimizeSceneForAnnouncementExport(scene)) : scenes;
-  const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset, crf } = hasAnnouncementScenes
-    ? getAnnouncementExportProfileConfig(settings)
-    : getExportProfileConfig(settings);
+  const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset, crf } = getExportProfileConfig(settings);
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
-  const totalFrameCount = Math.max(1, getTotalFrameCount(scenesForExport, fps, transitionFrameCount, includeTransitions));
+  const totalFrameCount = Math.max(1, getTotalFrameCount(scenes, fps, transitionFrameCount));
   const frameRenderWeight = 0.88;
   const encodeWeight = 0.12;
   const renderCache = new Map<string, HTMLCanvasElement>();
@@ -547,23 +475,25 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       onProgress?.(clampProgress((renderedFrameCount / totalFrameCount) * frameRenderWeight));
     };
 
-    for (let sceneIndex = 0; sceneIndex < scenesForExport.length; sceneIndex += 1) {
-      const scene = scenesForExport[sceneIndex];
-      const nextScene = scenesForExport[sceneIndex + 1];
+    for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex += 1) {
+      const scene = scenes[sceneIndex];
+      const nextScene = scenes[sceneIndex + 1];
       const totalSceneFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
       const stillFrameCount = totalSceneFrameCount;
 
       for (let repeat = 0; repeat < stillFrameCount; repeat += 1) {
         const sceneProgress = getFrameProgress(repeat, totalSceneFrameCount);
         const normalizedSceneProgress = normalizeSceneProgress(scene, sceneProgress);
-        const sceneCanvas = await renderSceneCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true, exportMode, exportAssetReadinessCache);
+        const sceneCanvas = hasAnnouncementScenes
+          ? await renderSceneCompositeCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true, exportAssetReadinessCache)
+          : await renderSceneCanvasCached(scene, settings, normalizedSceneProgress, renderCache, true, exportAssetReadinessCache);
         await writeCanvasFrame(frameIndex, sceneCanvas, frameExtension, frameMimeType, frameQuality);
         renderedFrameCount += 1;
         reportFrameProgress();
         frameIndex += 1;
       }
 
-      if (includeTransitions && nextScene) {
+      if (hasAnnouncementScenes && nextScene) {
         for (let transitionStep = 0; transitionStep < transitionFrameCount; transitionStep += 1) {
           const progress = (transitionStep + 1) / transitionFrameCount;
           const transitionCanvas = await renderTransitionFrame(scene, nextScene, settings, progress, renderCache, exportAssetReadinessCache);
@@ -593,7 +523,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       blob: videoBlob,
       url: downloadUrl,
       fileName: toSafeVideoFileName(projectName),
-      meta: { width: videoWidth, height: videoHeight, fps, transitionSeconds: includeTransitions ? settings.transitionSeconds : 0 },
+      meta: { width: videoWidth, height: videoHeight, fps, transitionSeconds: settings.transitionSeconds },
     };
   } finally {
     latestProgressCallback = undefined;
