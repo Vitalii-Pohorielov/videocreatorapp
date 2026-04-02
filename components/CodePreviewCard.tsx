@@ -19,6 +19,10 @@ type Token = {
   type: TokenType;
 };
 
+type VisibleToken = Token & {
+  visibleText: string;
+};
+
 const keywordPattern = /\b(function|const|let|var|return|for|if|else|Math|Math\.floor|true|false|new|class|import|from|export|async|await)\b/;
 const stringPattern = /^(['"`])(?:\\.|(?!\1).)*\1/;
 const numberPattern = /^\b\d+\b/;
@@ -135,6 +139,34 @@ function tokenClassName(type: TokenType) {
   }
 }
 
+function getVisibleTokenLines(tokenizedLines: Token[][], progress: number) {
+  const totalCharacters = tokenizedLines.reduce(
+    (sum, line, lineIndex) => sum + line.reduce((lineSum, token) => lineSum + token.text.length, 0) + (lineIndex < tokenizedLines.length - 1 ? 1 : 0),
+    0,
+  );
+  const visibleCharacterCount = Math.max(0, Math.floor(totalCharacters * clamp(progress)));
+  let remainingCharacters = visibleCharacterCount;
+
+  return tokenizedLines.map((line, lineIndex) => {
+    const visibleTokens: VisibleToken[] = [];
+
+    for (const token of line) {
+      if (remainingCharacters <= 0) break;
+      const visibleText = token.text.slice(0, remainingCharacters);
+      if (visibleText) {
+        visibleTokens.push({ ...token, visibleText });
+      }
+      remainingCharacters -= visibleText.length;
+    }
+
+    if (lineIndex < tokenizedLines.length - 1 && remainingCharacters > 0) {
+      remainingCharacters -= 1;
+    }
+
+    return visibleTokens;
+  });
+}
+
 export function CodePreviewCard({ code, progress = 1, compact = false, className = "", editable = false, onClick, accentColor = "#1f93ff" }: CodePreviewCardProps) {
   const lines = useMemo(
     () =>
@@ -146,6 +178,8 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
   );
   const tokenizedLines = useMemo(() => lines.map((line) => tokenizeLine(line)), [lines]);
   const lineProgress = clamp(progress);
+  const typingProgress = editable ? 1 : clamp(lineProgress / 0.72);
+  const visibleTokenLines = useMemo(() => getVisibleTokenLines(tokenizedLines, typingProgress), [tokenizedLines, typingProgress]);
   const windowScale = 0.92 + lineProgress * 0.08;
 
   return (
@@ -196,9 +230,9 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
             <div key={`${lineIndex}-${line}`} className="flex min-w-max">
               <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
               <div className="min-w-0 flex-1 whitespace-pre">
-                {tokenizedLines[lineIndex].map((token, tokenIndex) => (
+                {visibleTokenLines[lineIndex].map((token, tokenIndex) => (
                   <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
-                    {token.text}
+                    {token.visibleText}
                   </span>
                 ))}
               </div>
