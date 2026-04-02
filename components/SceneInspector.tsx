@@ -106,6 +106,7 @@ const presetChipStyles: Record<TemplatePreset, { idle: string; active: string }>
 type SceneInspectorProps = {
   scene: Scene | null;
   settings: ExportSettings;
+  isAnnouncementWorkspace: boolean;
   onUpdate: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
   onUpdateSettings: (updates: Partial<ExportSettings>) => void;
   onImageUploadStart: (label: string) => void;
@@ -129,7 +130,15 @@ function InspectorSection({ title, description, defaultOpen = false, children }:
   );
 }
 
-export const SceneInspector = memo(function SceneInspector({ scene, settings, onUpdate, onUpdateSettings, onImageUploadStart, onImageUploadEnd }: SceneInspectorProps) {
+export const SceneInspector = memo(function SceneInspector({
+  scene,
+  settings,
+  isAnnouncementWorkspace,
+  onUpdate,
+  onUpdateSettings,
+  onImageUploadStart,
+  onImageUploadEnd,
+}: SceneInspectorProps) {
   const fieldClassName =
     "w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400";
   const textareaClassName =
@@ -285,92 +294,98 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
       </div>
 
       <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
-        <InspectorSection title="Style preset" description="Choose the visual direction for the whole video." defaultOpen>
-          <div className="mt-4 grid gap-3">
-            <div className="grid grid-cols-2 gap-2">
-              {presetOptions.map((preset) => {
-                const active = settings.preset === preset;
-                const tone = presetChipStyles[preset];
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => onUpdateSettings({ preset })}
-                    className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? tone.active : tone.idle}`}
-                  >
-                    <span className="block font-medium">{presetLabels[preset]}</span>
-                  </button>
-                );
-              })}
+        {!isAnnouncementWorkspace ? (
+          <InspectorSection title="Style preset" description="Choose the visual direction for the whole video." defaultOpen>
+            <div className="mt-4 grid gap-3">
+              <div className="grid grid-cols-2 gap-2">
+                {presetOptions.map((preset) => {
+                  const active = settings.preset === preset;
+                  const tone = presetChipStyles[preset];
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => onUpdateSettings({ preset })}
+                      className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? tone.active : tone.idle}`}
+                    >
+                      <span className="block font-medium">{presetLabels[preset]}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </InspectorSection>
+          </InspectorSection>
+        ) : null}
 
-        <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className={labelClassName}>Background</span>
-              <div className="space-y-2">
-                <input
-                  type="color"
-                  value={settings.backgroundColor}
-                  onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
-                  className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
-                />
-                <input
-                  type="text"
-                  value={settings.backgroundColor}
-                  onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
-                  className={`${fieldClassName} uppercase`}
-                  placeholder="#F7F4EE"
-                />
-              </div>
-            </label>
-            <label className="block">
-              <span className={labelClassName}>Text</span>
-              <div className="space-y-2">
-                <input
-                  type="color"
-                  value={settings.textColor}
-                  onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
-                  className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
-                />
-                <input
-                  type="text"
-                  value={settings.textColor}
-                  onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
-                  className={`${fieldClassName} uppercase`}
-                  placeholder="#1B1F23"
-                />
-              </div>
-            </label>
-          </div>
-        </InspectorSection>
+        {!isAnnouncementWorkspace ? (
+          <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className={labelClassName}>Background</span>
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={settings.backgroundColor}
+                    onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
+                    className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
+                  />
+                  <input
+                    type="text"
+                    value={settings.backgroundColor}
+                    onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
+                    className={`${fieldClassName} uppercase`}
+                    placeholder="#F7F4EE"
+                  />
+                </div>
+              </label>
+              <label className="block">
+                <span className={labelClassName}>Text</span>
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={settings.textColor}
+                    onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
+                    className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
+                  />
+                  <input
+                    type="text"
+                    value={settings.textColor}
+                    onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
+                    className={`${fieldClassName} uppercase`}
+                    placeholder="#1B1F23"
+                  />
+                </div>
+              </label>
+            </div>
+          </InspectorSection>
+        ) : null}
 
-        <InspectorSection title="Text" description="Main copy for the selected scene." defaultOpen>
-          <div className="space-y-4">
-            <label className="block">
-              <span className={labelClassName}>Scene label</span>
-              <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
-            </label>
-            <label className="block">
-              <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : scene.type === "announcement-hero" ? "Main title" : "Title"}</span>
-              <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
-            </label>
-            {scene.type !== "website-url" && scene.type !== "announcement-hero" ? (
+        {!isAnnouncementWorkspace ? (
+          <InspectorSection title="Text" description="Main copy for the selected scene." defaultOpen>
+            <div className="space-y-4">
               <label className="block">
-                <span className={labelClassName}>{scene.type === "description" ? "Line 2" : scene.type === "split-slogan" ? "Project name" : "Subtitle"}</span>
-                <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
+                <span className={labelClassName}>Scene label</span>
+                <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
               </label>
-            ) : null}
-            {scene.type === "description" ? (
               <label className="block">
-                <span className={labelClassName}>Line 3</span>
-                <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className={textareaClassName} />
+                <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : scene.type === "announcement-hero" ? "Main title" : "Title"}</span>
+                <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
               </label>
-            ) : null}
-          </div>
-        </InspectorSection>
+              {scene.type !== "website-url" && scene.type !== "announcement-hero" ? (
+                <label className="block">
+                  <span className={labelClassName}>{scene.type === "description" ? "Line 2" : scene.type === "split-slogan" ? "Project name" : "Subtitle"}</span>
+                  <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
+                </label>
+              ) : null}
+              {scene.type === "description" ? (
+                <label className="block">
+                  <span className={labelClassName}>Line 3</span>
+                  <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className={textareaClassName} />
+                </label>
+              ) : null}
+            </div>
+          </InspectorSection>
+        ) : null}
 
         {scene.type === "code-preview" ? (
           <InspectorSection title="Code" description="Edit the snippet shown in the code card." defaultOpen>
@@ -458,7 +473,7 @@ export const SceneInspector = memo(function SceneInspector({ scene, settings, on
                 }}
               />
             </label>
-            <div className="mt-4 grid gap-3 2xl:grid-cols-2">
+            <div className="mt-4 grid gap-3 grid-cols-1">
               {Array.from({ length: scene.projectCount ?? 8 }, (_, index) => {
                 const imageUrl = scene.projectImageUrls?.[index] ?? "";
                 return (

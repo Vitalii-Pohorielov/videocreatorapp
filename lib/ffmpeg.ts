@@ -189,6 +189,10 @@ function getExportAssetKey(scene: Scene, renderLayer: "full" | "background" | "c
   ].join("::");
 }
 
+function shouldReuseAssetReadiness(scene: Scene) {
+  return scene.type !== "website-scroll";
+}
+
 async function ensureRenderSurface(videoWidth: number, videoHeight: number) {
   const { createRoot } = await getReactRenderer();
 
@@ -259,7 +263,7 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
   if (!node) throw new Error("Could not render scene preview for export.");
 
   const assetKey = getExportAssetKey(scene, renderLayer);
-  if (assetReadinessCache) {
+  if (assetReadinessCache && shouldReuseAssetReadiness(scene)) {
     let readinessPromise = assetReadinessCache.get(assetKey);
     if (!readinessPromise) {
       readinessPromise = waitForExportAssets(node);
@@ -272,7 +276,6 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
 
   try {
     return await toCanvas(node, {
-      cacheBust: true,
       pixelRatio: 1,
       canvasWidth: videoWidth,
       canvasHeight: videoHeight,

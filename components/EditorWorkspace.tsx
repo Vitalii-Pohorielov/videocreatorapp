@@ -738,6 +738,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
           <SceneInspector
             scene={selectedScene}
             settings={exportSettings}
+            isAnnouncementWorkspace={isAnnouncementWorkspace}
             onUpdate={handleInspectorSceneUpdate}
             onUpdateSettings={handleExportSettingsUpdate}
             onImageUploadStart={startImageUpload}
