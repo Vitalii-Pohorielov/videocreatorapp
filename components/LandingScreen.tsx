@@ -28,12 +28,6 @@ export function LandingScreen() {
             >
               Create promo video
             </Link>
-            <Link
-              href="/editor?videoType=announcement"
-              className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
-            >
-              Create announcement video
-            </Link>
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import { memo, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
-import { isAnnouncementScene, transitionTypeLabels } from "@/lib/sceneTransitions";
+import { announcementTransitionTypeLabels, isAnnouncementScene } from "@/lib/sceneTransitions";
 import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = [
@@ -744,7 +744,7 @@ export const SceneInspector = memo(function SceneInspector({
                 onChange={(event) => onUpdate(scene.id, { transition: event.target.value as Scene["transition"] })}
                 className={fieldClassName}
               >
-                {Object.entries(transitionTypeLabels).map(([value, label]) => (
+                {Object.entries(announcementTransitionTypeLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>

@@ -17,7 +17,7 @@ import {
   type VideoType,
 } from "@/lib/sceneDefinitions";
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
-import { getDefaultTransition } from "@/lib/sceneTransitions";
+import { getDefaultTransition, isAnnouncementSceneType, normalizeAnnouncementTransition } from "@/lib/sceneTransitions";
 
 export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType, VideoType } from "@/lib/sceneDefinitions";
 export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels, videoTypeLabels } from "@/lib/sceneDefinitions";
@@ -45,7 +45,9 @@ function normalizeProjectImageUrls(values: string[] | undefined, count: number) 
 }
 
 function normalizeLoadedScene(scene: Scene): Scene {
-  const normalizedTransition = scene.transition ?? getDefaultTransition(0);
+  const normalizedTransition = isAnnouncementSceneType(scene.type)
+    ? normalizeAnnouncementTransition(scene.transition)
+    : scene.transition ?? getDefaultTransition(0);
 
   if ((scene as unknown as { type?: string }).type === "brand-reveal") {
     return {
@@ -340,7 +342,10 @@ export const useStore = create<StudioStore>((set, get) => ({
                 return {
                   ...scene,
                   ...updates,
-                  transition: updates.transition ?? scene.transition,
+                  transition:
+                    scene.type === "announcement-hero" || scene.type === "split-slogan"
+                      ? normalizeAnnouncementTransition(updates.transition ?? scene.transition)
+                      : updates.transition ?? scene.transition,
                   durationSeconds: updates.durationSeconds === undefined ? scene.durationSeconds : clampDuration(updates.durationSeconds),
                   bullets: nextBullets,
                   projectCount: scene.type === "announcement-hero" ? nextProjectCount : scene.projectCount,

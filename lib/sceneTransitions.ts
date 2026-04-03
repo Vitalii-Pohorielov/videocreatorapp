@@ -12,7 +12,12 @@ export const transitionTypeLabels: Record<TransitionType, string> = {
 
 const announcementSceneTypes: SceneType[] = ["announcement-hero", "split-slogan"];
 
-const transitionCycle: TransitionType[] = ["slide-left", "slide-up", "slide-right", "slide-down", "zoom-in", "zoom-out", "fade"];
+export const announcementTransitionCycle: TransitionType[] = ["fade", "slide-left"];
+
+export const announcementTransitionTypeLabels = {
+  fade: transitionTypeLabels.fade,
+  "slide-left": transitionTypeLabels["slide-left"],
+} as const;
 
 export function isAnnouncementSceneType(type: SceneType) {
   return announcementSceneTypes.includes(type);
@@ -22,9 +27,14 @@ export function isAnnouncementScene(scene: Pick<Scene, "type">) {
   return isAnnouncementSceneType(scene.type);
 }
 
+export function normalizeAnnouncementTransition(transition: TransitionType | undefined, index = 0): TransitionType {
+  if (transition && announcementTransitionCycle.includes(transition)) return transition;
+  return announcementTransitionCycle[index % announcementTransitionCycle.length] ?? "fade";
+}
+
 export function getDefaultTransition(index: number, sceneType?: SceneType): TransitionType {
   if (sceneType && !isAnnouncementSceneType(sceneType)) return "fade";
-  return transitionCycle[index % transitionCycle.length] ?? "fade";
+  return normalizeAnnouncementTransition(undefined, index);
 }
 
 function clampProgress(value: number) {
