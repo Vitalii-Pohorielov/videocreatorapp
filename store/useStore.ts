@@ -20,7 +20,7 @@ import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { getDefaultTransition, isAnnouncementSceneType, normalizeAnnouncementTransition } from "@/lib/sceneTransitions";
 
 export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType, VideoType } from "@/lib/sceneDefinitions";
-export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, presetLabels, sceneDefinitions, sceneTypeLabels, videoTypeLabels } from "@/lib/sceneDefinitions";
+export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, freePromoSceneTypes, freeStylePresets, presetLabels, sceneDefinitions, sceneTypeLabels, videoTypeLabels } from "@/lib/sceneDefinitions";
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 

@@ -5,7 +5,8 @@ import { memo, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import { announcementTransitionTypeLabels, isAnnouncementScene } from "@/lib/sceneTransitions";
-import { presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
+import { usePremiumStatus } from "@/lib/usePremiumStatus";
+import { freeStylePresets, presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = [
   "black",
@@ -27,6 +28,8 @@ const presetOptions: TemplatePreset[] = [
   "retro-print",
   "ember-glow",
 ];
+
+const premiumPresetOptions = presetOptions.filter((preset) => !freeStylePresets.includes(preset));
 
 const presetChipStyles: Record<TemplatePreset, { idle: string; active: string }> = {
   black: {
@@ -139,6 +142,7 @@ export const SceneInspector = memo(function SceneInspector({
   onImageUploadStart,
   onImageUploadEnd,
 }: SceneInspectorProps) {
+  const { isPremium } = usePremiumStatus();
   const fieldClassName =
     "w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400";
   const textareaClassName =
@@ -297,21 +301,49 @@ export const SceneInspector = memo(function SceneInspector({
         {!isAnnouncementWorkspace ? (
           <InspectorSection title="Style preset" description="Choose the visual direction for the whole video." defaultOpen>
             <div className="mt-4 grid gap-3">
-              <div className="grid grid-cols-2 gap-2">
-                {presetOptions.map((preset) => {
-                  const active = settings.preset === preset;
-                  const tone = presetChipStyles[preset];
-                  return (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => onUpdateSettings({ preset })}
-                      className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? tone.active : tone.idle}`}
-                    >
-                      <span className="block font-medium">{presetLabels[preset]}</span>
-                    </button>
-                  );
-                })}
+              {!isPremium ? <p className="text-xs text-slate-500">Free mode supports the Black and White style presets only.</p> : null}
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-500">Free</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {freeStylePresets.map((preset) => {
+                    const active = settings.preset === preset;
+                    const tone = presetChipStyles[preset];
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => onUpdateSettings({ preset })}
+                        className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${active ? tone.active : tone.idle}`}
+                      >
+                        <span className="block font-medium">{presetLabels[preset]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-500">Premium</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {premiumPresetOptions.map((preset) => {
+                    const active = settings.preset === preset;
+                    const tone = presetChipStyles[preset];
+                    const isLockedPreset = !isPremium;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => onUpdateSettings({ preset })}
+                        disabled={isLockedPreset}
+                        aria-disabled={isLockedPreset}
+                        className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${
+                          active ? tone.active : tone.idle
+                        } ${isLockedPreset ? "cursor-not-allowed opacity-40 saturate-[0.65]" : ""}`}
+                      >
+                        <span className="block font-medium">{presetLabels[preset]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </InspectorSection>

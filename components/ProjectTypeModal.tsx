@@ -1,5 +1,6 @@
 "use client";
 
+import { usePremiumStatus } from "@/lib/usePremiumStatus";
 import { videoTypeLabels, type VideoType } from "@/store/useStore";
 
 type ProjectTypeModalProps = {
@@ -14,7 +15,11 @@ const projectTypeDescriptions: Record<VideoType, string> = {
 };
 
 export function ProjectTypeModal({ isOpen, onClose, onSelect }: ProjectTypeModalProps) {
+  const { isPremium } = usePremiumStatus();
+
   if (!isOpen) return null;
+
+  const availableVideoTypes = isPremium ? (["promo", "announcement"] as const) : (["promo"] as const);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
@@ -35,7 +40,7 @@ export function ProjectTypeModal({ isOpen, onClose, onSelect }: ProjectTypeModal
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {(["promo", "announcement"] as const).map((videoType) => (
+          {availableVideoTypes.map((videoType) => (
             <button
               key={videoType}
               type="button"
@@ -47,6 +52,7 @@ export function ProjectTypeModal({ isOpen, onClose, onSelect }: ProjectTypeModal
             </button>
           ))}
         </div>
+        {!isPremium ? <p className="mt-4 text-sm text-rose-200">Free mode supports promo videos only.</p> : null}
       </div>
     </div>
   );

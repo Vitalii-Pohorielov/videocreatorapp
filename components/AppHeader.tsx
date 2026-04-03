@@ -102,7 +102,11 @@ export function AppHeader() {
                         <span className="shrink-0 rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
                           Premium
                         </span>
-                      ) : null}
+                      ) : (
+                        <span className="shrink-0 rounded-full border border-slate-300/20 bg-slate-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+                          Free
+                        </span>
+                      )}
                     </div>
                     <p className="truncate text-xs text-slate-400">{user.email}</p>
                   </div>

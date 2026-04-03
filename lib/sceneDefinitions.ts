@@ -107,6 +107,9 @@ export type SceneTrack = {
   scenes: Scene[];
 };
 
+export const freePromoSceneTypes: SceneType[] = ["brand-reveal", "product-showcase", "feature-grid"];
+export const freeStylePresets: TemplatePreset[] = ["black", "white"];
+
 export const videoTypeLabels: Record<VideoType, string> = {
   promo: "Promo video",
   announcement: "Announcement video",
@@ -576,6 +579,14 @@ export function createInitialSceneTrackForVideoType(videoType: VideoType): Scene
     id: "main-track",
     name: "Scene Track",
     scenes: sceneTypes.map((type, index) => createScene(type, index)),
+  };
+}
+
+export function createFreeInitialSceneTrack(): SceneTrack {
+  return {
+    id: "main-track",
+    name: "Scene Track",
+    scenes: freePromoSceneTypes.map((type, index) => createScene(type, index)),
   };
 }
 

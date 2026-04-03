@@ -135,7 +135,7 @@ export function ProjectsWorkspace() {
               <button
                 type="button"
                 onClick={() => setIsProjectTypeModalOpen(true)}
-                disabled={!isPremium || isPremiumLoading}
+                disabled={isPremiumLoading}
                 className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPremiumLoading ? "Checking access..." : "New project"}
@@ -185,7 +185,9 @@ export function ProjectsWorkspace() {
           {isLoading ? <p className="text-sm text-slate-400">Loading projects...</p> : null}
           {error ? <p className="text-sm text-rose-400">{error}</p> : null}
           {!isPremiumLoading && !isPremium ? (
-            <p className="mb-4 text-sm text-amber-300">Premium access is required to create new videos. Ask an admin to enable your premium flag in Supabase.</p>
+            <div className="mb-4 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+              Free mode supports promo videos with Intro, Highlight, and Features scenes only.
+            </div>
           ) : null}
 
           {!isLoading && !error && projects.length === 0 ? (

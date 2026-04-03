@@ -9,8 +9,9 @@ import { StudioPreview } from "@/components/StudioPreview";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
-import { createScene } from "@/lib/sceneDefinitions";
+import { createFreeInitialSceneTrack, createScene, freePromoSceneTypes, freeStylePresets } from "@/lib/sceneDefinitions";
 import { isAnnouncementScene } from "@/lib/sceneTransitions";
+import { usePremiumStatus } from "@/lib/usePremiumStatus";
 import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneType, type VideoType } from "@/store/useStore";
 
 type EditorWorkspaceProps = {
@@ -52,6 +53,7 @@ function parseExpressCreatePrompt(prompt: string): ExpressCreateEntry[] {
 }
 
 export function EditorWorkspace({ initialProjectId = null, initialVideoType = "promo" }: EditorWorkspaceProps) {
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const projectId = useStore((state) => state.projectId);
   const projectName = useStore((state) => state.projectName);
   const sceneTrack = useStore((state) => state.sceneTrack);
@@ -98,6 +100,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
       scenes.some((scene) => scene.type === "announcement-hero" || scene.type === "split-slogan"),
     [initialVideoType, scenes],
   );
+  const isFreeMode = !isPremiumLoading && !isPremium;
   const hasAnnouncementTransitions = useMemo(() => scenes.some((scene) => isAnnouncementScene(scene)), [scenes]);
   const selectedScene = useMemo(() => scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0] ?? null, [scenes, selectedSceneId]);
   const totalDuration = useMemo(
@@ -270,6 +273,27 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
         setIsCloudBusy(false);
       });
   }, [hydrateProject, initialProjectId, initialVideoType, resetProject]);
+
+  useEffect(() => {
+    if (isPremiumLoading || !isFreeMode || initialProjectId) return;
+
+    const nextTrack = createFreeInitialSceneTrack();
+    restoreWorkspaceState({
+      projectName: "Untitled project",
+      sceneTrack: nextTrack,
+      exportSettings: useStore.getState().exportSettings,
+      selectedSceneId: nextTrack.scenes[0]?.id ?? "",
+    });
+    setCloudStatus("Free mode supports promo videos with Intro, Highlight, and Features scenes only.");
+  }, [initialProjectId, isFreeMode, isPremiumLoading, restoreWorkspaceState]);
+
+  useEffect(() => {
+    if (isPremiumLoading || !isFreeMode || isAnnouncementWorkspace) return;
+    if (freeStylePresets.includes(exportSettings.preset)) return;
+
+    updateExportSettings({ preset: "black" });
+    setCloudStatus("Free mode supports the Black and White style presets only.");
+  }, [exportSettings.preset, isAnnouncementWorkspace, isFreeMode, isPremiumLoading, updateExportSettings]);
 
   const resetDownload = useCallback(() => {
     if (downloadUrl) {
@@ -561,10 +585,14 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
 
   const handleExportSettingsUpdate = useCallback(
     (updates: Parameters<typeof updateExportSettings>[0]) => {
+      if (isFreeMode && updates.preset && !freeStylePresets.includes(updates.preset)) {
+        setCloudStatus("Free mode supports the Black and White style presets only.");
+        return;
+      }
       pushHistorySnapshot();
       updateExportSettings(updates);
     },
-    [pushHistorySnapshot, updateExportSettings],
+    [isFreeMode, pushHistorySnapshot, updateExportSettings],
   );
 
   const handleInspectorSceneUpdate = useCallback(
@@ -619,12 +647,17 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
 
   const handleSceneTypeSelect = useCallback(
     (type: SceneType) => {
+      if (isFreeMode && !freePromoSceneTypes.includes(type)) {
+        setCloudStatus("Free mode supports Intro, Highlight, and Features scenes only.");
+        setIsSceneModalOpen(false);
+        return;
+      }
       pushHistorySnapshot();
       addScene(type);
       setIsSceneModalOpen(false);
       resetDownload();
     },
-    [addScene, pushHistorySnapshot, resetDownload],
+    [addScene, isFreeMode, pushHistorySnapshot, resetDownload],
   );
 
   const handleOpenSceneModal = useCallback(() => {
