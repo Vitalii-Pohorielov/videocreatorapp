@@ -95,10 +95,10 @@ export function LandingScreen() {
         <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col items-center justify-center py-12 text-center">
           <div className="max-w-4xl">
             <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl xl:text-7xl">
-              Create videos that actually convert
+              Video creation. <span className="animate-[heroAccent_6s_linear_infinite]">Zero AI</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Designed for founders, marketers, and builders.
+              A new way to build promo videos - faster than editing, more predictable than AI.
             </p>
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
@@ -106,13 +106,13 @@ export function LandingScreen() {
                 href="/editor"
                 className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
               >
-                Get started
+                Build Your First Video
               </Link>
               <a
                 href="#real-examples"
                 className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.06]"
               >
-                View examples
+                Watch Example
               </a>
             </div>
 
@@ -211,20 +211,24 @@ export function LandingScreen() {
           <div className="flex flex-1 items-center justify-center">
             <div className="w-full rounded-[32px] border border-white/10 bg-white/[0.03] px-6 py-10 sm:px-10 sm:py-12">
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Get started</p>
-              <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Create videos that actually convert</h3>
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">Designed for founders, marketers, and builders.</p>
+              <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+                Video creation. <span className="animate-[heroAccent_6s_linear_infinite]">Zero AI</span>
+              </h3>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
+                A new way to build promo videos - faster than editing, more predictable than AI.
+              </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link
                   href="/editor"
                   className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
                 >
-                  Get started
+                  Build Your First Video
                 </Link>
                 <a
                   href="#real-examples"
                   className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.06]"
                 >
-                  View examples
+                  Watch Example
                 </a>
               </div>
             </div>
