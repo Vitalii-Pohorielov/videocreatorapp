@@ -403,7 +403,7 @@ export const SceneInspector = memo(function SceneInspector({
                 <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : scene.type === "announcement-hero" ? "Main title" : "Title"}</span>
                 <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
               </label>
-              {scene.type !== "website-url" && scene.type !== "announcement-hero" ? (
+              {scene.type !== "website-url" && scene.type !== "announcement-hero" && scene.type !== "brand-reveal-alt" ? (
                 <label className="block">
                   <span className={labelClassName}>{scene.type === "description" ? "Line 2" : scene.type === "split-slogan" ? "Project name" : "Subtitle"}</span>
                   <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
@@ -436,7 +436,7 @@ export const SceneInspector = memo(function SceneInspector({
           </InspectorSection>
         ) : null}
 
-        {scene.type === "brand-reveal" ? (
+        {scene.type === "brand-reveal" || scene.type === "brand-reveal-alt" ? (
           <InspectorSection title="Project logo" description="Upload a PNG or SVG logo for the intro scene.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>

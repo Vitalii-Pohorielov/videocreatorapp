@@ -186,7 +186,7 @@ export function ProjectsWorkspace() {
           {error ? <p className="text-sm text-rose-400">{error}</p> : null}
           {!isPremiumLoading && !isPremium ? (
             <div className="mb-4 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
-              Free mode supports promo videos with Intro, Highlight, and Features scenes only.
+              Free mode supports promo videos with Intro Fade, Highlight, and Features scenes only.
             </div>
           ) : null}
 

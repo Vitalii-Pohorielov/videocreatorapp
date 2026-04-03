@@ -52,6 +52,7 @@ export type VideoType = "promo" | "announcement";
 export type SceneType =
   | "announcement-hero"
   | "brand-reveal"
+  | "brand-reveal-alt"
   | "product-showcase"
   | "feature-grid"
   | "code-preview"
@@ -216,7 +217,7 @@ export const sceneDefinitions: SceneDefinition[] = [
   },
   {
     type: "brand-reveal",
-    label: "Intro",
+    label: "Intro Fade",
     catalogDescription: "Hero intro scene.",
     createTemplate: () => ({
       type: "brand-reveal",
@@ -243,6 +244,27 @@ export const sceneDefinitions: SceneDefinition[] = [
 
   return "Animation complete!";
 }`,
+    }),
+  },
+  {
+    type: "brand-reveal-alt",
+    label: "Intro Click",
+    catalogDescription: "Split intro with copy on one side and logo on the other.",
+    createTemplate: () => ({
+      type: "brand-reveal-alt",
+      durationSeconds: 3,
+      transition: getDefaultTransition(2, "brand-reveal-alt"),
+      eyebrow: "",
+      title: "Your product",
+      subtitle: "",
+      description: "",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
     }),
   },
   {
@@ -583,10 +605,11 @@ export function createInitialSceneTrackForVideoType(videoType: VideoType): Scene
 }
 
 export function createFreeInitialSceneTrack(): SceneTrack {
+  const starterSceneTypes = ["brand-reveal", "product-showcase", "feature-grid"] as const satisfies readonly SceneType[];
   return {
     id: "main-track",
     name: "Scene Track",
-    scenes: freePromoSceneTypes.map((type, index) => createScene(type, index)),
+    scenes: starterSceneTypes.map((type, index) => createScene(type, index)),
   };
 }
 

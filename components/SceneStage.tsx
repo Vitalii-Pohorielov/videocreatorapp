@@ -1023,12 +1023,22 @@ export function SceneStage({
   const urlCharacterCount = Math.max(1, Math.min(scene.title.length, Math.ceil((scene.title.length * urlTypingProgress) / 2) * 2));
   const displayedUrl = (editable ? scene.title : scene.title.slice(0, urlCharacterCount)).toLowerCase();
   const urlHover = editable ? 0 : motion(progress, 0.42, 0.1);
-  const urlPress = editable ? 0 : motion(progress, 0.56, 0.08);
-  const urlBurst = editable ? 0 : motion(progress, 0.62, 0.1);
-  const urlFade = editable ? 0 : outroMotion(progress, 0.76, 0.18);
-  const introLogoOutro = editable ? 0 : outroMotion(progress, 0.72, 0.2);
-  const introTextOutro = editable ? 0 : outroMotion(progress, 0.58, 0.16);
-  const ctaAppear = editable ? 1 : motion(progress, 0.18, 0.1);
+    const urlPress = editable ? 0 : motion(progress, 0.56, 0.08);
+    const urlBurst = editable ? 0 : motion(progress, 0.62, 0.1);
+    const urlFade = editable ? 0 : outroMotion(progress, 0.76, 0.18);
+    const introLogoOutro = editable ? 0 : outroMotion(progress, 0.72, 0.2);
+    const introTextOutro = editable ? 0 : outroMotion(progress, 0.58, 0.16);
+    const introSplitMergeOutro = editable ? 0 : outroMotion(progress, 0.66, 0.18);
+    const introSplitTitleIn = editable ? 1 : motion(progress, 0.08, 0.18);
+    const introSplitCursorApproach = editable ? 0 : motion(progress, 0.34, 0.14);
+    const introSplitCursorPress = editable ? 0 : motion(progress, 0.5, 0.08);
+    const introSplitCursorBurst = editable ? 0 : motion(progress, 0.58, 0.08);
+    const introSplitTitleClickGlow = editable ? 0 : motion(progress, 0.5, 0.1);
+    const introSplitTitleRelease = editable ? 1 : motion(progress, 0.58, 0.08);
+    const introSplitTitleFade = editable ? 0 : outroMotion(progress, 0.68, 0.08);
+    const introSplitLogoIn = editable ? 1 : motion(progress, 0.72, 0.14);
+    const introSplitLogoFly = editable ? 0 : outroMotion(progress, 0.86, 0.14);
+    const ctaAppear = editable ? 1 : motion(progress, 0.18, 0.1);
   const ctaHover = editable ? 0 : motion(progress, 0.66, 0.1);
   const ctaPress = editable ? 0 : motion(progress, 0.76, 0.08);
   const ctaBurst = editable ? 0 : motion(progress, 0.8, 0.08);
@@ -1378,10 +1388,10 @@ export function SceneStage({
         </div>
       )}
 
-      {scene.type === "brand-reveal" && (
-        <div className="flex h-full flex-col items-center justify-center text-center">
-          <IntroLogoSlot scene={scene} entryProgress={sharedIn} outroProgress={introLogoOutro} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} textColor={textColor} />
-          <EditableText
+        {scene.type === "brand-reveal" && (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <IntroLogoSlot scene={scene} entryProgress={sharedIn} outroProgress={introLogoOutro} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} textColor={textColor} />
+            <EditableText
             as="h2"
             value={introTitle}
             editable={editable}
@@ -1492,6 +1502,222 @@ export function SceneStage({
               accentColor={elevatedAccentColor}
               onClick={editable ? () => setIsCodeEditorOpen(true) : undefined}
             />
+          </div>
+        )}
+
+        {scene.type === "brand-reveal-alt" && (
+          <div className="relative h-full overflow-hidden">
+            {editable ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-8 text-center">
+                <div className="relative flex aspect-square items-center justify-center rounded-full border border-white/12 bg-white/[0.03] shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+                  style={{
+                    width: compact ? "180px" : "320px",
+                    height: compact ? "180px" : "320px",
+                  }}
+                >
+                  <div className="absolute inset-[10%] rounded-full border border-white/10" />
+                  <div className="absolute inset-[22%] rounded-full border border-white/8" />
+                  <div className="relative flex h-full w-full items-center justify-center rounded-full bg-black/10 p-6">
+                    {getRenderableImageUrl(scene.logoImageUrl) ? (
+                      <button
+                        type="button"
+                        onClick={onRequestLogoUpload}
+                        className="flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)] transition hover:scale-105"
+                        style={{
+                          width: compact ? "140px" : "196px",
+                          height: compact ? "140px" : "196px",
+                        }}
+                      >
+                        <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white/[0.06] p-1.5">
+                          <img
+                            src={getRenderableImageUrl(scene.logoImageUrl) ?? ""}
+                            alt="Project logo"
+                            className="h-full w-full rounded-full object-cover"
+                          />
+                        </div>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onRequestLogoUpload}
+                        className="flex items-center justify-center rounded-full border border-dashed border-white/18 bg-white/[0.04] text-white/80 transition hover:scale-105"
+                        style={{
+                          width: compact ? "140px" : "196px",
+                          height: compact ? "140px" : "196px",
+                        }}
+                      >
+                        <div className="flex flex-col items-center gap-2 text-center">
+                          <span className={compact ? "text-2xl" : "text-3xl"}>+</span>
+                          <span className={compact ? "text-[9px]" : "text-[11px]"}>Upload logo</span>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <EditableText
+                  as="h2"
+                  value={introTitle}
+                  editable={editable}
+                  onCommit={updateIntroTitle}
+                  className={`mx-auto max-w-5xl leading-[0.9] ${compact ? "text-4xl" : "text-7xl md:text-[5.8rem]"} ${s.title} normal-case`}
+                  placeholder="Scene title"
+                />
+              </div>
+            ) : null}
+              {!editable ? (
+                <>
+                  <div className="pointer-events-none absolute inset-0">
+                    <div
+                      className="absolute left-1/2 top-1/2 rounded-full border border-white/10 bg-white/[0.03]"
+                      style={{
+                        width: compact ? "180px" : "320px",
+                        height: compact ? "180px" : "320px",
+                        transform: `translate(-50%, -50%) scale(${0.8 + introSplitLogoIn * 0.2 + introSplitLogoFly * 0.65})`,
+                        opacity: 0.12 * introSplitLogoIn * (1 - introSplitLogoFly),
+                      }}
+                    />
+                    <div
+                      className="absolute left-1/2 top-1/2 rounded-full border border-white/8"
+                      style={{
+                        width: compact ? "124px" : "244px",
+                        height: compact ? "124px" : "244px",
+                        transform: `translate(-50%, -50%) scale(${0.86 + introSplitLogoIn * 0.14 + introSplitLogoFly * 0.5})`,
+                        opacity: 0.18 * introSplitLogoIn * (1 - introSplitLogoFly),
+                      }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center px-8 text-center">
+                    <div className="relative">
+                      <EditableText
+                        as="h2"
+                        value={introTitle}
+                        editable={editable}
+                        onCommit={updateIntroTitle}
+                        className={`mx-auto max-w-5xl leading-[0.9] ${compact ? "text-4xl" : "text-7xl md:text-[5.8rem]"} ${s.title} normal-case`}
+                        style={{
+                          transform: `translateY(${20 * (1 - introSplitTitleIn)}px) scale(${
+                            0.94 +
+                            introSplitTitleIn * 0.06 -
+                            introSplitCursorPress * 0.08 +
+                            introSplitTitleRelease * 0.08 +
+                            introSplitTitleClickGlow * 0.02
+                          })`,
+                          opacity: introSplitTitleIn * (1 - introSplitTitleFade),
+                          filter: `blur(${8 * blurMultiplier * (1 - introSplitTitleIn) + 12 * introSplitTitleFade}px) brightness(${1 + introSplitTitleClickGlow * 0.12})`,
+                          color: mixHexColors(textColor, accentColor, Math.min(0.26, introSplitTitleClickGlow * 0.26)),
+                          textShadow:
+                            introSplitTitleClickGlow > 0.01
+                              ? `0 0 ${16 + introSplitTitleClickGlow * 30}px ${hexToRgba(accentColor, 0.3 + introSplitTitleClickGlow * 0.2)}, 0 0 ${3 + introSplitTitleClickGlow * 8}px ${hexToRgba(accentColor, 0.22)}`
+                              : "none",
+                        }}
+                        placeholder="Scene title"
+                      />
+                      {!optimizedLightRender ? (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-1/2 top-1/2 rounded-full border"
+                          style={{
+                            width: `${80 + introSplitCursorBurst * 180}px`,
+                            height: `${28 + introSplitCursorBurst * 84}px`,
+                            transform: "translate(-50%, -50%)",
+                            opacity: introSplitCursorBurst > 0.04 ? (1 - introSplitCursorBurst) * 0.4 : 0,
+                            borderColor: hexToRgba(accentColor, 0.28 * (1 - introSplitCursorBurst)),
+                            boxShadow: `0 0 ${16 + introSplitCursorBurst * 24}px ${hexToRgba(accentColor, 0.12 * (1 - introSplitCursorBurst))}`,
+                          }}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                  <div
+                    className="pointer-events-none absolute"
+                    style={{
+                      left: "50%",
+                      top: compact ? "55%" : "58%",
+                      transform: `translate(-50%, -50%) translate(${(optimizedLightRender ? 110 : 168) * (1 - introSplitCursorApproach)}px, ${(optimizedLightRender ? 46 : 76) * (1 - introSplitCursorApproach) - introSplitCursorPress * 8}px) scale(${1 - introSplitCursorPress * 0.08}) rotate(-8deg)`,
+                      opacity: (1 - introSplitTitleFade) * (1 - Math.min(1, introSplitCursorBurst * 1.4)),
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 64 72"
+                      className={compact ? "h-10 w-8" : "h-16 w-12"}
+                      fill="none"
+                    >
+                      <path
+                        d="M10 7 V63 L31 38 H56 L10 7 Z"
+                        fill="#ffffff"
+                        stroke="#0f172a"
+                        strokeWidth="5.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    {!optimizedLightRender ? (
+                      <span
+                        className="absolute left-[62%] top-[54%] rounded-full border"
+                        style={{
+                          width: `${10 + introSplitCursorBurst * 18}px`,
+                          height: `${10 + introSplitCursorBurst * 18}px`,
+                          transform: "translate(-50%, -50%)",
+                          opacity: introSplitCursorBurst > 0.05 ? (1 - introSplitCursorBurst) * 0.55 : 0,
+                          borderColor: hexToRgba(accentColor, 0.3 * (1 - introSplitCursorBurst)),
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                      className="relative flex aspect-square items-center justify-center rounded-full border border-white/12 bg-white/[0.03] shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+                      style={{
+                        width: compact ? "180px" : "320px",
+                        height: compact ? "180px" : "320px",
+                        transform: `scale(${0.82 + introSplitLogoIn * 0.18 + introSplitLogoFly * 2.4})`,
+                        opacity: introSplitLogoIn * (1 - introSplitLogoFly),
+                        filter: `blur(${26 * introSplitLogoFly}px)`,
+                        transformOrigin: "center center",
+                      }}
+                    >
+                      <div className="absolute inset-[10%] rounded-full border border-white/10" />
+                      <div className="absolute inset-[22%] rounded-full border border-white/8" />
+                      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-black/10 p-6">
+                        {getRenderableImageUrl(scene.logoImageUrl) ? (
+                          <button
+                            type="button"
+                            onClick={editable ? onRequestLogoUpload : undefined}
+                            className={`${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"} flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)]`}
+                            style={{
+                              width: compact ? "140px" : "196px",
+                              height: compact ? "140px" : "196px",
+                            }}
+                          >
+                            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white/[0.06] p-1.5">
+                              <img
+                                src={getRenderableImageUrl(scene.logoImageUrl) ?? ""}
+                                alt="Project logo"
+                                className="h-full w-full rounded-full object-cover"
+                              />
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={editable ? onRequestLogoUpload : undefined}
+                            className={`${editable ? "cursor-pointer transition hover:scale-105" : "cursor-default"} flex items-center justify-center rounded-full border border-dashed border-white/18 bg-white/[0.04] text-white/80`}
+                            style={{
+                              width: compact ? "140px" : "196px",
+                              height: compact ? "140px" : "196px",
+                            }}
+                          >
+                            <div className="flex flex-col items-center gap-2 text-center">
+                              <span className={compact ? "text-2xl" : "text-3xl"}>+</span>
+                              <span className={compact ? "text-[9px]" : "text-[11px]"}>Upload logo</span>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : null}
           </div>
         )}
 

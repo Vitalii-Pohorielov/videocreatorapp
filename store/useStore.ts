@@ -49,7 +49,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
     ? normalizeAnnouncementTransition(scene.transition)
     : scene.transition ?? getDefaultTransition(0);
 
-  if ((scene as unknown as { type?: string }).type === "brand-reveal") {
+  if ((scene as unknown as { type?: string }).type === "brand-reveal" || (scene as unknown as { type?: string }).type === "brand-reveal-alt") {
     return {
       ...scene,
       transition: normalizedTransition,

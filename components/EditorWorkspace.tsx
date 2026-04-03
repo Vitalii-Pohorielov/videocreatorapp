@@ -284,7 +284,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
       exportSettings: useStore.getState().exportSettings,
       selectedSceneId: nextTrack.scenes[0]?.id ?? "",
     });
-    setCloudStatus("Free mode supports promo videos with Intro, Highlight, and Features scenes only.");
+    setCloudStatus("Free mode supports Intro Fade, Highlight, and Features scenes only.");
   }, [initialProjectId, isFreeMode, isPremiumLoading, restoreWorkspaceState]);
 
   useEffect(() => {
@@ -648,7 +648,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
   const handleSceneTypeSelect = useCallback(
     (type: SceneType) => {
       if (isFreeMode && !freePromoSceneTypes.includes(type)) {
-        setCloudStatus("Free mode supports Intro, Highlight, and Features scenes only.");
+        setCloudStatus("Free mode supports Intro Fade, Highlight, and Features scenes only.");
         setIsSceneModalOpen(false);
         return;
       }
