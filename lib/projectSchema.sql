@@ -1,5 +1,39 @@
 create extension if not exists pgcrypto;
 
+create table if not exists public.user_access (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  is_premium boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create or replace function public.set_user_access_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+drop trigger if exists set_user_access_updated_at on public.user_access;
+
+create trigger set_user_access_updated_at
+before update on public.user_access
+for each row
+execute function public.set_user_access_updated_at();
+
+alter table public.user_access enable row level security;
+
+drop policy if exists "Users can read own access" on public.user_access;
+
+create policy "Users can read own access"
+on public.user_access
+for select
+to authenticated
+using (auth.uid() = user_id);
+
 create table if not exists public.video_projects (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id) on delete cascade,

@@ -10,6 +10,7 @@ import { ProjectTypeModal } from "@/components/ProjectTypeModal";
 import { deleteProject, deleteProjects, listProjects } from "@/lib/projectPersistence";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
+import { usePremiumStatus } from "@/lib/usePremiumStatus";
 import type { VideoType } from "@/store/useStore";
 
 type ProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
@@ -30,6 +31,7 @@ function formatRelativeDate(value?: string) {
 export function ProjectsWorkspace() {
   const router = useRouter();
   const { user } = useAuthSession();
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,9 +135,10 @@ export function ProjectsWorkspace() {
               <button
                 type="button"
                 onClick={() => setIsProjectTypeModalOpen(true)}
-                className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+                disabled={!isPremium || isPremiumLoading}
+                className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                New project
+                {isPremiumLoading ? "Checking access..." : "New project"}
               </button>
               <button
                 type="button"
@@ -181,6 +184,9 @@ export function ProjectsWorkspace() {
 
           {isLoading ? <p className="text-sm text-slate-400">Loading projects...</p> : null}
           {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+          {!isPremiumLoading && !isPremium ? (
+            <p className="mb-4 text-sm text-amber-300">Premium access is required to create new videos. Ask an admin to enable your premium flag in Supabase.</p>
+          ) : null}
 
           {!isLoading && !error && projects.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center">

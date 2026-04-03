@@ -7,9 +7,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
+import { usePremiumStatus } from "@/lib/usePremiumStatus";
 
 export function AppHeader() {
   const { isLoading, user } = useAuthSession();
+  const { isPremium } = usePremiumStatus();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -94,7 +96,14 @@ export function AppHeader() {
               {isMenuOpen ? (
                 <div className="absolute right-0 top-[calc(100%+0.75rem)] w-64 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/95 p-2 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-xl">
                   <div className="border-b border-white/10 px-3 py-3">
-                    <p className="truncate text-sm font-medium text-white">{user.user_metadata?.full_name ?? user.user_metadata?.name ?? "User"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium text-white">{user.user_metadata?.full_name ?? user.user_metadata?.name ?? "User"}</p>
+                      {isPremium ? (
+                        <span className="shrink-0 rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                          Premium
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="truncate text-xs text-slate-400">{user.email}</p>
                   </div>
 
