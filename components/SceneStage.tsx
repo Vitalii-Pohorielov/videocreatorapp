@@ -2665,7 +2665,15 @@ export function SceneStage({
                   pointerEvents: editable ? "auto" : progress >= 0.78 ? "auto" : "none",
                 }}
               >
-                Get started
+                <EditableText
+                  as="span"
+                  value={scene.description}
+                  editable={editable}
+                  onCommit={(value) => onSceneChange?.({ description: value })}
+                  className="font-semibold"
+                  unstyledWhenEditable
+                  placeholder="Get started"
+                />
               </div>
               {!editable && !optimizedLightRender ? (
                 <span
@@ -2681,6 +2689,83 @@ export function SceneStage({
                   }}
                 />
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {scene.type === "cta-panel" && (
+        <div className="flex h-full items-center justify-center">
+          <div
+            className={`relative w-full rounded-[34px] border ${compact ? "max-w-[34rem] px-8 py-8" : "max-w-5xl px-12 py-12"} ${s.card}`}
+            style={{
+              transform: `translateY(${26 * (1 - cardIn) - 30 * ctaFade}px) scale(${0.94 + cardIn * 0.06 + ctaHover * 0.015})`,
+              opacity: cardIn * (1 - ctaFade),
+              filter: optimizedLightRender ? "none" : `blur(${8 * ctaFade}px)`,
+              boxShadow: optimizedLightRender ? "none" : `0 24px 70px ${hexToRgba(resolvedAccentColor, 0.14)}`,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              className="pointer-events-none absolute -right-12 -top-12 rounded-full"
+              style={{
+                width: compact ? "120px" : "180px",
+                height: compact ? "120px" : "180px",
+                background: `radial-gradient(circle, ${hexToRgba(resolvedAccentColor, 0.34)} 0%, transparent 70%)`,
+                opacity: 0.8,
+              }}
+            />
+            <div
+              className="pointer-events-none absolute -left-16 bottom-[-3.5rem] rounded-full"
+              style={{
+                width: compact ? "160px" : "240px",
+                height: compact ? "160px" : "240px",
+                background: `radial-gradient(circle, ${hexToRgba(elevatedAccentColor, 0.2)} 0%, transparent 72%)`,
+                opacity: 0.9,
+              }}
+            />
+            <div className="relative z-10">
+              <EditableText
+                as="h2"
+                value={scene.title}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ title: value })}
+                className={`mt-5 ${compact ? "text-3xl" : "text-6xl md:text-7xl"} ${s.title} max-w-4xl leading-[0.92] tracking-[-0.06em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.16, 0.16), { y: 18, blur: 8, minOpacity: 0 })}
+                placeholder="Title"
+              />
+              <EditableText
+                as="p"
+                value={scene.subtitle}
+                editable={editable}
+                multiline
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mt-5 max-w-3xl ${compact ? "text-sm" : "text-lg"} leading-relaxed opacity-[0.82]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.28, 0.16), { y: 14, blur: 8, minOpacity: 0 })}
+                placeholder="Subtitle"
+              />
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <div
+                  className={`inline-flex items-center justify-center rounded-[20px] font-semibold ${compact ? "min-w-[180px] px-7 py-4 text-sm" : "min-w-[240px] px-10 py-5 text-lg"}`}
+                  style={{
+                    ...revealStyle(editable ? 1 : ctaAppear, { y: 14, blur: 8, minOpacity: 0 }),
+                    backgroundColor: resolvedAccentColor,
+                    color: mixHexColors("#111111", resolvedAccentColor, 0.18),
+                    boxShadow: optimizedLightRender ? "none" : `0 18px 38px ${hexToRgba(resolvedAccentColor, 0.3)}`,
+                    transform: `translateY(${12 * (1 - ctaAppear)}px) scale(${1 + ctaHover * 0.03 - ctaPress * 0.08 + ctaBurst * 0.08})`,
+                  }}
+                >
+                  <EditableText
+                    as="span"
+                    value={scene.description}
+                    editable={editable}
+                    onCommit={(value) => onSceneChange?.({ description: value })}
+                    className="font-semibold"
+                    unstyledWhenEditable
+                    placeholder="Get started"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

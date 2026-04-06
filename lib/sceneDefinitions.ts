@@ -69,7 +69,8 @@ export type SceneType =
   | "website-scroll"
   | "website-scroll-front"
   | "quote"
-  | "cta";
+  | "cta"
+  | "cta-panel";
 
 export type ExportSettings = {
   fps: number;
@@ -643,10 +644,31 @@ export const sceneDefinitions: SceneDefinition[] = [
       type: "cta",
       durationSeconds: 2.7,
       transition: getDefaultTransition(15, "cta"),
-      eyebrow: "Call to action",
+      eyebrow: "",
       title: "Launch your next promo today",
       subtitle: "Start with one scene and build the full story",
-      description: "",
+      description: "Get started",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "cta-panel",
+    label: "CTA Panel",
+    catalogDescription: "Panel-style call to action with a bold button block.",
+    createTemplate: () => ({
+      type: "cta-panel",
+      durationSeconds: 3,
+      transition: getDefaultTransition(16, "cta-panel"),
+      eyebrow: "",
+      title: "Start building in minutes",
+      subtitle: "Pick a scene, tune the style, and export a polished promo without leaving the browser.",
+      description: "Get started",
       bullets: [],
       bulletEmojis: [],
       bulletImageUrls: [],

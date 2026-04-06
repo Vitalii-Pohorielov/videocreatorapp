@@ -483,6 +483,17 @@ export const SceneInspector = memo(function SceneInspector({
                   <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className={textareaClassName} />
                 </label>
               ) : null}
+              {scene.type === "cta" || scene.type === "cta-panel" ? (
+                <label className="block">
+                  <span className={labelClassName}>Button label</span>
+                  <input
+                    value={scene.description}
+                    onChange={(event) => onUpdate(scene.id, { description: event.target.value })}
+                    className={fieldClassName}
+                    placeholder="Get started"
+                  />
+                </label>
+              ) : null}
             </div>
           </InspectorSection>
         ) : null}
