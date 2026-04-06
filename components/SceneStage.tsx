@@ -1317,7 +1317,7 @@ export function SceneStage({
       ) : null}
       <div
         className={
-          scene.type === "announcement-hero" || scene.type === "split-slogan" || scene.type === "pricing-peek"
+          scene.type === "announcement-hero" || scene.type === "split-slogan" || scene.type === "pricing-peek" || scene.type === "brand-reveal-circle"
             ? "relative h-full w-full"
             : compact
               ? "relative h-full w-full px-4 py-4"
@@ -1462,6 +1462,108 @@ export function SceneStage({
           />
         </div>
       )}
+
+        {scene.type === "brand-reveal-circle" && (() => {
+          const circleIn = editable ? 1 : motion(progress, 0.06, 0.2);
+          const ringOpen = editable ? 1 : motion(progress, 0.4, 0.14);
+          const circleOut = editable ? 0 : outroMotion(progress, 0.76, 0.16);
+          const circleOpacity = circleIn * (1 - circleOut * 0.92);
+          const textIn = editable ? 1 : motion(progress, 0.26, 0.14);
+          const textOut = editable ? 0 : outroMotion(progress, 0.58, 0.14);
+          const textOpacity = textIn * (1 - Math.min(1, textOut * 1.2));
+          const ringThickness = compact ? 26 : 48;
+          const titleScale = 0.9 + textIn * 0.1 + ringOpen * 0.02 - textOut * 0.05;
+
+          return (
+            <div className="relative flex h-full items-center justify-center overflow-hidden">
+              <div className="absolute inset-0">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+                    backgroundSize: compact ? "28px 28px" : "36px 36px",
+                    opacity: 0.28,
+                  }}
+                />
+              </div>
+              <div
+                className="absolute left-1/2 top-1/2 rounded-full"
+                style={{
+                  width: compact ? "300px" : "560px",
+                  height: compact ? "300px" : "560px",
+                  transform: `translate(-50%, -50%) scale(${0.38 + circleIn * 0.62 + ringOpen * 0.04 - circleOut * 0.16})`,
+                  opacity: circleOpacity,
+                  backgroundColor: resolvedAccentColor,
+                  boxShadow: optimizedLightRender ? "none" : `0 0 80px ${hexToRgba(resolvedAccentColor, 0.24)}`,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-1/2 rounded-full"
+                style={{
+                  width: compact ? `${18 + ringOpen * 236}px` : `${24 + ringOpen * 484}px`,
+                  height: compact ? `${18 + ringOpen * 236}px` : `${24 + ringOpen * 484}px`,
+                  transform: `translate(-50%, -50%) scale(${0.9 + ringOpen * 0.1})`,
+                  opacity: circleOpacity * ringOpen,
+                  backgroundColor,
+                  boxShadow: optimizedLightRender ? "none" : `0 0 0 ${ringThickness}px ${resolvedAccentColor}`,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-1/2 rounded-full"
+                style={{
+                  width: compact ? `${250 + ringOpen * 88}px` : `${454 + ringOpen * 136}px`,
+                  height: compact ? `${250 + ringOpen * 88}px` : `${454 + ringOpen * 136}px`,
+                  transform: `translate(-50%, -50%) scale(${0.92 + ringOpen * 0.08})`,
+                  opacity: circleOpacity * ringOpen,
+                  border: `${compact ? 10 : 16}px solid ${hexToRgba(resolvedAccentColor, 0.85)}`,
+                  boxShadow: optimizedLightRender ? "none" : `0 0 32px ${hexToRgba(resolvedAccentColor, 0.16)}`,
+                }}
+              />
+              <div className="relative z-10 flex w-full flex-col items-center justify-center px-6 text-center">
+                <EditableText
+                  as="h2"
+                  value={introTitle}
+                  editable={editable}
+                  onCommit={updateIntroTitle}
+                  className={`${compact ? "text-4xl" : "text-7xl md:text-[5.8rem]"} ${s.title} uppercase leading-[0.9] tracking-[-0.05em]`}
+                  style={{
+                    opacity: textOpacity,
+                    transform: `translateY(${28 * (1 - textIn) - 32 * textOut}px) scale(${titleScale})`,
+                    filter: `blur(${10 * blurMultiplier * (1 - textIn) + 12 * textOut}px)`,
+                    textShadow: optimizedLightRender ? "none" : `0 8px 28px ${hexToRgba("#000000", 0.18)}`,
+                  }}
+                  placeholder="Welcome"
+                />
+                <div
+                  className={`mt-4 rounded-full ${compact ? "h-1.5 w-40" : "h-2 w-64"}`}
+                  style={{
+                    opacity: textOpacity,
+                    transform: `translateY(${20 * (1 - textIn) - 24 * textOut}px) scaleX(${0.6 + textIn * 0.4})`,
+                    backgroundColor: textColor,
+                    boxShadow: optimizedLightRender ? "none" : `0 0 22px ${hexToRgba(textColor, 0.18)}`,
+                  }}
+                />
+                {scene.subtitle ? (
+                  <EditableText
+                    as="p"
+                    value={scene.subtitle}
+                    editable={editable}
+                    multiline
+                    onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                    className={`mt-5 max-w-2xl ${compact ? "text-sm" : "text-lg"} leading-relaxed opacity-[0.82]`}
+                    style={{
+                      opacity: textOpacity,
+                      transform: `translateY(${22 * (1 - textIn) - 24 * textOut}px)`,
+                      filter: `blur(${8 * blurMultiplier * (1 - textIn) + 8 * textOut}px)`,
+                    }}
+                    placeholder="Short supporting line"
+                  />
+                ) : null}
+              </div>
+            </div>
+          );
+        })()}
 
       {scene.type === "product-showcase" && (
         showcaseImageBottom ? (

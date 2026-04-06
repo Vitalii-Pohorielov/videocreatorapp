@@ -53,6 +53,7 @@ export type SceneType =
   | "announcement-hero"
   | "brand-reveal"
   | "brand-reveal-alt"
+  | "brand-reveal-circle"
   | "product-showcase"
   | "feature-grid"
   | "code-preview"
@@ -259,6 +260,27 @@ export const sceneDefinitions: SceneDefinition[] = [
       durationSeconds: 3,
       transition: getDefaultTransition(2, "brand-reveal-alt"),
       eyebrow: "",
+      title: "Your product",
+      subtitle: "",
+      description: "",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "brand-reveal-circle",
+    label: "Intro Circle",
+    catalogDescription: "Accent circle reveal with title entering and fading out.",
+    createTemplate: () => ({
+      type: "brand-reveal-circle",
+      durationSeconds: 3.2,
+      transition: getDefaultTransition(3, "brand-reveal-circle"),
+      eyebrow: "Intro",
       title: "Your product",
       subtitle: "",
       description: "",
