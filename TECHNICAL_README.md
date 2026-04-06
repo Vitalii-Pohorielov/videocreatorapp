@@ -162,6 +162,7 @@ Current scene types:
 - `center-text`
 - `website-url`
 - `website-scroll`
+- `website-scroll-front`
 - `quote`
 - `cta`
 
@@ -184,6 +185,7 @@ Important catalog behavior:
 - `process` is fixed to 3 steps.
 - `center-text` is a centered message scene used both directly and as a migration target for older saved scene types.
 - `website-scroll` works best with a tall manually uploaded screenshot.
+- `website-scroll-front` uses the same scrolling screenshot treatment without the perspective tilt.
 - `quote` supports author photo or logo upload.
 
 ## Store and normalization rules

@@ -190,7 +190,7 @@ function getExportAssetKey(scene: Scene, renderLayer: "full" | "background" | "c
 }
 
 function shouldReuseAssetReadiness(scene: Scene) {
-  return scene.type !== "website-scroll";
+  return scene.type !== "website-scroll" && scene.type !== "website-scroll-front";
 }
 
 async function ensureRenderSurface(videoWidth: number, videoHeight: number) {
@@ -248,6 +248,7 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
         React.createElement(SceneStage, {
           scene,
           backgroundColor: settings.backgroundColor,
+          accentColor: settings.accentColor,
           textColor: settings.textColor,
           preset: settings.preset,
           performanceMode: "light",

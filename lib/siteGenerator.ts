@@ -295,6 +295,7 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
       transitionSeconds: 0.4,
       backgroundColor: presetColors.backgroundColor,
       textColor: presetColors.textColor,
+      accentColor: presetColors.accentColor,
       preset,
       resolution: "720p",
       profile: "standard",

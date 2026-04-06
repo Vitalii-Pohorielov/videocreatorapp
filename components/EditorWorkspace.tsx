@@ -720,6 +720,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
               settings={exportSettings}
               scene={playbackState.scene ?? null}
               backgroundColor={exportSettings.backgroundColor}
+              accentColor={exportSettings.accentColor}
               textColor={exportSettings.textColor}
               preset={exportSettings.preset}
               profile={exportSettings.profile}

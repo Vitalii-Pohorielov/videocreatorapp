@@ -12,6 +12,7 @@ import type { ExportProfile, ExportResolution, Scene, TemplatePreset } from "@/s
 type SceneStageProps = {
   scene: Scene;
   backgroundColor: string;
+  accentColor: string;
   textColor: string;
   preset: TemplatePreset;
   performanceMode?: "full" | "light";
@@ -629,8 +630,10 @@ function WebsiteScrollFrame({
   progress,
   editable,
   onPickImage,
+  onChangeMediaPosition,
   lightweightPreview = false,
   textColor,
+  tilted = true,
 }: {
   scene: Scene;
   cardClassName: string;
@@ -639,8 +642,10 @@ function WebsiteScrollFrame({
   progress: number;
   editable?: boolean;
   onPickImage?: () => void;
+  onChangeMediaPosition?: (value: "left" | "right") => void;
   lightweightPreview?: boolean;
   textColor: string;
+  tilted?: boolean;
 }) {
   const scrollDelaySeconds = 1;
   const elapsedSceneSeconds = progress * scene.durationSeconds;
@@ -649,63 +654,109 @@ function WebsiteScrollFrame({
   const scrollOffset = `${activeScrollSeconds * scrollSpeedPerSecond}%`;
   const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
   const viewportHeight = compact ? 156 : 540;
+  const tiltSide = scene.mediaPosition === "left" ? 1 : -1;
+  const tiltTransform = tilted ? (compact ? `rotateY(${tiltSide * 10}deg) rotateX(4deg)` : `rotateY(${tiltSide * 16}deg) rotateX(6deg)`) : "";
+  const frameStyle: CSSProperties = {
+    ...style,
+    transform: `${style.transform ?? ""} ${tiltTransform}`.trim(),
+    transformOrigin: "center center",
+    transformStyle: "preserve-3d",
+  };
 
   return (
-    <div className={`w-full rounded-[28px] border p-5 ${cardClassName}`} style={style}>
-      <div className="mb-3 flex gap-2">
-        <span className="h-2.5 w-2.5 rounded-full bg-white/60" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/40" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
-      </div>
-      <button
-        type="button"
-        onClick={editable ? onPickImage : undefined}
-        className={`relative block w-full overflow-hidden rounded-[22px] border text-left ${editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
-        style={{
-          height: viewportHeight,
-          borderColor: `color-mix(in srgb, ${textColor} 18%, transparent)`,
-          backgroundColor: `color-mix(in srgb, ${textColor} 8%, transparent)`,
-          contain: "paint",
-        }}
-      >
-        {websiteImageUrl ? (
-          <img
-            src={websiteImageUrl}
-            alt="Website screenshot"
-            className="absolute left-0 top-0 block w-full select-none"
-            draggable={false}
-            decoding="async"
-            loading="eager"
+    <div className="flex w-full justify-center" style={{ perspective: tilted ? (compact ? "1200px" : "1800px") : undefined }}>
+      <div className={`w-full rounded-[28px] border p-5 ${cardClassName}`} style={frameStyle}>
+        <div className="mb-3 flex gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-white/60" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
+        </div>
+        <div className="group relative">
+          <button
+            type="button"
+            onClick={editable ? onPickImage : undefined}
+            className={`relative block w-full overflow-hidden rounded-[22px] border text-left ${editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
             style={{
-              transform: `translate3d(0, -${scrollOffset}, 0)`,
-              transition: lightweightPreview ? "none" : "transform 80ms linear",
-              willChange: lightweightPreview ? "auto" : "transform",
-              backfaceVisibility: "hidden",
+              height: viewportHeight,
+              borderColor: `color-mix(in srgb, ${textColor} 18%, transparent)`,
+              backgroundColor: `color-mix(in srgb, ${textColor} 8%, transparent)`,
+              contain: "paint",
             }}
-          />
-        ) : (
-          <div className="p-5">
-            <div className="space-y-3">
-              <div className="h-3 w-2/5 rounded-full bg-white/20" />
-              <div className="h-28 rounded-[18px] bg-white/10" />
-              <div className="h-3 rounded-full bg-white/16" />
-              <div className="h-3 w-4/5 rounded-full bg-white/10" />
-              <div
-                className="flex h-20 items-center justify-center rounded-[18px] border border-dashed text-center text-xs"
+          >
+            {websiteImageUrl ? (
+              <img
+                src={websiteImageUrl}
+                alt="Website screenshot"
+                className="absolute left-0 top-0 block w-full select-none"
+                draggable={false}
+                decoding="async"
+                loading="eager"
                 style={{
-                  color: textColor,
-                  borderColor: `color-mix(in srgb, ${textColor} 28%, transparent)`,
-                  backgroundColor: `color-mix(in srgb, ${textColor} 6%, transparent)`,
+                  transform: `translate3d(0, -${scrollOffset}, 0)`,
+                  transition: lightweightPreview ? "none" : "transform 80ms linear",
+                  willChange: lightweightPreview ? "auto" : "transform",
+                  backfaceVisibility: "hidden",
                 }}
-              >
-                {editable ? "Click to upload a tall website screenshot" : "Upload a tall website screenshot"}
+              />
+            ) : (
+              <div className="p-5">
+                <div className="space-y-3">
+                  <div className="h-3 w-2/5 rounded-full bg-white/20" />
+                  <div className="h-28 rounded-[18px] bg-white/10" />
+                  <div className="h-3 rounded-full bg-white/16" />
+                  <div className="h-3 w-4/5 rounded-full bg-white/10" />
+                  <div
+                    className="flex h-20 items-center justify-center rounded-[18px] border border-dashed text-center text-xs"
+                    style={{
+                      color: textColor,
+                      borderColor: `color-mix(in srgb, ${textColor} 28%, transparent)`,
+                      backgroundColor: `color-mix(in srgb, ${textColor} 6%, transparent)`,
+                    }}
+                  >
+                    {editable ? "Click to upload a tall website screenshot" : "Upload a tall website screenshot"}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
-        {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent" /> : null}
-        {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" /> : null}
-      </button>
+            )}
+            {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent" /> : null}
+            {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" /> : null}
+          </button>
+          {editable && tilted && onChangeMediaPosition ? (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onChangeMediaPosition("left");
+                }}
+                className={`absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${
+                  scene.mediaPosition === "left"
+                    ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
+                    : "border-white/20 bg-black/45 text-white hover:bg-black/65"
+                }`}
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onChangeMediaPosition("right");
+                }}
+                className={`absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${
+                  scene.mediaPosition === "right"
+                    ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
+                    : "border-white/20 bg-black/45 text-white hover:bg-black/65"
+                }`}
+              >
+                →
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -980,6 +1031,7 @@ function StageShell({
 export function SceneStage({
   scene,
   backgroundColor,
+  accentColor,
   textColor,
   preset,
   performanceMode = "full",
@@ -1016,9 +1068,9 @@ export function SceneStage({
   const sceneOutroFade = scene.type === "announcement-hero" ? announcementOutroFade : isAnnouncementScene ? outroFade : 1;
   const promoLayerOpacity = renderLayer === "background" ? 1 : 1 - promoOutroProgress;
   const s = presetStyles(preset, lightweightPreview);
-  const accentColor = presetAccentColor(preset);
-  const elevatedAccentColor = mixHexColors(accentColor, "#000000", preset === "black" ? 0.08 : 0.16);
-  const accentGlow = hexToRgba(accentColor, optimizedLightRender ? 0.16 : 0.28);
+  const resolvedAccentColor = accentColor || presetAccentColor(preset);
+  const elevatedAccentColor = mixHexColors(resolvedAccentColor, "#000000", preset === "black" ? 0.08 : 0.16);
+  const accentGlow = hexToRgba(resolvedAccentColor, optimizedLightRender ? 0.16 : 0.28);
   const urlTypingProgress = editable ? 1 : motion(progress, 0.08, 0.34);
   const urlCharacterCount = Math.max(1, Math.min(scene.title.length, Math.ceil((scene.title.length * urlTypingProgress) / 2) * 2));
   const displayedUrl = (editable ? scene.title : scene.title.slice(0, urlCharacterCount)).toLowerCase();
@@ -1604,10 +1656,10 @@ export function SceneStage({
                           })`,
                           opacity: introSplitTitleIn * (1 - introSplitTitleFade),
                           filter: `blur(${8 * blurMultiplier * (1 - introSplitTitleIn) + 12 * introSplitTitleFade}px) brightness(${1 + introSplitTitleClickGlow * 0.12})`,
-                          color: mixHexColors(textColor, accentColor, Math.min(0.26, introSplitTitleClickGlow * 0.26)),
+                          color: mixHexColors(textColor, resolvedAccentColor, Math.min(0.26, introSplitTitleClickGlow * 0.26)),
                           textShadow:
                             introSplitTitleClickGlow > 0.01
-                              ? `0 0 ${16 + introSplitTitleClickGlow * 30}px ${hexToRgba(accentColor, 0.3 + introSplitTitleClickGlow * 0.2)}, 0 0 ${3 + introSplitTitleClickGlow * 8}px ${hexToRgba(accentColor, 0.22)}`
+                              ? `0 0 ${16 + introSplitTitleClickGlow * 30}px ${hexToRgba(resolvedAccentColor, 0.3 + introSplitTitleClickGlow * 0.2)}, 0 0 ${3 + introSplitTitleClickGlow * 8}px ${hexToRgba(resolvedAccentColor, 0.22)}`
                               : "none",
                         }}
                         placeholder="Scene title"
@@ -1621,8 +1673,8 @@ export function SceneStage({
                             height: `${28 + introSplitCursorBurst * 84}px`,
                             transform: "translate(-50%, -50%)",
                             opacity: introSplitCursorBurst > 0.04 ? (1 - introSplitCursorBurst) * 0.4 : 0,
-                            borderColor: hexToRgba(accentColor, 0.28 * (1 - introSplitCursorBurst)),
-                            boxShadow: `0 0 ${16 + introSplitCursorBurst * 24}px ${hexToRgba(accentColor, 0.12 * (1 - introSplitCursorBurst))}`,
+                            borderColor: hexToRgba(resolvedAccentColor, 0.28 * (1 - introSplitCursorBurst)),
+                            boxShadow: `0 0 ${16 + introSplitCursorBurst * 24}px ${hexToRgba(resolvedAccentColor, 0.12 * (1 - introSplitCursorBurst))}`,
                           }}
                         />
                       ) : null}
@@ -1659,7 +1711,7 @@ export function SceneStage({
                           height: `${10 + introSplitCursorBurst * 18}px`,
                           transform: "translate(-50%, -50%)",
                           opacity: introSplitCursorBurst > 0.05 ? (1 - introSplitCursorBurst) * 0.55 : 0,
-                          borderColor: hexToRgba(accentColor, 0.3 * (1 - introSplitCursorBurst)),
+                          borderColor: hexToRgba(resolvedAccentColor, 0.3 * (1 - introSplitCursorBurst)),
                         }}
                       />
                     ) : null}
@@ -1936,7 +1988,7 @@ export function SceneStage({
                       style={revealStyle(itemIn, { y: 10, blur: editable ? 0 : 6, minOpacity: 0 })}
                       placeholder="Plan"
                     />
-                    <div className="mt-4 h-1.5 w-20 rounded-full" style={{ backgroundColor: featured ? elevatedAccentColor : accentColor }} />
+                    <div className="mt-4 h-1.5 w-20 rounded-full" style={{ backgroundColor: featured ? elevatedAccentColor : resolvedAccentColor }} />
                     <EditableText
                       as="p"
                       value={planDescription}
@@ -1978,9 +2030,9 @@ export function SceneStage({
               className={`relative mx-auto w-full rounded-[36px] border ${compact ? "px-8 py-8" : "px-12 py-10"}`}
               style={{
                 maxWidth: compact ? "34rem" : "46rem",
-                borderColor: `color-mix(in srgb, ${accentColor} 26%, transparent)`,
-                background: `linear-gradient(180deg, color-mix(in srgb, ${accentColor} 24%, transparent), color-mix(in srgb, ${elevatedAccentColor} 14%, transparent))`,
-                boxShadow: `0 0 0 1px color-mix(in srgb, ${accentColor} 12%, transparent), 0 18px 60px rgba(0,0,0,0.18)`,
+                borderColor: `color-mix(in srgb, ${resolvedAccentColor} 26%, transparent)`,
+                background: `linear-gradient(180deg, color-mix(in srgb, ${resolvedAccentColor} 24%, transparent), color-mix(in srgb, ${elevatedAccentColor} 14%, transparent))`,
+                boxShadow: `0 0 0 1px color-mix(in srgb, ${resolvedAccentColor} 12%, transparent), 0 18px 60px rgba(0,0,0,0.18)`,
                 backdropFilter: "blur(10px)",
                 transform: `translate3d(0, ${(motion(progress, 0.22, 0.28) - 0.5) * 6}px, 0) scale(${0.96 + centerTextBoxIn * 0.04})`,
                 opacity: 0.12 + centerTextBoxIn * 0.8,
@@ -2042,7 +2094,7 @@ export function SceneStage({
                         {index + 1}
                       </div>
                       <div className="h-1 flex-1 rounded-full bg-white/10">
-                        <div className="h-full rounded-full" style={{ width: `${100 - index * 14}%`, backgroundColor: index === 1 ? elevatedAccentColor : accentColor }} />
+                        <div className="h-full rounded-full" style={{ width: `${100 - index * 14}%`, backgroundColor: index === 1 ? elevatedAccentColor : resolvedAccentColor }} />
                       </div>
                     </div>
                     <EditableText
@@ -2168,7 +2220,7 @@ export function SceneStage({
                           height: `${10 + urlBurst * 20}px`,
                           transform: "translate(-50%, -50%)",
                           opacity: urlBurst > 0.06 ? (1 - urlBurst) * 0.55 : 0,
-                          borderColor: hexToRgba(accentColor, 0.3 * (1 - urlBurst)),
+                          borderColor: hexToRgba(resolvedAccentColor, 0.3 * (1 - urlBurst)),
                         }}
                       />
                     ) : null}
@@ -2190,8 +2242,27 @@ export function SceneStage({
               progress={progress}
               editable={editable}
               onPickImage={onRequestHighlightUpload}
+              onChangeMediaPosition={(value) => onSceneChange?.({ mediaPosition: value })}
               lightweightPreview={lightweightPreview}
               textColor={textColor}
+              tilted
+            />
+        </div>
+      )}
+
+      {scene.type === "website-scroll-front" && (
+        <div className="flex h-full items-center justify-center">
+            <WebsiteScrollFrame
+              scene={scene}
+              cardClassName={s.card}
+              style={{ transform: `translateY(${24 * (1 - cardIn)}px) scale(${optimizedLightRender ? 0.97 + cardIn * 0.03 : 0.94 + cardIn * 0.06})`, opacity: cardIn }}
+              compact={compact}
+              progress={progress}
+              editable={editable}
+              onPickImage={onRequestHighlightUpload}
+              lightweightPreview={lightweightPreview}
+              textColor={textColor}
+              tilted={false}
             />
         </div>
       )}

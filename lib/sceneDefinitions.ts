@@ -64,6 +64,7 @@ export type SceneType =
   | "center-text"
   | "website-url"
   | "website-scroll"
+  | "website-scroll-front"
   | "quote"
   | "cta";
 
@@ -72,6 +73,7 @@ export type ExportSettings = {
   transitionSeconds: number;
   backgroundColor: string;
   textColor: string;
+  accentColor: string;
   preset: TemplatePreset;
   resolution: ExportResolution;
   profile: ExportProfile;
@@ -146,25 +148,25 @@ export const presetLabels: Record<TemplatePreset, string> = {
   "ember-glow": "Ember Glow",
 };
 
-export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor">> = {
-  white: { backgroundColor: "#ffffff", textColor: "#111111" },
-  black: { backgroundColor: "#111111", textColor: "#ffffff" },
-  premium: { backgroundColor: "#10233a", textColor: "#f8f3ea" },
-  bold: { backgroundColor: "#13111c", textColor: "#ffd166" },
-  editorial: { backgroundColor: "#efe8de", textColor: "#181411" },
-  sunset: { backgroundColor: "#1f0f0c", textColor: "#ffd9b3" },
-  mono: { backgroundColor: "#111111", textColor: "#f1f1f1" },
-  "neon-grid": { backgroundColor: "#08111f", textColor: "#86f7ff" },
-  "paper-cut": { backgroundColor: "#f3eadf", textColor: "#2d1f18" },
-  "arctic-glass": { backgroundColor: "#dff5ff", textColor: "#0d2236" },
-  brutalist: { backgroundColor: "#f4f000", textColor: "#121212" },
-  "velvet-noir": { backgroundColor: "#16070f", textColor: "#f7d6e6" },
-  "mint-pop": { backgroundColor: "#d9fff2", textColor: "#053b34" },
-  terminal: { backgroundColor: "#07130c", textColor: "#7dff9b" },
-  blueprint: { backgroundColor: "#0f2747", textColor: "#d8eeff" },
-  "acid-pop": { backgroundColor: "#d6ff3f", textColor: "#161616" },
-  "retro-print": { backgroundColor: "#f6dfc8", textColor: "#3e2418" },
-  "ember-glow": { backgroundColor: "#1b0a07", textColor: "#ffd9bf" },
+export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor" | "accentColor">> = {
+  white: { backgroundColor: "#ffffff", textColor: "#111111", accentColor: "#4b5563" },
+  black: { backgroundColor: "#111111", textColor: "#ffffff", accentColor: "#cbd5e1" },
+  premium: { backgroundColor: "#10233a", textColor: "#f8f3ea", accentColor: "#b89d74" },
+  bold: { backgroundColor: "#13111c", textColor: "#ffd166", accentColor: "#e7b84f" },
+  editorial: { backgroundColor: "#efe8de", textColor: "#181411", accentColor: "#826644" },
+  sunset: { backgroundColor: "#1f0f0c", textColor: "#ffd9b3", accentColor: "#dd7d31" },
+  mono: { backgroundColor: "#111111", textColor: "#f1f1f1", accentColor: "#cfcfcf" },
+  "neon-grid": { backgroundColor: "#08111f", textColor: "#86f7ff", accentColor: "#27c9d4" },
+  "paper-cut": { backgroundColor: "#f3eadf", textColor: "#2d1f18", accentColor: "#b9492b" },
+  "arctic-glass": { backgroundColor: "#dff5ff", textColor: "#0d2236", accentColor: "#1067d6" },
+  brutalist: { backgroundColor: "#f4f000", textColor: "#121212", accentColor: "#4a4a4a" },
+  "velvet-noir": { backgroundColor: "#16070f", textColor: "#f7d6e6", accentColor: "#d86492" },
+  "mint-pop": { backgroundColor: "#d9fff2", textColor: "#053b34", accentColor: "#14a789" },
+  terminal: { backgroundColor: "#07130c", textColor: "#7dff9b", accentColor: "#24cc5b" },
+  blueprint: { backgroundColor: "#0f2747", textColor: "#d8eeff", accentColor: "#5fb7e4" },
+  "acid-pop": { backgroundColor: "#d6ff3f", textColor: "#161616", accentColor: "#d93fb8" },
+  "retro-print": { backgroundColor: "#f6dfc8", textColor: "#3e2418", accentColor: "#aa5a31" },
+  "ember-glow": { backgroundColor: "#1b0a07", textColor: "#ffd9bf", accentColor: "#d97440" },
 };
 
 export function normalizeTemplatePreset(preset: string | undefined | null): TemplatePreset {
@@ -515,13 +517,34 @@ export const sceneDefinitions: SceneDefinition[] = [
     }),
   },
   {
+    type: "website-scroll-front",
+    label: "Website Scroll Front",
+    catalogDescription: "Scroll a manually uploaded website screenshot in a frontal frame.",
+    createTemplate: () => ({
+      type: "website-scroll-front",
+      durationSeconds: 4,
+      transition: getDefaultTransition(13, "website-scroll-front"),
+      eyebrow: "Website",
+      title: "Show the product page in motion",
+      subtitle: "Upload a tall screenshot and the scene will auto-scroll it",
+      description: "",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
     type: "quote",
     label: "Quote",
     catalogDescription: "Customer quote / testimonial.",
     createTemplate: () => ({
       type: "quote",
       durationSeconds: 2.7,
-      transition: getDefaultTransition(13, "quote"),
+      transition: getDefaultTransition(14, "quote"),
       eyebrow: "Social proof",
       title: '"This changed our workflow overnight."',
       subtitle: "Team lead, Product Ops",
@@ -542,7 +565,7 @@ export const sceneDefinitions: SceneDefinition[] = [
     createTemplate: () => ({
       type: "cta",
       durationSeconds: 2.7,
-      transition: getDefaultTransition(14, "cta"),
+      transition: getDefaultTransition(15, "cta"),
       eyebrow: "Call to action",
       title: "Launch your next promo today",
       subtitle: "Start with one scene and build the full story",

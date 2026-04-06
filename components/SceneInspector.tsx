@@ -118,18 +118,49 @@ type SceneInspectorProps = {
 
 function InspectorSection({ title, description, defaultOpen = false, children }: { title: string; description?: string; defaultOpen?: boolean; children: ReactNode }) {
   return (
-    <details open={defaultOpen} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+    <details open={defaultOpen} className="group rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <summary className="cursor-pointer list-none">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-white">{title}</p>
             {description ? <p className="mt-1 text-sm text-slate-400">{description}</p> : null}
           </div>
-          <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Open</span>
+          <span className="text-slate-500 transition-transform duration-200 group-open:rotate-180" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 6.5L8 10L12 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
         </div>
       </summary>
       <div className="mt-4">{children}</div>
     </details>
+  );
+}
+
+function ColorPopoverRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-900/30 px-3 py-2.5">
+      <span className="min-w-0 text-sm text-slate-300">{label}</span>
+      <div className="flex items-center">
+        <label className="relative block h-8 w-16 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+          <input
+            type="color"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent opacity-0"
+          />
+          <span className="pointer-events-none absolute inset-0 z-0 block rounded-2xl" style={{ backgroundColor: value }} />
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -297,7 +328,8 @@ export const SceneInspector = memo(function SceneInspector({
         <p className="mt-1 text-sm text-slate-400">{sceneTypeLabels[scene.type]}</p>
       </div>
 
-      <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4 pr-1 [scrollbar-gutter:stable] [scrollbar-color:rgba(148,163,184,0.45)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-400/40 [&::-webkit-scrollbar-thumb:hover]:bg-slate-300/55">
+        <div className="space-y-3">
         {!isAnnouncementWorkspace ? (
           <InspectorSection title="Style preset" description="Choose the visual direction for the whole video." defaultOpen>
             <div className="mt-4 grid gap-3">
@@ -351,43 +383,22 @@ export const SceneInspector = memo(function SceneInspector({
 
         {!isAnnouncementWorkspace ? (
           <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className={labelClassName}>Background</span>
-                <div className="space-y-2">
-                  <input
-                    type="color"
-                    value={settings.backgroundColor}
-                    onChange={(event) => onUpdateSettings({ backgroundColor: event.target.value })}
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
-                  />
-                  <input
-                    type="text"
-                    value={settings.backgroundColor}
-                    onChange={(event) => onUpdateSettings({ backgroundColor: normalizeColorInput(event.target.value) })}
-                    className={`${fieldClassName} uppercase`}
-                    placeholder="#F7F4EE"
-                  />
-                </div>
-              </label>
-              <label className="block">
-                <span className={labelClassName}>Text</span>
-                <div className="space-y-2">
-                  <input
-                    type="color"
-                    value={settings.textColor}
-                    onChange={(event) => onUpdateSettings({ textColor: event.target.value })}
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 p-2"
-                  />
-                  <input
-                    type="text"
-                    value={settings.textColor}
-                    onChange={(event) => onUpdateSettings({ textColor: normalizeColorInput(event.target.value) })}
-                    className={`${fieldClassName} uppercase`}
-                    placeholder="#1B1F23"
-                  />
-                </div>
-              </label>
+            <div className="space-y-3">
+              <ColorPopoverRow
+                label="Background"
+                value={settings.backgroundColor}
+                onChange={(value) => onUpdateSettings({ backgroundColor: normalizeColorInput(value) })}
+              />
+              <ColorPopoverRow
+                label="Accent"
+                value={settings.accentColor}
+                onChange={(value) => onUpdateSettings({ accentColor: normalizeColorInput(value) })}
+              />
+              <ColorPopoverRow
+                label="Text"
+                value={settings.textColor}
+                onChange={(value) => onUpdateSettings({ textColor: normalizeColorInput(value) })}
+              />
             </div>
           </InspectorSection>
         ) : null}
@@ -592,7 +603,7 @@ export const SceneInspector = memo(function SceneInspector({
           </InspectorSection>
         ) : null}
 
-        {scene.type === "website-scroll" ? (
+        {scene.type === "website-scroll" || scene.type === "website-scroll-front" ? (
           <InspectorSection title="Website screenshot" description="Upload your own site screenshot. A tall image works best for visible scrolling.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
@@ -611,6 +622,31 @@ export const SceneInspector = memo(function SceneInspector({
               ) : (
                 <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-slate-400">No screenshot uploaded yet.</div>
               )}
+            </div>
+          </InspectorSection>
+        ) : null}
+
+        {scene.type === "website-scroll" ? (
+          <InspectorSection title="Tilt direction" description="Choose which side the scrolling frame leans toward.">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => onUpdate(scene.id, { mediaPosition: "left" })}
+                className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                  scene.mediaPosition === "left" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"
+                }`}
+              >
+                ← Left
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdate(scene.id, { mediaPosition: "right" })}
+                className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                  scene.mediaPosition === "right" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"
+                }`}
+              >
+                Right →
+              </button>
             </div>
           </InspectorSection>
         ) : null}
@@ -785,6 +821,7 @@ export const SceneInspector = memo(function SceneInspector({
             </label>
           ) : null}
         </InspectorSection>
+        </div>
       </div>
     </aside>
   );

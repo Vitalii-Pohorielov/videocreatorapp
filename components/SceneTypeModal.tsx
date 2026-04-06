@@ -3,6 +3,8 @@
 import { usePremiumStatus } from "@/lib/usePremiumStatus";
 import { freePromoSceneTypes, sceneDefinitions, type SceneType } from "@/store/useStore";
 
+type SceneDefinitionItem = (typeof sceneDefinitions)[number];
+
 type SceneTypeModalProps = {
   isOpen: boolean;
   isAnnouncementWorkspace: boolean;
@@ -23,6 +25,16 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
 
   const freeSceneDefinitions = filteredSceneDefinitions.filter((definition) => freePromoSceneTypes.includes(definition.type));
   const premiumSceneDefinitions = filteredSceneDefinitions.filter((definition) => !freePromoSceneTypes.includes(definition.type));
+  const premiumGroups: Array<{ label: string; types: SceneType[] }> = [
+    { label: "Intro", types: ["brand-reveal-alt"] },
+    { label: "Text", types: ["description", "center-text", "quote"] },
+    { label: "Pricing", types: ["pricing"] },
+    { label: "Code", types: ["code-preview"] },
+    { label: "Website", types: ["website-url", "website-scroll", "website-scroll-front", "process"] },
+    { label: "CTA", types: ["cta"] },
+  ];
+
+  const premiumDefinitionMap = new Map(premiumSceneDefinitions.map((definition) => [definition.type, definition] as const));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-md">
@@ -44,7 +56,11 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
         <div className="space-y-6">
           {!isAnnouncementWorkspace ? (
             <section>
-              <p className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500">Free</p>
+              <p className="mb-3">
+                <span className="inline-flex rounded-full border border-slate-300/20 bg-slate-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+                  Free
+                </span>
+              </p>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {freeSceneDefinitions.map((definition) => (
                   <button
@@ -62,27 +78,65 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
           ) : null}
 
           <section>
-            <p className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500">{isAnnouncementWorkspace ? "Scenes" : "Premium"}</p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {(isAnnouncementWorkspace ? filteredSceneDefinitions : premiumSceneDefinitions).map((definition) => {
-                const isLocked = !isAnnouncementWorkspace && !isPremium;
-                return (
+            <p className="mb-3">
+              {isAnnouncementWorkspace ? (
+                <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Scenes</span>
+              ) : (
+                <span className="inline-flex rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                  Premium
+                </span>
+              )}
+            </p>
+            {isAnnouncementWorkspace ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredSceneDefinitions.map((definition) => (
                   <button
                     key={definition.type}
-                    disabled={isLocked}
-                    aria-disabled={isLocked}
                     type="button"
                     onClick={() => onSelect(definition.type)}
-                    className={`rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-sky-400/35 hover:bg-white/[0.07] ${
-                      isLocked ? "cursor-not-allowed opacity-40 saturate-[0.65]" : ""
-                    }`}
+                    className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-sky-400/35 hover:bg-white/[0.07]"
                   >
                     <h3 className="text-lg font-semibold text-white">{definition.label}</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-400">{definition.catalogDescription}</p>
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {premiumGroups.map((group) => {
+                  const definitions = group.types
+                    .map((type) => premiumDefinitionMap.get(type))
+                    .filter((definition): definition is SceneDefinitionItem => Boolean(definition));
+                  if (definitions.length === 0) return null;
+
+                  return (
+                    <section key={group.label}>
+                      <p className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500">{group.label}</p>
+                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {definitions.map((definition) => {
+                          const isLocked = !isPremium;
+                          return (
+                            <button
+                              key={definition.type}
+                              disabled={isLocked}
+                              aria-disabled={isLocked}
+                              type="button"
+                              onClick={() => onSelect(definition.type)}
+                              className={`rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-left transition hover:border-sky-400/35 hover:bg-white/[0.07] ${
+                                isLocked ? "cursor-not-allowed opacity-40 saturate-[0.65]" : ""
+                              }`}
+                            >
+                              <h3 className="text-lg font-semibold text-white">{definition.label}</h3>
+                              <p className="mt-2 text-sm leading-6 text-slate-400">{definition.catalogDescription}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </div>
         </div>

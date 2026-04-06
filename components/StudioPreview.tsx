@@ -23,6 +23,7 @@ type StudioPreviewProps = {
   settings: ExportSettings;
   scene: Scene | null;
   backgroundColor: string;
+  accentColor: string;
   textColor: string;
   preset: TemplatePreset;
   profile: ExportProfile;
@@ -68,6 +69,7 @@ export function StudioPreview({
   settings,
   scene,
   backgroundColor,
+  accentColor,
   textColor,
   preset,
   profile,
@@ -417,6 +419,7 @@ export function StudioPreview({
                           <SceneStage
                             scene={scene}
                             backgroundColor={backgroundColor}
+                            accentColor={accentColor}
                             textColor={textColor}
                             preset={preset}
                             performanceMode="light"
@@ -430,6 +433,7 @@ export function StudioPreview({
                           <SceneStage
                             scene={scene}
                             backgroundColor={backgroundColor}
+                            accentColor={accentColor}
                             textColor={textColor}
                             preset={preset}
                             performanceMode="light"
@@ -445,6 +449,7 @@ export function StudioPreview({
                           <SceneStage
                             scene={transitionScene}
                             backgroundColor={backgroundColor}
+                            accentColor={accentColor}
                             textColor={textColor}
                             preset={preset}
                             performanceMode="light"
@@ -458,6 +463,7 @@ export function StudioPreview({
                           <SceneStage
                             scene={transitionScene}
                             backgroundColor={backgroundColor}
+                            accentColor={accentColor}
                             textColor={textColor}
                             preset={preset}
                             performanceMode="light"
@@ -475,6 +481,7 @@ export function StudioPreview({
                         <SceneStage
                           scene={scene}
                           backgroundColor={backgroundColor}
+                          accentColor={accentColor}
                           textColor={textColor}
                           preset={preset}
                           performanceMode="light"
@@ -488,6 +495,7 @@ export function StudioPreview({
                         <SceneStage
                           scene={scene}
                           backgroundColor={backgroundColor}
+                          accentColor={accentColor}
                           textColor={textColor}
                           preset={preset}
                           performanceMode="light"

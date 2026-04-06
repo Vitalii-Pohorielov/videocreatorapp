@@ -243,6 +243,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     transitionSeconds: DEFAULT_TRANSITION_SECONDS,
     backgroundColor: presetDefaults.white.backgroundColor,
     textColor: presetDefaults.white.textColor,
+    accentColor: presetDefaults.white.accentColor,
     preset: "white",
     resolution: "720p",
     profile: "standard",
@@ -259,6 +260,7 @@ export const useStore = create<StudioStore>((set, get) => ({
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
         backgroundColor: presetDefaults.white.backgroundColor,
         textColor: presetDefaults.white.textColor,
+        accentColor: presetDefaults.white.accentColor,
         preset: "white",
         resolution: "720p",
         profile: "standard",
@@ -284,6 +286,7 @@ export const useStore = create<StudioStore>((set, get) => ({
         transitionSeconds: DEFAULT_TRANSITION_SECONDS,
         backgroundColor: project.exportSettings.backgroundColor || normalizedDefaults.backgroundColor,
         textColor: project.exportSettings.textColor || normalizedDefaults.textColor,
+        accentColor: project.exportSettings.accentColor || normalizedDefaults.accentColor,
         preset: normalizedPreset,
         resolution: project.exportSettings.resolution,
         profile: project.exportSettings.profile,
@@ -417,6 +420,12 @@ export const useStore = create<StudioStore>((set, get) => ({
                 ? presetColors.textColor
                 : state.exportSettings.textColor
               : updates.textColor,
+          accentColor:
+            updates.accentColor === undefined
+              ? presetChanged
+                ? presetColors.accentColor
+                : state.exportSettings.accentColor
+              : updates.accentColor,
           preset: nextPreset,
           resolution: updates.resolution ?? state.exportSettings.resolution,
           profile: updates.profile ?? state.exportSettings.profile,
