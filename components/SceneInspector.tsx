@@ -116,6 +116,44 @@ type SceneInspectorProps = {
   onImageUploadEnd: () => void;
 };
 
+type StyleSnapshot = Pick<ExportSettings, "preset" | "backgroundColor" | "textColor" | "accentColor">;
+
+function hslToHex(hue: number, saturation: number, lightness: number) {
+  const s = saturation / 100;
+  const l = lightness / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = l - c / 2;
+
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (hue < 60) [red, green, blue] = [c, x, 0];
+  else if (hue < 120) [red, green, blue] = [x, c, 0];
+  else if (hue < 180) [red, green, blue] = [0, c, x];
+  else if (hue < 240) [red, green, blue] = [0, x, c];
+  else if (hue < 300) [red, green, blue] = [x, 0, c];
+  else [red, green, blue] = [c, 0, x];
+
+  const toHex = (value: number) => Math.round((value + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
+}
+
+function getRandomStyleSnapshot(allowedPresets: TemplatePreset[]): StyleSnapshot {
+  const preset = allowedPresets[Math.floor(Math.random() * allowedPresets.length)] ?? "white";
+  const backgroundHue = Math.floor(Math.random() * 360);
+  const accentHue = (backgroundHue + 110 + Math.floor(Math.random() * 80)) % 360;
+  const darkBackground = Math.random() > 0.45;
+
+  return {
+    preset,
+    backgroundColor: darkBackground ? hslToHex(backgroundHue, 72, 10 + Math.random() * 8) : hslToHex(backgroundHue, 88, 92 + Math.random() * 4),
+    textColor: darkBackground ? hslToHex((backgroundHue + 18) % 360, 28, 95) : hslToHex((backgroundHue + 210) % 360, 24, 12),
+    accentColor: hslToHex(accentHue, 82, darkBackground ? 62 : 46),
+  };
+}
+
 function InspectorSection({ title, description, defaultOpen = false, children }: { title: string; description?: string; defaultOpen?: boolean; children: ReactNode }) {
   return (
     <details open={defaultOpen} className="group rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -283,6 +321,11 @@ export const SceneInspector = memo(function SceneInspector({
     event.target.value = "";
   };
 
+  const allowedRandomPresets = isPremium ? presetOptions : freeStylePresets;
+  const handleRandomizeStyle = () => {
+    onUpdateSettings(getRandomStyleSnapshot(allowedRandomPresets));
+  };
+
   const handleAnnouncementProjectImageChange =
     (index: number) =>
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -356,6 +399,20 @@ export const SceneInspector = memo(function SceneInspector({
               <div>
                 <p className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-500">Premium</p>
                 <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRandomizeStyle}
+                    disabled={!isPremium}
+                    aria-disabled={!isPremium}
+                    className={`col-span-2 rounded-2xl border px-3 py-3 text-center text-sm transition ${
+                      isPremium
+                        ? "border-sky-400/35 bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(14,165,233,0.08))] text-sky-50 shadow-[0_10px_30px_rgba(14,165,233,0.12)] hover:border-sky-300/45 hover:bg-[linear-gradient(135deg,rgba(56,189,248,0.24),rgba(14,165,233,0.12))] hover:shadow-[0_14px_34px_rgba(14,165,233,0.18)]"
+                        : "cursor-not-allowed border-sky-400/10 bg-sky-400/8 text-sky-100/50 opacity-40 saturate-[0.65]"
+                    }`}
+                  >
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-200/80">Generate</span>
+                    <span className="mt-1 block font-medium">Random Style</span>
+                  </button>
                   {premiumPresetOptions.map((preset) => {
                     const active = settings.preset === preset;
                     const tone = presetChipStyles[preset];
