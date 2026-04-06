@@ -430,7 +430,7 @@ export const SceneInspector = memo(function SceneInspector({
           </InspectorSection>
         ) : null}
 
-        {scene.type === "code-preview" ? (
+        {scene.type === "code-preview" || scene.type === "code-review" ? (
           <InspectorSection title="Code" description="Edit the snippet shown in the code card." defaultOpen>
             <label className="block">
               <span className={labelClassName}>Snippet</span>
@@ -444,6 +444,31 @@ export const SceneInspector = memo(function SceneInspector({
                 spellCheck={false}
               />
             </label>
+          </InspectorSection>
+        ) : null}
+
+        {scene.type === "code-review" ? (
+          <InspectorSection title="Layout" description="Choose which side shows the code card.">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => onUpdate(scene.id, { mediaPosition: "left" })}
+                className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                  scene.mediaPosition === "left" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"
+                }`}
+              >
+                Code left
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdate(scene.id, { mediaPosition: "right" })}
+                className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                  scene.mediaPosition === "right" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"
+                }`}
+              >
+                Code right
+              </button>
+            </div>
           </InspectorSection>
         ) : null}
 

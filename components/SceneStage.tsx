@@ -730,10 +730,10 @@ function WebsiteScrollFrame({
                   event.stopPropagation();
                   onChangeMediaPosition("left");
                 }}
-                className={`absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${
+                className={`absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 hover:-translate-y-1/2 ${
                   scene.mediaPosition === "left"
                     ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
-                    : "border-white/20 bg-black/45 text-white hover:bg-black/65"
+                    : "border-white/20 bg-black/45 text-white hover:bg-black/65 hover:border-sky-300/40 hover:text-sky-100 hover:shadow-[0_10px_24px_rgba(14,165,233,0.18)]"
                 }`}
               >
                 ←
@@ -745,10 +745,10 @@ function WebsiteScrollFrame({
                   event.stopPropagation();
                   onChangeMediaPosition("right");
                 }}
-                className={`absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${
+                className={`absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 hover:-translate-y-1/2 ${
                   scene.mediaPosition === "right"
                     ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
-                    : "border-white/20 bg-black/45 text-white hover:bg-black/65"
+                    : "border-white/20 bg-black/45 text-white hover:bg-black/65 hover:border-sky-300/40 hover:text-sky-100 hover:shadow-[0_10px_24px_rgba(14,165,233,0.18)]"
                 }`}
               >
                 →
@@ -881,10 +881,10 @@ function ShowcaseImageSlot({
                 event.stopPropagation();
                 onChangeMediaPosition(button.value);
               }}
-              className={`absolute z-50 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition opacity-0 group-hover:opacity-100 ${lightweightPreview ? "" : "backdrop-blur-sm"} ${placementClassName} ${
+              className={`absolute z-50 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 ${button.value === "bottom" ? "hover:-translate-x-1/2" : "hover:-translate-y-1/2"} ${lightweightPreview ? "" : "backdrop-blur-sm"} ${placementClassName} ${
                 active
                   ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
-                  : "border-white/20 bg-black/45 text-white hover:bg-black/65"
+                  : "border-white/20 bg-black/45 text-white hover:bg-black/65 hover:border-sky-300/40 hover:text-sky-100 hover:shadow-[0_10px_24px_rgba(14,165,233,0.18)]"
               }`}
               style={active ? undefined : { color: textColor, borderColor: `color-mix(in srgb, ${textColor} 28%, transparent)`, backgroundColor: `color-mix(in srgb, ${textColor} 8%, transparent)` }}
               aria-label={`Move image ${button.value}`}
@@ -1552,7 +1552,7 @@ export function SceneStage({
         </div>
       )}
 
-        {scene.type === "code-preview" && (
+      {scene.type === "code-preview" && (
           <div className="flex h-full items-center justify-center px-4">
             <CodePreviewCard
               code={scene.code ?? scene.description}
@@ -1564,6 +1564,103 @@ export function SceneStage({
             />
           </div>
         )}
+
+        {scene.type === "code-review" && (() => {
+          const codeOnLeft = scene.mediaPosition !== "right";
+          const codeCard = (
+            <div className="group relative w-full">
+              <CodePreviewCard
+                code={scene.code ?? scene.description}
+                progress={editable ? 1 : progress}
+                compact={compact}
+                editable={editable}
+                accentColor={elevatedAccentColor}
+                className={compact ? "mx-auto max-w-[360px]" : "mx-auto max-w-[540px]"}
+                onClick={editable ? () => setIsCodeEditorOpen(true) : undefined}
+              />
+              {editable ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onSceneChange?.({ mediaPosition: "left" });
+                    }}
+                    className={`absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 hover:-translate-y-1/2 ${
+                      codeOnLeft
+                        ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
+                        : "border-white/20 bg-black/45 text-white hover:bg-black/65 hover:border-sky-300/40 hover:text-sky-100 hover:shadow-[0_10px_24px_rgba(14,165,233,0.18)]"
+                    }`}
+                    aria-label="Move code left"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onSceneChange?.({ mediaPosition: "right" });
+                    }}
+                    className={`absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border text-sm font-semibold transition duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 hover:-translate-y-1/2 ${
+                      !codeOnLeft
+                        ? "border-sky-400 bg-sky-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.35)]"
+                        : "border-white/20 bg-black/45 text-white hover:bg-black/65 hover:border-sky-300/40 hover:text-sky-100 hover:shadow-[0_10px_24px_rgba(14,165,233,0.18)]"
+                    }`}
+                    aria-label="Move code right"
+                  >
+                    →
+                  </button>
+                </>
+              ) : null}
+            </div>
+          );
+
+          const textPanel = (
+            <div className={`w-full ${compact ? "max-w-[300px]" : "max-w-[460px]"}`}>
+              <div className={`${compact ? "px-2" : "px-4"}`}>
+                <EditableText
+                  as="h2"
+                  value={scene.title}
+                  editable={editable}
+                  onCommit={(value) => onSceneChange?.({ title: value })}
+                  className={`${compact ? "text-3xl" : "text-5xl md:text-6xl"} ${s.title} leading-[0.94] tracking-[-0.06em]`}
+                  style={revealStyle(editable ? 1 : motion(progress, 0.12, 0.14), { y: 18, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                  placeholder="Readable structure"
+                />
+                <EditableText
+                  as="p"
+                  value={scene.subtitle}
+                  editable={editable}
+                  multiline
+                  onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                  className={`mt-4 ${compact ? "text-base" : "text-xl"} leading-relaxed opacity-[0.84]`}
+                  style={revealStyle(editable ? 1 : motion(progress, 0.24, 0.14), { y: 14, blur: optimizedLightRender ? 0 : 6, minOpacity: 0 })}
+                  placeholder="Explain the implementation beside the snippet"
+                />
+              </div>
+            </div>
+          );
+
+          return (
+            <div className="flex h-full items-center justify-center px-4">
+              <div className={`grid w-full max-w-6xl items-center gap-8 ${compact ? "grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" : "grid-cols-2 gap-12"}`}>
+                {codeOnLeft ? (
+                  <>
+                    {codeCard}
+                    {textPanel}
+                  </>
+                ) : (
+                  <>
+                    {textPanel}
+                    {codeCard}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {scene.type === "brand-reveal-alt" && (
           <div className="relative h-full overflow-hidden">
@@ -2489,7 +2586,7 @@ export function SceneStage({
         </div>
       ) : null}
       </div>
-      {scene.type === "code-preview" ? (
+      {scene.type === "code-preview" || scene.type === "code-review" ? (
         <CodeEditorModal
           isOpen={isCodeEditorOpen && editable}
           title={scene.name}

@@ -29,7 +29,7 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
     { label: "Intro", types: ["brand-reveal-alt"] },
     { label: "Text", types: ["description", "center-text", "quote"] },
     { label: "Pricing", types: ["pricing", "pricing-peek"] },
-    { label: "Code", types: ["code-preview"] },
+    { label: "Code", types: ["code-preview", "code-review"] },
     { label: "Website", types: ["website-url", "website-scroll", "website-scroll-front", "process"] },
     { label: "CTA", types: ["cta"] },
   ];

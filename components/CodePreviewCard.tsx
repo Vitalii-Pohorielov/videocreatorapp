@@ -225,11 +225,11 @@ export function CodePreviewCard({ code, progress = 1, compact = false, className
           <span className="h-2.5 w-2.5 rounded-full bg-white/35" />
           {editable ? <span className="ml-3 rounded-full border border-sky-400/20 bg-sky-400/12 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-sky-200">Click to edit</span> : null}
         </div>
-        <div className="space-y-[0.48rem] overflow-x-auto font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-white">
+        <div className="space-y-[0.48rem] font-mono text-[17px] leading-[1.8] tracking-[-0.03em] text-white">
           {lines.map((line, lineIndex) => (
-            <div key={`${lineIndex}-${line}`} className="flex min-w-max">
+            <div key={`${lineIndex}-${line}`} className="flex min-w-0">
               <div className="mr-4 w-7 shrink-0 text-right text-white/22">{lineIndex + 1}</div>
-              <div className="min-w-0 flex-1 whitespace-pre">
+              <div className="min-w-0 flex-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                 {visibleTokenLines[lineIndex].map((token, tokenIndex) => (
                   <span key={`${lineIndex}-${tokenIndex}-${token.text}`} className={tokenClassName(token.type)}>
                     {token.visibleText}

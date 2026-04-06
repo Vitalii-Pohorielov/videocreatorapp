@@ -56,6 +56,7 @@ export type SceneType =
   | "product-showcase"
   | "feature-grid"
   | "code-preview"
+  | "code-review"
   | "slogan"
   | "split-slogan"
   | "description"
@@ -340,6 +341,32 @@ export const sceneDefinitions: SceneDefinition[] = [
       logoImageUrl: "",
       authorImageUrl: "",
       mediaPosition: "right",
+    }),
+  },
+  {
+    type: "code-review",
+    label: "Code Review",
+    catalogDescription: "Code window with explanatory review notes beside it.",
+    createTemplate: () => ({
+      type: "code-review",
+      durationSeconds: 3.2,
+      transition: getDefaultTransition(17, "code-review"),
+      eyebrow: "Code review",
+      title: "Readable structure",
+      subtitle: "Explain the implementation beside the snippet",
+      description: "Pair the code with a short review summary, rollout note, or implementation rationale.",
+      code: `export async function reviewPullRequest(diff) {
+  const findings = analyzeDiff(diff);
+
+  return findings.filter((item) => item.severity !== "low");
+}`,
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "left",
     }),
   },
   {
