@@ -28,7 +28,7 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
   const premiumGroups: Array<{ label: string; types: SceneType[] }> = [
     { label: "Intro", types: ["brand-reveal-alt"] },
     { label: "Text", types: ["description", "center-text", "quote"] },
-    { label: "Pricing", types: ["pricing"] },
+    { label: "Pricing", types: ["pricing", "pricing-peek"] },
     { label: "Code", types: ["code-preview"] },
     { label: "Website", types: ["website-url", "website-scroll", "website-scroll-front", "process"] },
     { label: "CTA", types: ["cta"] },

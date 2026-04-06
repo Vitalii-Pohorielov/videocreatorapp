@@ -1315,7 +1315,15 @@ export function SceneStage({
           />
         </>
       ) : null}
-      <div className={scene.type === "announcement-hero" || scene.type === "split-slogan" ? "relative h-full w-full" : compact ? "relative h-full w-full px-4 py-4" : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`}>
+      <div
+        className={
+          scene.type === "announcement-hero" || scene.type === "split-slogan" || scene.type === "pricing-peek"
+            ? "relative h-full w-full"
+            : compact
+              ? "relative h-full w-full px-4 py-4"
+              : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`
+        }
+      >
       {showSceneContent ? (
         <div
           className="relative h-full w-full"
@@ -2247,6 +2255,122 @@ export function SceneStage({
               textColor={textColor}
               tilted
             />
+        </div>
+      )}
+
+      {scene.type === "pricing-peek" && (
+        <div className="relative flex h-full items-stretch justify-center overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                `radial-gradient(circle at 50% 42%, ${hexToRgba(resolvedAccentColor, 0.22)} 0%, transparent 32%), radial-gradient(circle at 50% 100%, ${hexToRgba(elevatedAccentColor, 0.18)} 0%, transparent 42%)`,
+              opacity: editable ? 0.9 : 0.82,
+            }}
+          />
+          <div className="relative z-10 h-full w-full pt-8">
+            <div className="px-6 pt-12 text-center">
+              <EditableText
+                as="h2"
+                value={scene.title}
+                editable={editable}
+                onCommit={(value) => onSceneChange?.({ title: value })}
+                className={`${compact ? "text-3xl" : "text-6xl md:text-7xl"} ${s.title} leading-[0.94] tracking-[-0.06em]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.08, 0.14), { y: 18, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Choose a plan"
+              />
+              <EditableText
+                as="p"
+                value={scene.subtitle}
+                editable={editable}
+                multiline
+                onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                className={`mx-auto mt-4 max-w-3xl ${midSize} opacity-[0.82]`}
+                style={revealStyle(editable ? 1 : motion(progress, 0.2, 0.14), { y: 14, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                placeholder="Simple pricing"
+              />
+            </div>
+            <div className={`absolute inset-x-0 bottom-0 flex items-end justify-center ${compact ? "h-[250px]" : "h-[390px]"}`}>
+              {scene.bullets.map((bullet, index) => {
+                const itemIn = editable ? 1 : motion(progress, 0.2 + index * 0.07, 0.18);
+                const featured = index === 1;
+                const planTitles = scene.pricingPlanTitles ?? [];
+                const planDescriptions = scene.pricingPlanDescriptions ?? [];
+                const planTitle = planTitles[index] || (index === 0 ? "Starter" : index === 1 ? "Pro" : "Team");
+                const planDescription =
+                  planDescriptions[index] ||
+                  (index === 0 ? "Launch quickly with the essentials." : index === 1 ? "Most popular for polished weekly content." : "Full flexibility for growing teams.");
+                const cardWidth = compact ? 220 : 340;
+                const cardHeight = compact ? (featured ? 215 : 178) : featured ? 328 : 266;
+                const xOffset = compact ? (index === 0 ? -194 : index === 1 ? 0 : 194) : index === 0 ? -326 : index === 1 ? 0 : 326;
+                const baseRotate = index === 0 ? -6 : index === 2 ? 6 : 0;
+                const sideOpacity = featured ? 1 : 0.94;
+                return (
+                  <div
+                    key={`${scene.id}-pricing-peek-${index}`}
+                    className={`absolute top-auto rounded-[30px] border p-6 ${s.card}`}
+                    style={{
+                      width: cardWidth,
+                      height: cardHeight,
+                      left: "50%",
+                      bottom: 0,
+                      marginLeft: -(cardWidth / 2),
+                      opacity: itemIn * sideOpacity,
+                      transform: `translateX(${xOffset}px) translateY(${24 * (1 - itemIn)}px) scale(${0.94 + itemIn * 0.06}) rotate(${baseRotate * (featured ? 0 : 1)}deg)`,
+                      borderColor: featured
+                        ? `color-mix(in srgb, ${resolvedAccentColor} 42%, rgba(255,255,255,0.24))`
+                        : `color-mix(in srgb, ${textColor} 18%, transparent)`,
+                      background: featured
+                        ? `linear-gradient(180deg, color-mix(in srgb, ${resolvedAccentColor} 18%, rgba(255,255,255,0.06)), rgba(255,255,255,0.04))`
+                        : `linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025))`,
+                      boxShadow: featured
+                        ? `0 28px 60px ${hexToRgba(resolvedAccentColor, 0.18)}`
+                        : "0 18px 46px rgba(2,6,23,0.3)",
+                      zIndex: featured ? 4 : 2,
+                    }}
+                  >
+                    <EditableText
+                      as="p"
+                      value={planTitle}
+                      editable={editable}
+                      onCommit={(value) =>
+                        onSceneChange?.({
+                          pricingPlanTitles: planTitles.map((item, planIndex) => (planIndex === index ? value : item)),
+                        })
+                      }
+                      className="text-xs uppercase tracking-[0.24em] opacity-55"
+                      style={revealStyle(itemIn, { y: 8, blur: editable ? 0 : 4, minOpacity: 0 })}
+                      placeholder={index === 0 ? "Starter" : index === 1 ? "Pro" : "Team"}
+                    />
+                    <EditableText
+                      as="div"
+                      value={bullet}
+                      editable={editable}
+                      onCommit={(value) => updateBullet(index, value)}
+                      className={`mt-4 ${compact ? "text-2xl" : "text-5xl"} font-semibold leading-[0.92] tracking-[-0.07em] ${s.title}`}
+                      style={revealStyle(itemIn, { y: 10, blur: editable ? 0 : 6, minOpacity: 0 })}
+                      placeholder="$49"
+                    />
+                    <div className="mt-4 h-1.5 w-20 rounded-full" style={{ backgroundColor: featured ? elevatedAccentColor : resolvedAccentColor }} />
+                    <EditableText
+                      as="p"
+                      value={planDescription}
+                      editable={editable}
+                      multiline
+                      onCommit={(value) =>
+                        onSceneChange?.({
+                          pricingPlanDescriptions: planDescriptions.map((item, planIndex) => (planIndex === index ? value : item)),
+                        })
+                      }
+                      className={`mt-4 ${compact ? "text-sm" : "text-lg"} leading-relaxed opacity-75`}
+                      style={revealStyle(itemIn, { y: 8, blur: editable ? 0 : 4, minOpacity: 0 })}
+                      placeholder="Describe this plan"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

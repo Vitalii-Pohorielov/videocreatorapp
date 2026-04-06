@@ -722,7 +722,7 @@ export const SceneInspector = memo(function SceneInspector({
           </InspectorSection>
         ) : null}
 
-        {scene.type === "pricing" ? (
+        {scene.type === "pricing" || scene.type === "pricing-peek" ? (
           <InspectorSection title="Plans" description="Edit plan names, prices, and descriptions separately.">
             <label className="block">
               <span className={labelClassName}>Prices</span>
@@ -754,7 +754,7 @@ export const SceneInspector = memo(function SceneInspector({
                 placeholder="Great for small launches and demos."
               />
             </label>
-            <p className="mt-2 text-xs text-slate-500">This pricing scene keeps 3 plans.</p>
+            <p className="mt-2 text-xs text-slate-500">This pricing layout keeps exactly 3 plans.</p>
           </InspectorSection>
         ) : null}
 

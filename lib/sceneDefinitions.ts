@@ -60,6 +60,7 @@ export type SceneType =
   | "split-slogan"
   | "description"
   | "pricing"
+  | "pricing-peek"
   | "process"
   | "center-text"
   | "website-url"
@@ -422,6 +423,33 @@ export const sceneDefinitions: SceneDefinition[] = [
         "Great for small launches and demos.",
         "Best balance of speed and polish.",
         "Everything a growing team needs.",
+      ],
+      bulletEmojis: ["", "", ""],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "pricing-peek",
+    label: "Pricing Peek",
+    catalogDescription: "Three tall pricing cards peeking from the screen edges with the middle plan elevated.",
+    createTemplate: () => ({
+      type: "pricing-peek",
+      durationSeconds: 3.2,
+      transition: getDefaultTransition(16, "pricing-peek"),
+      eyebrow: "Pricing",
+      title: "Choose the plan that fits",
+      subtitle: "Side plans peek from the edges while the featured plan stands taller in the center.",
+      description: "",
+      bullets: ["$19", "$49", "$99"],
+      pricingPlanTitles: ["Starter", "Pro", "Team"],
+      pricingPlanDescriptions: [
+        "Launch quickly with the essentials.",
+        "Most popular for polished weekly content.",
+        "Full flexibility for growing teams.",
       ],
       bulletEmojis: ["", "", ""],
       bulletImageUrls: [],

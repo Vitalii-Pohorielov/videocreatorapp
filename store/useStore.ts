@@ -107,7 +107,7 @@ function normalizeLoadedScene(scene: Scene): Scene {
     };
   }
 
-  if ((scene as unknown as { type?: string }).type === "pricing") {
+  if ((scene as unknown as { type?: string }).type === "pricing" || (scene as unknown as { type?: string }).type === "pricing-peek") {
     const planTitles = normalizeTextRows((scene as Scene).pricingPlanTitles, ["Starter", "Pro", "Team"], 3);
     const planDescriptions = normalizeTextRows(
       (scene as Scene).pricingPlanDescriptions,
