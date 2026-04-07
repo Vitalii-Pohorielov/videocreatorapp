@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk, Syne } from "next/font/google";
 
 import { AppFooter } from "@/components/AppFooter";
 import { AppHeader } from "@/components/AppHeader";
@@ -9,6 +9,16 @@ import "./globals.css";
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-plus-jakarta",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
 });
 
 export const metadata: Metadata = {
@@ -55,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakartaSans.variable} flex min-h-screen flex-col font-sans antialiased`}>
+      <body className={`${plusJakartaSans.variable} ${spaceGrotesk.variable} ${syne.variable} flex min-h-screen flex-col font-sans antialiased`}>
         <AppHeader />
         <div className="flex-1">{children}</div>
         <AppFooter />

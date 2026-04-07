@@ -189,6 +189,24 @@ function presetStyles(preset: TemplatePreset, lightweight = false) {
         title: "font-semibold uppercase tracking-[0.12em]",
         italic: "",
       };
+    case "chrome-sport":
+      return {
+        card: lightweight
+          ? "bg-[#0f131b]/82 border-[#d8ff3e]/18 shadow-[0_12px_34px_rgba(0,0,0,0.28)]"
+          : "bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] border-[#d8ff3e]/18 backdrop-blur-md shadow-[0_22px_80px_rgba(0,0,0,0.52)]",
+        accent: "bg-[#d8ff3e]",
+        title: "[font-family:var(--font-space-grotesk)] font-bold uppercase tracking-[0.04em]",
+        italic: "",
+      };
+    case "solar-archive":
+      return {
+        card: lightweight
+          ? "bg-[#081a29]/82 border-[#ff6b2c]/24 shadow-[0_14px_38px_rgba(0,0,0,0.3)]"
+          : "bg-[linear-gradient(180deg,rgba(12,28,43,0.84),rgba(6,19,31,0.68))] border-[#ff6b2c]/24 backdrop-blur-md shadow-[0_26px_80px_rgba(0,0,0,0.42)]",
+        accent: "bg-[#ff6b2c]",
+        title: "[font-family:var(--font-syne)] font-extrabold tracking-[-0.04em]",
+        italic: "",
+      };
     case "acid-pop":
       return {
         card: "bg-[#fff8d6]/76 border-black/18 shadow-[10px_10px_0_rgba(0,0,0,0.18)]",
@@ -245,6 +263,10 @@ function presetAccentColor(preset: TemplatePreset) {
       return "#24cc5b";
     case "blueprint":
       return "#5fb7e4";
+    case "chrome-sport":
+      return "#d8ff3e";
+    case "solar-archive":
+      return "#ff6b2c";
     case "acid-pop":
       return "#d93fb8";
     case "retro-print":
@@ -1192,6 +1214,17 @@ export function SceneStage({
             background:
               "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 48%), linear-gradient(rgba(124,212,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(124,212,255,0.12) 1px, transparent 1px), radial-gradient(circle at 18% 20%, rgba(255,255,255,0.12), transparent 18%)",
             backgroundSize: "100% 100%, 28px 28px, 28px 28px, 100% 100%",
+          }
+      : preset === "chrome-sport"
+        ? {
+            background:
+              "linear-gradient(115deg, rgba(216,255,62,0.04) 0 18%, transparent 18% 100%), linear-gradient(132deg, rgba(255,255,255,0.06) 0 10%, transparent 10% 100%), radial-gradient(circle at 18% 18%, rgba(155,215,255,0.12), transparent 16%), radial-gradient(circle at 82% 24%, rgba(216,255,62,0.14), transparent 18%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 44%)",
+          }
+      : preset === "solar-archive"
+        ? {
+            background:
+              "radial-gradient(circle at 14% 22%, rgba(79,214,255,0.2), transparent 16%), radial-gradient(circle at 82% 18%, rgba(255,107,44,0.24), transparent 18%), linear-gradient(140deg, rgba(255,107,44,0.12) 0 10%, transparent 10% 28%, rgba(79,214,255,0.1) 28% 38%, transparent 38% 100%), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)",
+            backgroundSize: "100% 100%, 100% 100%, 100% 100%, 34px 34px, 34px 34px",
           }
       : preset === "acid-pop"
         ? {

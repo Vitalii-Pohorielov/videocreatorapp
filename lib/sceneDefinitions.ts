@@ -20,6 +20,8 @@ export type TemplatePreset =
   | "mint-pop"
   | "terminal"
   | "blueprint"
+  | "chrome-sport"
+  | "solar-archive"
   | "acid-pop"
   | "retro-print"
   | "ember-glow";
@@ -40,6 +42,8 @@ const templatePresets = [
   "mint-pop",
   "terminal",
   "blueprint",
+  "chrome-sport",
+  "solar-archive",
   "acid-pop",
   "retro-print",
   "ember-glow",
@@ -147,6 +151,8 @@ export const presetLabels: Record<TemplatePreset, string> = {
   "mint-pop": "Mint Pop",
   terminal: "Terminal",
   blueprint: "Blueprint",
+  "chrome-sport": "Chrome Sport",
+  "solar-archive": "Signal Mesh",
   "acid-pop": "Acid Pop",
   "retro-print": "Retro Print",
   "ember-glow": "Ember Glow",
@@ -168,6 +174,8 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   "mint-pop": { backgroundColor: "#d9fff2", textColor: "#053b34", accentColor: "#14a789" },
   terminal: { backgroundColor: "#07130c", textColor: "#7dff9b", accentColor: "#24cc5b" },
   blueprint: { backgroundColor: "#0f2747", textColor: "#d8eeff", accentColor: "#5fb7e4" },
+  "chrome-sport": { backgroundColor: "#0b0d12", textColor: "#f4f7fb", accentColor: "#d8ff3e" },
+  "solar-archive": { backgroundColor: "#06131f", textColor: "#eef6ff", accentColor: "#ff6b2c" },
   "acid-pop": { backgroundColor: "#d6ff3f", textColor: "#161616", accentColor: "#d93fb8" },
   "retro-print": { backgroundColor: "#f6dfc8", textColor: "#3e2418", accentColor: "#aa5a31" },
   "ember-glow": { backgroundColor: "#1b0a07", textColor: "#ffd9bf", accentColor: "#d97440" },

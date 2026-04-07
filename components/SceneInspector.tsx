@@ -24,6 +24,8 @@ const presetOptions: TemplatePreset[] = [
   "mint-pop",
   "terminal",
   "blueprint",
+  "chrome-sport",
+  "solar-archive",
   "acid-pop",
   "retro-print",
   "ember-glow",
@@ -91,6 +93,14 @@ const presetChipStyles: Record<TemplatePreset, { idle: string; active: string }>
   blueprint: {
     idle: "border-[#7cd4ff]/35 bg-[#0f2747] text-[#d8eeff] hover:bg-[#15345d]",
     active: "border-[#7cd4ff] bg-[#15345d] text-white ring-2 ring-[#7cd4ff]/24",
+  },
+  "chrome-sport": {
+    idle: "border-[#d8ff3e]/28 bg-[#0b0d12] text-[#f4f7fb] hover:bg-[#13161f]",
+    active: "border-[#d8ff3e] bg-[#13161f] text-white ring-2 ring-[#d8ff3e]/22",
+  },
+  "solar-archive": {
+    idle: "border-[#ff6b2c]/28 bg-[#06131f] text-[#eef6ff] hover:bg-[#0b1c2b]",
+    active: "border-[#ff6b2c] bg-[#0b1c2b] text-white ring-2 ring-[#ff6b2c]/20",
   },
   "acid-pop": {
     idle: "border-[#ff4fd8]/35 bg-[#d6ff3f] text-[#161616] hover:bg-[#ddff63]",
