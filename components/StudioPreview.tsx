@@ -117,6 +117,7 @@ export function StudioPreview({
   const selectedProfileLabel = exportProfileLabels[settings.profile];
   const hasScene = Boolean(scene);
   const isTransitioning = Boolean(scene && transitionScene && transitionProgress > 0);
+  const shouldRenderPreviewAtFullScale = scene?.type === "announcement-hero" || scene?.type === "split-slogan";
 
   void projectId;
   void cloudStatus;
@@ -411,7 +412,7 @@ export function StudioPreview({
           <div className="flex flex-1 items-center justify-center overflow-hidden bg-black">
             <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden bg-black">
               {scene ? (
-                <div className="absolute inset-0 scale-[0.94] origin-center">
+                <div className={`absolute inset-0 origin-center ${shouldRenderPreviewAtFullScale ? "scale-100" : "scale-[0.94]"}`}>
                   {isTransitioning && transitionScene ? (
                     <>
                       <div className="absolute inset-0" style={getTransitionLayerStyle(scene.transition, "current", transitionProgress)}>

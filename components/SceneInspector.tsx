@@ -4,7 +4,7 @@ import { memo, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
-import { announcementTransitionTypeLabels, isAnnouncementScene } from "@/lib/sceneTransitions";
+import { isAnnouncementScene } from "@/lib/sceneTransitions";
 import { usePremiumStatus } from "@/lib/usePremiumStatus";
 import { freeStylePresets, presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
 
@@ -898,20 +898,9 @@ export const SceneInspector = memo(function SceneInspector({
             <p className="mt-2 text-xs text-slate-500">{scene.durationSeconds.toFixed(1)}s</p>
           </label>
           {isAnnouncementScene(scene) ? (
-            <label className="mt-4 block">
-              <span className={labelClassName}>Scene transition</span>
-              <select
-                value={scene.transition}
-                onChange={(event) => onUpdate(scene.id, { transition: event.target.value as Scene["transition"] })}
-                className={fieldClassName}
-              >
-                {Object.entries(announcementTransitionTypeLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <p className="mt-4 text-xs text-slate-500">
+              Announcement scenes now alternate swipe transitions: right to left, left to right, top to bottom, bottom to top.
+            </p>
           ) : null}
         </InspectorSection>
         </div>

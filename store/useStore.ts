@@ -44,9 +44,9 @@ function normalizeProjectImageUrls(values: string[] | undefined, count: number) 
   return Array.from({ length: count }, (_, index) => sanitizeImageUrl(source[index]));
 }
 
-function normalizeLoadedScene(scene: Scene): Scene {
+function normalizeLoadedScene(scene: Scene, index = 0): Scene {
   const normalizedTransition = isAnnouncementSceneType(scene.type)
-    ? normalizeAnnouncementTransition(scene.transition)
+    ? normalizeAnnouncementTransition(scene.transition, index)
     : scene.transition ?? getDefaultTransition(0);
 
   if ((scene as unknown as { type?: string }).type === "brand-reveal" || (scene as unknown as { type?: string }).type === "brand-reveal-alt") {
@@ -164,6 +164,17 @@ function normalizeFixedBullets(bullets: string[], count: number) {
   return Array.from({ length: count }, (_, index) => bullets[index] ?? "");
 }
 
+function syncAnnouncementTransitions(scenes: Scene[]) {
+  return scenes.map((scene, index) =>
+    isAnnouncementSceneType(scene.type)
+      ? {
+          ...scene,
+          transition: getDefaultTransition(index, scene.type),
+        }
+      : scene,
+  );
+}
+
 type StudioStore = {
   projectId: string | null;
   projectName: string;
@@ -268,7 +279,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     });
   },
   hydrateProject: (project) => {
-    const nextScenes = project.sceneTrack.scenes.map((scene) => normalizeLoadedScene(scene));
+    const nextScenes = syncAnnouncementTransitions(project.sceneTrack.scenes.map((scene, index) => normalizeLoadedScene(scene, index)));
     const normalizedPreset = normalizeTemplatePreset(project.exportSettings.preset);
     const normalizedDefaults = presetDefaults[normalizedPreset];
     set({
@@ -302,8 +313,9 @@ export const useStore = create<StudioStore>((set, get) => ({
     const { sceneTrack } = get();
     if (sceneTrack.scenes.length >= MAX_SCENES) return;
     const nextScene = createScene(type, sceneTrack.scenes.length);
+    const nextScenes = syncAnnouncementTransitions([...sceneTrack.scenes, nextScene]);
     set({
-      sceneTrack: { ...sceneTrack, scenes: [...sceneTrack.scenes, nextScene] },
+      sceneTrack: { ...sceneTrack, scenes: nextScenes },
       selectedSceneId: nextScene.id,
     });
   },
@@ -327,9 +339,10 @@ export const useStore = create<StudioStore>((set, get) => ({
 
     const nextScenes = [...sceneTrack.scenes];
     nextScenes.splice(sceneIndex + 1, 0, duplicatedScene);
+    const syncedScenes = syncAnnouncementTransitions(nextScenes);
 
     set({
-      sceneTrack: { ...sceneTrack, scenes: nextScenes },
+      sceneTrack: { ...sceneTrack, scenes: syncedScenes },
       selectedSceneId: duplicatedScene.id,
     });
   },
@@ -370,7 +383,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     if (sceneTrack.scenes.length === 1) return;
 
     const sceneIndex = sceneTrack.scenes.findIndex((scene) => scene.id === id);
-    const nextScenes = sceneTrack.scenes.filter((scene) => scene.id !== id);
+    const nextScenes = syncAnnouncementTransitions(sceneTrack.scenes.filter((scene) => scene.id !== id));
     const nextSelectedId =
       selectedSceneId === id ? nextScenes[Math.max(0, sceneIndex - 1)]?.id ?? nextScenes[0].id : selectedSceneId;
 
@@ -389,11 +402,12 @@ export const useStore = create<StudioStore>((set, get) => ({
       if (fromIndex < 0 || toIndex < 0) return state;
       const [moved] = nextScenes.splice(fromIndex, 1);
       nextScenes.splice(toIndex, 0, moved);
+      const syncedScenes = syncAnnouncementTransitions(nextScenes);
 
       return {
         sceneTrack: {
           ...state.sceneTrack,
-          scenes: nextScenes,
+          scenes: syncedScenes,
         },
       };
     });
@@ -437,7 +451,10 @@ export const useStore = create<StudioStore>((set, get) => ({
     set((state) => ({
       projectId: state.projectId,
       projectName: nextState.projectName,
-      sceneTrack: nextState.sceneTrack,
+      sceneTrack: {
+        ...nextState.sceneTrack,
+        scenes: syncAnnouncementTransitions(nextState.sceneTrack.scenes),
+      },
       selectedSceneId: nextState.selectedSceneId,
       exportSettings: nextState.exportSettings,
     }));

@@ -12,11 +12,13 @@ export const transitionTypeLabels: Record<TransitionType, string> = {
 
 const announcementSceneTypes: SceneType[] = ["announcement-hero", "split-slogan"];
 
-export const announcementTransitionCycle: TransitionType[] = ["fade", "slide-left"];
+export const announcementTransitionCycle: TransitionType[] = ["slide-left", "slide-right", "slide-down", "slide-up"];
 
 export const announcementTransitionTypeLabels = {
-  fade: transitionTypeLabels.fade,
   "slide-left": transitionTypeLabels["slide-left"],
+  "slide-up": transitionTypeLabels["slide-up"],
+  "slide-right": transitionTypeLabels["slide-right"],
+  "slide-down": transitionTypeLabels["slide-down"],
 } as const;
 
 export function isAnnouncementSceneType(type: SceneType) {

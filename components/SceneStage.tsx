@@ -15,7 +15,7 @@ type SceneStageProps = {
   accentColor: string;
   textColor: string;
   preset: TemplatePreset;
-  performanceMode?: "full" | "light";
+  performanceMode?: "full" | "light" | "export";
   renderLayer?: "full" | "background" | "content";
   progress?: number;
   compact?: boolean;
@@ -1049,6 +1049,7 @@ export function SceneStage({
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState(scene.code ?? scene.description);
   const lightweightPreview = performanceMode === "light";
+  const exportRender = performanceMode === "export";
   const optimizedLightRender = lightweightPreview && !editable;
   const blurMultiplier = optimizedLightRender ? 0.08 : lightweightPreview ? 0.2 : 1;
   const showSceneBackground = renderLayer !== "content";
@@ -1061,11 +1062,11 @@ export function SceneStage({
   const outroFade = editable ? 1 : 1 - outroMotion(progress, 0.72, 0.28);
   const announcementLogoCount = scene.type === "announcement-hero" ? scene.projectCount ?? 8 : 0;
   const announcementLastTileDelay = announcementLogoCount > 0 ? 0.04 + Math.max(0, announcementLogoCount - 1) * 0.035 : 0.04;
-  const announcementOutroDelay = Math.min(0.9, announcementLastTileDelay + 0.2);
-  const announcementOutroFade = editable ? 1 : 1 - outroMotion(progress, announcementOutroDelay, 0.1);
+  const announcementOutroDelay = Math.max(0.84, Math.min(0.93, announcementLastTileDelay + 0.48));
+  const announcementOutroFade = 1;
   const isAnnouncementScene = scene.type === "announcement-hero" || scene.type === "split-slogan";
   const promoOutroProgress = editable || isAnnouncementScene ? 0 : outroMotion(progress, 0.78, 0.18);
-  const sceneOutroFade = scene.type === "announcement-hero" ? announcementOutroFade : isAnnouncementScene ? outroFade : 1;
+  const sceneOutroFade = isAnnouncementScene ? 1 : 1;
   const promoLayerOpacity = renderLayer === "background" ? 1 : 1 - promoOutroProgress;
   const s = presetStyles(preset, lightweightPreview);
   const resolvedAccentColor = accentColor || presetAccentColor(preset);
@@ -1338,13 +1339,22 @@ export function SceneStage({
       {scene.type === "announcement-hero" && (
         <div className="relative flex h-full items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
-            <div
-              className="absolute inset-0"
-              style={{
-                background: "linear-gradient(90deg, #4f6dff 0%, #9a68df 52%, #f05bb8 100%)",
-              }}
-            />
-            <div className="absolute inset-0 bg-[#090d18]/42" />
+            {!exportRender ? (
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                src="/scene-assets/announcement-backgrounds/announcement-hero-bg.mp4"
+                muted
+                playsInline
+                autoPlay
+                loop
+                preload="metadata"
+                aria-hidden="true"
+                style={{
+                  opacity: 1,
+                  filter: lightweightPreview ? "saturate(1.08) contrast(1.12) brightness(1.02)" : "saturate(1.12) contrast(1.16) brightness(1.03)",
+                }}
+              />
+            ) : null}
             {Array.from({ length: scene.projectCount ?? 8 }, (_, index) => {
               const totalProjects = scene.projectCount ?? 8;
               const shuffledIndexMap = getAnnouncementShuffledIndexMap(totalProjects);
@@ -1354,6 +1364,8 @@ export function SceneStage({
               const baseCardSize = Math.min(cellWidth, rowHeight) * (compact ? 0.62 : 0.58);
               const cardSize = index % 3 === 0 ? baseCardSize * 0.95 : index % 3 === 2 ? baseCardSize * 1.05 : baseCardSize;
               const tileIn = editable ? 1 : motion(progress, 0.04 + index * 0.035, 0.18);
+              const tileZoomProgress = editable ? 1 : motion(progress, 0.18 + index * 0.018, 0.74);
+              const tileScale = tileIn * (1 + tileZoomProgress * (compact ? 0.12 : 0.16));
 
               return (
                 <div
@@ -1364,7 +1376,7 @@ export function SceneStage({
                     top: `${y + (rowHeight - cardSize) / 2}%`,
                     width: `${cardSize}%`,
                     aspectRatio: "1 / 1",
-                    transform: `translateY(${18 * (1 - tileIn)}px) rotate(10deg) scale(${tileIn})`,
+                    transform: `translateY(${18 * (1 - tileIn) - 10 * tileZoomProgress}px) rotate(10deg) scale(${tileScale})`,
                     opacity: tileIn * 0.85,
                   }}
                 >
@@ -1393,8 +1405,6 @@ export function SceneStage({
                 </div>
               );
             })}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.14)_0%,rgba(15,23,42,0.32)_100%)]" />
-            <div className="absolute inset-0 bg-black/22" />
           </div>
 
           <div className="relative z-10 w-full max-w-5xl">
@@ -2010,12 +2020,12 @@ export function SceneStage({
       {scene.type === "split-slogan" && (
         <div className="absolute inset-0 overflow-hidden text-center" style={{ background: sloganPalette.background }}>
           <div className="relative z-10 flex h-full items-center justify-center">
-            <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center">
+            <div className="mx-auto flex w-[88%] max-w-6xl flex-col items-center justify-center">
               <div className="relative min-h-[12rem] w-full">
                 {scene.subtitle ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <p
-                      className={`${compact ? "text-6xl" : "text-8xl md:text-[6.25rem]"} w-full text-center font-black leading-[1.04] tracking-[0.01em]`}
+                      className={`${compact ? "text-7xl" : "text-[5.75rem] md:text-[7rem]"} w-full text-center font-black leading-[1.02] tracking-[0.01em]`}
                       style={{
                         color: sloganPalette.text,
                         transform: `translateY(${-24 * projectTitleExit}px) scale(${1 - projectTitleExit * 0.06})`,
@@ -2027,13 +2037,13 @@ export function SceneStage({
                   </div>
                 ) : null}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
+                  <div className="mx-auto flex w-[88%] max-w-6xl flex-col items-center justify-center text-center">
                     {sloganFirstLines.map((line, index) => {
                       const lineIn = editable ? 1 : motion(progress, 0.34 + index * 0.08, 0.08);
                       return (
                         <p
                           key={`split-slogan-first-${index}`}
-                          className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
+                          className={`${compact ? "text-[2.9rem]" : "text-[4.25rem] md:text-[5rem]"} w-full text-center font-black leading-[1.06] tracking-[0.015em]`}
                           style={{
                             color: sloganPalette.text,
                             transform: `translateY(${18 * (1 - lineIn) - 20 * sloganFirstExit}px)`,
@@ -2048,16 +2058,16 @@ export function SceneStage({
                 </div>
                 {sloganSecondPart ? (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="mx-auto flex w-[80%] max-w-5xl flex-col items-center justify-center text-center">
+                    <div className="mx-auto flex w-[92%] max-w-[72rem] flex-col items-center justify-center text-center">
                       {sloganSecondLines.map((line, index) => {
                         const lineIn = editable ? 1 : motion(progress, 0.68 + index * 0.08, 0.08);
                         return (
-                          <p
-                            key={`split-slogan-second-${index}`}
-                            className={`${compact ? "text-4xl" : "text-6xl md:text-7xl"} w-full text-center font-black leading-[1.08] tracking-[0.015em]`}
-                            style={{
-                              color: sloganPalette.text,
-                              transform: `translateY(${18 * (1 - lineIn) - 20 * sloganSecondExit}px)`,
+                        <p
+                          key={`split-slogan-second-${index}`}
+                            className={`${compact ? "text-[3.25rem]" : "text-[5rem] md:text-[5.9rem]"} w-full text-center font-black leading-[1.04] tracking-[0.015em]`}
+                          style={{
+                            color: sloganPalette.text,
+                            transform: `translateY(${18 * (1 - lineIn) - 20 * sloganSecondExit}px)`,
                               opacity: lineIn * (1 - sloganSecondExit),
                             }}
                           >

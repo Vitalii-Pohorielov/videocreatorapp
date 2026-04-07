@@ -30,9 +30,12 @@ let reactRendererPromise:
 let renderHost: HTMLDivElement | null = null;
 let renderRoot: ReturnType<ReactClientModule["createRoot"]> | null = null;
 let renderHostSize: { width: number; height: number } | null = null;
+let announcementHeroBackgroundVideo: HTMLVideoElement | null = null;
+let announcementHeroBackgroundVideoReadyPromise: Promise<HTMLVideoElement> | null = null;
 
 const coreBaseUrl = "/ffmpeg";
 const exportMediaReadyTimeoutMs = 3500;
+const announcementHeroBackgroundVideoSrc = "/scene-assets/announcement-backgrounds/announcement-hero-bg.mp4";
 
 function getVideoSize(settings: ExportSettings) {
   return exportResolutionDimensions[settings.resolution];
@@ -88,11 +91,9 @@ function clampProgress(value: number) {
 }
 
 function getTotalFrameCount(scenes: Scene[], fps: number, transitionFrameCount: number) {
-  const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
   return scenes.reduce((total, scene, sceneIndex) => {
-    const nextScene = scenes[sceneIndex + 1];
     const stillFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
-    return total + stillFrameCount + (hasAnnouncementScenes && nextScene ? transitionFrameCount : 0);
+    return total + stillFrameCount;
   }, 0);
 }
 
@@ -114,6 +115,85 @@ function cleanupRenderSurface() {
   renderHost?.remove();
   renderHost = null;
   renderHostSize = null;
+}
+
+async function ensureAnnouncementHeroBackgroundVideo() {
+  if (announcementHeroBackgroundVideo && announcementHeroBackgroundVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    return announcementHeroBackgroundVideo;
+  }
+
+  if (!announcementHeroBackgroundVideoReadyPromise) {
+    announcementHeroBackgroundVideoReadyPromise = new Promise<HTMLVideoElement>((resolve, reject) => {
+      const video = document.createElement("video");
+      video.src = announcementHeroBackgroundVideoSrc;
+      video.muted = true;
+      video.playsInline = true;
+      video.loop = true;
+      video.preload = "auto";
+      video.crossOrigin = "anonymous";
+      video.style.position = "fixed";
+      video.style.left = "-20000px";
+      video.style.top = "0";
+      video.style.width = "1px";
+      video.style.height = "1px";
+      video.style.pointerEvents = "none";
+      video.style.opacity = "0";
+
+      const cleanup = () => {
+        video.removeEventListener("loadeddata", handleReady);
+        video.removeEventListener("error", handleError);
+      };
+
+      const handleReady = () => {
+        cleanup();
+        announcementHeroBackgroundVideo = video;
+        resolve(video);
+      };
+
+      const handleError = () => {
+        cleanup();
+        reject(new Error("Could not load announcement hero background video for export."));
+      };
+
+      video.addEventListener("loadeddata", handleReady, { once: true });
+      video.addEventListener("error", handleError, { once: true });
+      document.body.appendChild(video);
+    });
+  }
+
+  return announcementHeroBackgroundVideoReadyPromise;
+}
+
+async function seekBackgroundVideo(video: HTMLVideoElement, timeSeconds: number) {
+  if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+  const safeTime = Math.min(Math.max(0, timeSeconds), Math.max(0, video.duration - 0.001));
+  if (Math.abs(video.currentTime - safeTime) < 0.01 && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
+
+  await new Promise<void>((resolve) => {
+    const settle = () => {
+      video.removeEventListener("seeked", settle);
+      video.removeEventListener("error", settle);
+      resolve();
+    };
+
+    video.addEventListener("seeked", settle, { once: true });
+    video.addEventListener("error", settle, { once: true });
+
+    try {
+      video.currentTime = safeTime;
+    } catch {
+      settle();
+    }
+  });
+}
+
+async function drawAnnouncementHeroBackgroundFrame(ctx: CanvasRenderingContext2D, width: number, height: number, progress: number) {
+  const video = await ensureAnnouncementHeroBackgroundVideo();
+  if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+
+  const targetTime = Math.min(Math.max(0, progress), 1) * Math.max(0, video.duration - 0.001);
+  await seekBackgroundVideo(video, targetTime);
+  ctx.drawImage(video, 0, 0, width, height);
 }
 
 function syncExportHostStyles(host: HTMLDivElement) {
@@ -251,7 +331,7 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
           accentColor: settings.accentColor,
           textColor: settings.textColor,
           preset: settings.preset,
-          performanceMode: "light",
+          performanceMode: "export",
           renderLayer,
           progress,
         }),
@@ -352,6 +432,9 @@ async function renderSceneCompositeCanvasCached(
   const contentCanvas = await renderSceneLayerToCanvas(scene, settings, progress, "content", assetReadinessCache);
 
   ctx.drawImage(backgroundCanvas, 0, 0, videoWidth, videoHeight);
+  if (scene.type === "announcement-hero") {
+    await drawAnnouncementHeroBackgroundFrame(ctx, videoWidth, videoHeight, progress);
+  }
   ctx.drawImage(contentCanvas, 0, 0, videoWidth, videoHeight);
 
   if (allowCache) cache.set(cacheKey, canvas);
@@ -446,6 +529,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
   const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
+  const useAnimatedTransitions = hasAnnouncementScenes;
   const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset, crf } = getExportProfileConfig(settings);
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
@@ -497,7 +581,7 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
         frameIndex += 1;
       }
 
-      if (hasAnnouncementScenes && nextScene) {
+      if (useAnimatedTransitions && hasAnnouncementScenes && nextScene) {
         for (let transitionStep = 0; transitionStep < transitionFrameCount; transitionStep += 1) {
           const progress = (transitionStep + 1) / transitionFrameCount;
           const transitionCanvas = await renderTransitionFrame(scene, nextScene, settings, progress, renderCache, exportAssetReadinessCache);
