@@ -783,6 +783,78 @@ function WebsiteScrollFrame({
   );
 }
 
+function WebsiteScrollBackground({
+  scene,
+  progress,
+  compact,
+  lightweightPreview = false,
+  editable = false,
+  onPickImage,
+  showUploadHint = true,
+}: {
+  scene: Scene;
+  progress: number;
+  compact: boolean;
+  lightweightPreview?: boolean;
+  editable?: boolean;
+  onPickImage?: () => void;
+  showUploadHint?: boolean;
+}) {
+  const scrollDelaySeconds = 0.5;
+  const elapsedSceneSeconds = progress * scene.durationSeconds;
+  const activeScrollSeconds = Math.max(0, elapsedSceneSeconds - scrollDelaySeconds);
+  const scrollSpeedPerSecond = lightweightPreview ? 8 : 10;
+  const scrollOffset = `${activeScrollSeconds * scrollSpeedPerSecond}%`;
+  const websiteImageUrl = getRenderableImageUrl(scene.websiteImageUrl);
+
+  if (!websiteImageUrl) {
+    return (
+      <button
+        type="button"
+        onClick={editable ? onPickImage : undefined}
+        className="absolute inset-0 block h-full w-full appearance-none border-0 bg-transparent p-0 text-inherit"
+        style={{
+          background:
+            "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1), transparent 28%), radial-gradient(circle at 80% 10%, rgba(255,255,255,0.07), transparent 24%), linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03) 34%, rgba(0,0,0,0.14))",
+          cursor: editable ? "pointer" : "default",
+        }}
+      >
+        {editable && showUploadHint ? (
+          <div className="absolute inset-0 flex items-center justify-end px-6 text-right">
+            <div className="mr-6 rounded-[24px] border border-dashed border-white/20 bg-black/25 px-6 py-5 text-sm text-white/78 backdrop-blur-sm">
+              Click to upload a website screenshot
+            </div>
+          </div>
+        ) : null}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={editable ? onPickImage : undefined}
+      className="absolute inset-0 block h-full w-full appearance-none overflow-hidden border-0 bg-transparent p-0 text-inherit"
+      style={{ cursor: editable ? "pointer" : "default" }}
+    >
+      <img
+        src={websiteImageUrl}
+        alt="Website background"
+        className="absolute left-1/2 top-0 block h-auto min-h-full w-full min-w-full max-w-none -translate-x-1/2 select-none object-cover object-top"
+        draggable={false}
+        decoding="async"
+        loading="eager"
+        style={{
+          transform: `translate3d(-50%, -${scrollOffset}, 0) scale(${compact ? 1.08 : 1.12})`,
+          transition: lightweightPreview ? "none" : "transform 80ms linear",
+          willChange: lightweightPreview ? "auto" : "transform",
+          backfaceVisibility: "hidden",
+        }}
+      />
+    </button>
+  );
+}
+
 function BulletMarker({ emoji, imageUrl, accentClassName, compact, interactive = false, onClick, animatedProgress }: { emoji?: string; imageUrl?: string; accentClassName: string; compact: boolean; interactive?: boolean; onClick?: () => void; animatedProgress?: number }) {
   const renderableImageUrl = getRenderableImageUrl(imageUrl);
   if (renderableImageUrl) {
@@ -1350,13 +1422,17 @@ export function SceneStage({
         </>
       ) : null}
       <div
-        className={
-          scene.type === "announcement-hero" || scene.type === "split-slogan" || scene.type === "pricing-peek" || scene.type === "brand-reveal-circle"
-            ? "relative h-full w-full"
-            : compact
-              ? "relative h-full w-full px-4 py-4"
-              : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`
-        }
+          className={
+            scene.type === "announcement-hero" ||
+            scene.type === "split-slogan" ||
+            scene.type === "pricing-peek" ||
+            scene.type === "brand-reveal-circle" ||
+            scene.type === "website-scroll-overlay"
+              ? "relative h-full w-full"
+              : compact
+                ? "relative h-full w-full px-4 py-4"
+                : `relative h-full w-full px-8 ${scene.type === "product-showcase" && showcaseImageBottom ? "pt-8 pb-0" : "py-8"}`
+          }
       >
       {showSceneContent ? (
         <div
@@ -2499,6 +2575,90 @@ export function SceneStage({
             />
         </div>
       )}
+
+      {scene.type === "website-scroll-overlay" && (() => {
+        const textOnLeft = scene.mediaPosition !== "right";
+        const leadIn = editable ? 1 : motion(progress, 0.08, 0.16);
+        const secondLineIn = editable ? 1 : motion(progress, 0.24, 0.16);
+        const thirdLineIn = editable ? 1 : motion(progress, 0.4, 0.16);
+        const textColumnClassName = "h-full w-full max-w-full";
+        const textContentClassName = "w-[70%] max-w-[70%]";
+
+        return (
+          <div className="relative flex h-full items-center overflow-hidden">
+            <WebsiteScrollBackground
+              scene={scene}
+              progress={progress}
+              compact={compact}
+              lightweightPreview={lightweightPreview}
+              editable={editable}
+              onPickImage={onRequestHighlightUpload}
+              showUploadHint={false}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-black/52" />
+            <div className="pointer-events-none absolute inset-0 bg-black/64" />
+            {!optimizedLightRender ? (
+              <div
+                className={`pointer-events-none absolute top-1/2 h-[64%] w-[44%] -translate-y-1/2 rounded-[40px] blur-3xl ${textOnLeft ? "left-[-8%]" : "right-[-8%]"}`}
+                style={{ background: hexToRgba(resolvedAccentColor, 0.18) }}
+              />
+            ) : null}
+            {editable ? (
+              <div className={`absolute inset-y-0 z-20 flex items-center ${textOnLeft ? "right-0 justify-end" : "left-0 justify-start"} ${compact ? "px-4" : "px-8"}`}>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onRequestHighlightUpload?.();
+                  }}
+                  className="rounded-[24px] border border-dashed border-white/20 bg-black/35 px-6 py-5 text-sm text-white/78 backdrop-blur-sm transition hover:bg-black/45"
+                >
+                  {scene.websiteImageUrl ? "Replace website screenshot" : "Upload website screenshot"}
+                </button>
+              </div>
+            ) : null}
+            <div className={`relative z-10 flex h-full w-full ${textOnLeft ? "justify-start" : "justify-end"}`}>
+              <div className={textColumnClassName}>
+                <div
+                  className={`flex h-full items-center rounded-none border-0 ${compact ? "px-4 py-5" : "px-7 py-8"}`}
+                  style={{ borderColor: "rgba(255,255,255,0.12)", background: "rgba(0,0,0,0.64)" }}
+                >
+                  <div className={textContentClassName}>
+                  <EditableText
+                    as="h2"
+                    value={scene.title}
+                    editable={editable}
+                    onCommit={(value) => onSceneChange?.({ title: value })}
+                    className={`w-full ${compact ? "text-4xl" : "text-6xl md:text-7xl"} ${s.title} leading-[0.96] tracking-[-0.065em]`}
+                    style={revealStyle(leadIn, { x: textOnLeft ? -14 : 14, y: 20, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                    placeholder="Line 1"
+                  />
+                  <EditableText
+                    as="h2"
+                    value={scene.subtitle}
+                    editable={editable}
+                    onCommit={(value) => onSceneChange?.({ subtitle: value })}
+                    className={`mt-3 w-full ${compact ? "text-4xl" : "text-6xl md:text-7xl"} ${s.title} leading-[0.96] tracking-[-0.065em]`}
+                    style={revealStyle(secondLineIn, { x: textOnLeft ? -12 : 12, y: 22, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                    placeholder="Line 2"
+                  />
+                  <EditableText
+                    as="h2"
+                    value={scene.description}
+                    editable={editable}
+                    onCommit={(value) => onSceneChange?.({ description: value })}
+                    className={`mt-3 w-full ${compact ? "text-4xl" : "text-6xl md:text-7xl"} ${s.title} leading-[0.96] tracking-[-0.065em]`}
+                    style={revealStyle(thirdLineIn, { x: textOnLeft ? -10 : 10, y: 24, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                    placeholder="Line 3"
+                  />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {scene.type === "pricing-peek" && (
         <div className="relative flex h-full items-stretch justify-center overflow-hidden">

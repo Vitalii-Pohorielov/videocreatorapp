@@ -71,6 +71,7 @@ export type SceneType =
   | "center-text"
   | "website-url"
   | "website-scroll"
+  | "website-scroll-overlay"
   | "website-scroll-front"
   | "quote"
   | "cta"
@@ -603,13 +604,34 @@ export const sceneDefinitions: SceneDefinition[] = [
     }),
   },
   {
+    type: "website-scroll-overlay",
+    label: "Website Scroll Overlay",
+    catalogDescription: "Darkened website scroll in the background with oversized side copy in front.",
+    createTemplate: () => ({
+      type: "website-scroll-overlay",
+      durationSeconds: 4,
+      transition: getDefaultTransition(13, "website-scroll-overlay"),
+      eyebrow: "Website",
+      title: "A moving product story",
+      subtitle: "Let the site scroll in the background",
+      description: "While the key message stays large and readable in front.",
+      bullets: [],
+      bulletEmojis: [],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "left",
+    }),
+  },
+  {
     type: "website-scroll-front",
     label: "Website Scroll Front",
     catalogDescription: "Scroll a manually uploaded website screenshot in a frontal frame.",
     createTemplate: () => ({
       type: "website-scroll-front",
       durationSeconds: 4,
-      transition: getDefaultTransition(13, "website-scroll-front"),
+      transition: getDefaultTransition(14, "website-scroll-front"),
       eyebrow: "Website",
       title: "Show the product page in motion",
       subtitle: "Upload a tall screenshot and the scene will auto-scroll it",

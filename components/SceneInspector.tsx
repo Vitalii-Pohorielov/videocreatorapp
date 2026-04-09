@@ -477,17 +477,23 @@ export const SceneInspector = memo(function SceneInspector({
                 <span className={labelClassName}>Scene label</span>
                 <input value={scene.name} onChange={(event) => onUpdate(scene.id, { name: event.target.value })} className={fieldClassName} />
               </label>
+              {scene.type === "website-scroll-overlay" ? (
+                <label className="block">
+                  <span className={labelClassName}>Top line</span>
+                  <input value={scene.eyebrow} onChange={(event) => onUpdate(scene.id, { eyebrow: event.target.value })} className={fieldClassName} placeholder="Website" />
+                </label>
+              ) : null}
               <label className="block">
-                <span className={labelClassName}>{scene.type === "description" ? "Line 1" : scene.type === "website-url" ? "Website address" : scene.type === "announcement-hero" ? "Main title" : "Title"}</span>
+                <span className={labelClassName}>{scene.type === "description" || scene.type === "website-scroll-overlay" ? "Line 1" : scene.type === "website-url" ? "Website address" : scene.type === "announcement-hero" ? "Main title" : "Title"}</span>
                 <textarea value={scene.title} rows={3} onChange={(event) => onUpdate(scene.id, { title: event.target.value })} className={textareaClassName} />
               </label>
               {scene.type !== "website-url" && scene.type !== "announcement-hero" && scene.type !== "brand-reveal-alt" ? (
                 <label className="block">
-                  <span className={labelClassName}>{scene.type === "description" ? "Line 2" : scene.type === "split-slogan" ? "Project name" : "Subtitle"}</span>
+                  <span className={labelClassName}>{scene.type === "description" || scene.type === "website-scroll-overlay" ? "Line 2" : scene.type === "split-slogan" ? "Project name" : "Subtitle"}</span>
                   <textarea value={scene.subtitle} rows={3} onChange={(event) => onUpdate(scene.id, { subtitle: event.target.value })} className={textareaClassName} />
                 </label>
               ) : null}
-              {scene.type === "description" ? (
+              {scene.type === "description" || scene.type === "website-scroll-overlay" ? (
                 <label className="block">
                   <span className={labelClassName}>Line 3</span>
                   <textarea value={scene.description} rows={5} onChange={(event) => onUpdate(scene.id, { description: event.target.value })} className={textareaClassName} />
@@ -706,7 +712,7 @@ export const SceneInspector = memo(function SceneInspector({
           </InspectorSection>
         ) : null}
 
-        {scene.type === "website-scroll" || scene.type === "website-scroll-front" ? (
+        {scene.type === "website-scroll" || scene.type === "website-scroll-overlay" || scene.type === "website-scroll-front" ? (
           <InspectorSection title="Website screenshot" description="Upload your own site screenshot. A tall image works best for visible scrolling.">
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
@@ -749,6 +755,31 @@ export const SceneInspector = memo(function SceneInspector({
                 }`}
               >
                 Right →
+              </button>
+            </div>
+          </InspectorSection>
+        ) : null}
+
+        {scene.type === "website-scroll-overlay" ? (
+          <InspectorSection title="Text side" description="Choose which side keeps the large front copy.">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => onUpdate(scene.id, { mediaPosition: "left" })}
+                className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                  scene.mediaPosition === "left" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"
+                }`}
+              >
+                Text left
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdate(scene.id, { mediaPosition: "right" })}
+                className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${
+                  scene.mediaPosition === "right" ? "border-sky-400 bg-sky-400/12 text-sky-200" : "border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]"
+                }`}
+              >
+                Text right
               </button>
             </div>
           </InspectorSection>

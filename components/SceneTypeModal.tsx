@@ -30,7 +30,7 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
     { label: "Text", types: ["description", "center-text", "quote"] },
     { label: "Pricing", types: ["pricing", "pricing-peek"] },
     { label: "Code", types: ["code-preview", "code-review"] },
-    { label: "Website", types: ["website-url", "website-scroll", "website-scroll-front", "process"] },
+    { label: "Website", types: ["website-url", "website-scroll", "website-scroll-overlay", "website-scroll-front", "process"] },
     { label: "CTA", types: ["cta", "cta-panel"] },
   ];
 
