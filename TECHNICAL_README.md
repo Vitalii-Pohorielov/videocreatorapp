@@ -6,6 +6,7 @@ Use it as the project map before changing editor flow, scene rendering, export, 
 The app already includes:
 
 - a browser scene editor;
+- a browser banner builder;
 - project save/load via Supabase;
 - browser-side `.mp4` export;
 - deterministic draft generation from a website URL;
@@ -29,12 +30,14 @@ Treat the current `main` branch HEAD as the recovery baseline when future work b
 
 ## What this project is
 
-This is a Next.js 16 app for assembling short promo or announcement videos from scene blocks.
+This is a Next.js 16 app for assembling short promo or announcement videos from scene blocks, plus a new banner builder flow.
 
 The user can:
 
 - create or open a project;
+- switch between video creation and banner creation from the projects workspace;
 - edit scenes in preview or inspector;
+- configure banner text, colors, fonts, and image theme;
 - upload logos, screenshots, author media, and announcement project tiles;
 - generate a draft from a website URL;
 - build announcement slogan sequences from pasted text;
@@ -54,6 +57,7 @@ The user can:
 
 - [app/page.tsx](/d:/VideoCreatorApp/app/page.tsx) - landing page.
 - [app/editor/page.tsx](/d:/VideoCreatorApp/app/editor/page.tsx) - editor studio.
+- [app/banner/page.tsx](/d:/VideoCreatorApp/app/banner/page.tsx) - banner builder.
 - [app/projects/page.tsx](/d:/VideoCreatorApp/app/projects/page.tsx) - project list.
 - [app/api/generate-from-url/route.ts](/d:/VideoCreatorApp/app/api/generate-from-url/route.ts) - server route for website-to-draft generation.
 
@@ -72,12 +76,37 @@ The user can:
 
 ### Core UI surfaces
 
+- [components/CreateModeSwitcher.tsx](/d:/VideoCreatorApp/components/CreateModeSwitcher.tsx) - top-level `Create video` / `Create banner` launcher.
 - [components/StudioPreview.tsx](/d:/VideoCreatorApp/components/StudioPreview.tsx) - top toolbar, playback preview, export controls, URL generation, Express Create modal.
 - [components/SceneTimeline.tsx](/d:/VideoCreatorApp/components/SceneTimeline.tsx) - single-track sortable scene list.
 - [components/SceneInspector.tsx](/d:/VideoCreatorApp/components/SceneInspector.tsx) - right-side scene and export settings editor.
 - [components/SceneStage.tsx](/d:/VideoCreatorApp/components/SceneStage.tsx) - scene renderer for edit, preview, and export.
 - [components/SceneTypeModal.tsx](/d:/VideoCreatorApp/components/SceneTypeModal.tsx) - filtered scene catalog based on workspace mode.
-- [components/ProjectTypeModal.tsx](/d:/VideoCreatorApp/components/ProjectTypeModal.tsx) - project type chooser.
+- [components/ProjectTypeModal.tsx](/d:/VideoCreatorApp/components/ProjectTypeModal.tsx) - currently hidden project type chooser kept in the codebase so announcement creation can be restored later.
+- [components/BannerWorkspace.tsx](/d:/VideoCreatorApp/components/BannerWorkspace.tsx) - banner editing surface with live preview and editable banner controls.
+
+## Banner flow
+
+Banner config lives in [lib/bannerDefinitions.ts](/d:/VideoCreatorApp/lib/bannerDefinitions.ts).
+
+- Route: [app/banner/page.tsx](/d:/VideoCreatorApp/app/banner/page.tsx)
+- Workspace: [components/BannerWorkspace.tsx](/d:/VideoCreatorApp/components/BannerWorkspace.tsx)
+- Current editable fields:
+  - eyebrow
+  - title
+  - subtitle
+  - CTA label
+  - background color
+  - accent color
+  - text color
+  - font choice
+  - image type: `business`, `saas`, `ai`, `travel`
+
+Important:
+
+- Banner creation is currently a standalone scaffold and does not yet reuse video project persistence.
+- The image-type selector is a placeholder art-direction control for future generation or upload logic.
+- Extend the banner flow in its own files first instead of mixing banner state into the video editor store.
 
 ## Creation modes
 
@@ -89,6 +118,9 @@ Video mode lives in [lib/sceneDefinitions.ts](/d:/VideoCreatorApp/lib/sceneDefin
 
 Important:
 
+- The announcement creation path currently remains implemented but hidden from the UI.
+- New projects now open directly in `promo` mode from [components/ProjectsWorkspace.tsx](/d:/VideoCreatorApp/components/ProjectsWorkspace.tsx).
+- To restore announcement creation, re-enable [components/ProjectTypeModal.tsx](/d:/VideoCreatorApp/components/ProjectTypeModal.tsx) in the new-project flow and route to `/editor?videoType=announcement`.
 - Some UI copy still says the announcement editor starts blank.
 - Actual store reset behavior currently seeds one `announcement-hero` scene.
 - If this changes, update both the modal copy and this README together.
