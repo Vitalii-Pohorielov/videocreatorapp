@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { toPng } from "html-to-image";
 
 import { BannerStylesModal } from "@/components/BannerStylesModal";
+import { loadBannerProject, saveBannerProject } from "@/lib/projectPersistence";
 import { bannerStylePresets, getBannerStylePreset, type BannerStyleLayoutId, type BannerStylePresetId } from "@/lib/bannerStylePresets";
 import {
   bannerFontLabels,
@@ -201,6 +202,18 @@ const bannerTitleSizeBasePx: Record<BannerSize, number> = {
   "1:1": 58,
   "4:3": 72,
   "16:9": 88,
+};
+
+type BannerWorkspaceProps = {
+  initialProjectId?: string | null;
+};
+
+type BannerWorkspaceSnapshot = {
+  bannerName: string;
+  draft: BannerDraft;
+  activeStylePresetId: BannerStylePresetId;
+  bannerPositionIndex: number;
+  bannerAssetVariantIndex: number;
 };
 
 function ControlCard({
@@ -786,20 +799,27 @@ function BannerTemplatePreview({
   }
 }
 
-export function BannerWorkspace() {
+export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProps) {
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [draft, setDraft] = useState<BannerDraft>(defaultBannerDraft);
   const [bannerName, setBannerName] = useState("Untitled banner");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSizeMenuOpen, setIsSizeMenuOpen] = useState(false);
   const [isStylePopupOpen, setIsStylePopupOpen] = useState(false);
   const [activeStylePresetId, setActiveStylePresetId] = useState<BannerStylePresetId>("aurora-burst");
   const [bannerPositionIndex, setBannerPositionIndex] = useState(0);
   const [bannerAssetVariantIndex, setBannerAssetVariantIndex] = useState(0);
   const [previewAreaSize, setPreviewAreaSize] = useState({ width: 0, height: 0 });
+  const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const previewFontFamily = fontFamilyMap[draft.fontChoice];
   const previewAreaRef = useRef<HTMLElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const sizeMenuRef = useRef<HTMLDivElement | null>(null);
+  const didHydrateProject = useRef<string | null | undefined>(undefined);
+  const lastSavedSignatureRef = useRef("");
+  const saveInFlightRef = useRef(false);
+  const queuedSaveReasonRef = useRef<"auto" | "manual" | null>(null);
   const bannerStyleLabel = bannerImageTypeLabels[draft.imageType];
   const selectedVariantImages = bannerImageVariantMap[draft.imageType] ?? [themeImageMap[draft.imageType]];
   const selectedBannerImage = selectedVariantImages[bannerAssetVariantIndex % selectedVariantImages.length] ?? themeImageMap[draft.imageType];
@@ -811,6 +831,26 @@ export function BannerWorkspace() {
     previewAreaSize.width > 0 && previewAreaSize.height > 0
       ? Math.min(previewAreaSize.width, previewAreaSize.height * bannerAspectRatio[draft.size])
       : undefined;
+  const projectSaveSignature = useMemo(
+    () =>
+      JSON.stringify({
+        bannerName,
+        draft,
+        activeStylePresetId,
+        bannerPositionIndex,
+        bannerAssetVariantIndex,
+      }),
+    [activeStylePresetId, bannerAssetVariantIndex, bannerName, bannerPositionIndex, draft],
+  );
+
+  const applySnapshot = useCallback((snapshot: BannerWorkspaceSnapshot, nextProjectId: string | null) => {
+    setProjectId(nextProjectId);
+    setBannerName(snapshot.bannerName);
+    setDraft(snapshot.draft);
+    setActiveStylePresetId(snapshot.activeStylePresetId);
+    setBannerPositionIndex(snapshot.bannerPositionIndex);
+    setBannerAssetVariantIndex(snapshot.bannerAssetVariantIndex);
+  }, []);
 
   const updateField = <K extends keyof BannerDraft>(key: K, value: BannerDraft[K]) => {
     setDraft((current) => ({
@@ -876,7 +916,73 @@ export function BannerWorkspace() {
     setActiveStylePresetId(preset.id);
   };
 
+  const saveCurrentBanner = useCallback(
+    async (reason: "auto" | "manual") => {
+      if (saveInFlightRef.current) {
+        queuedSaveReasonRef.current = queuedSaveReasonRef.current === "manual" || reason === "manual" ? "manual" : "auto";
+        return;
+      }
+
+      saveInFlightRef.current = true;
+      try {
+        const currentSignature = JSON.stringify({
+          bannerName,
+          draft,
+          activeStylePresetId,
+          bannerPositionIndex,
+          bannerAssetVariantIndex,
+        });
+
+        if (reason === "auto" && currentSignature === lastSavedSignatureRef.current) {
+          return;
+        }
+
+        if (reason === "manual") {
+          setIsSaving(true);
+          setCloudStatus("Saving banner...");
+        }
+
+        const project = await saveBannerProject({
+          projectId,
+          projectName: bannerName,
+          draft,
+          stylePresetId: activeStylePresetId,
+          bannerPositionIndex,
+          bannerAssetVariantIndex,
+        });
+
+        setProjectId(project.id);
+        setBannerName(project.name);
+        window.history.replaceState({}, "", `/banner?project=${project.id}`);
+        lastSavedSignatureRef.current = JSON.stringify({
+          bannerName: project.name,
+          draft,
+          activeStylePresetId,
+          bannerPositionIndex,
+          bannerAssetVariantIndex,
+        });
+        setCloudStatus(reason === "manual" ? `Saved "${project.name}".` : `Autosaved "${project.name}".`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not save banner.";
+        setCloudStatus(message);
+      } finally {
+        saveInFlightRef.current = false;
+        if (reason === "manual") {
+          setIsSaving(false);
+        }
+
+        const queuedReason = queuedSaveReasonRef.current;
+        queuedSaveReasonRef.current = null;
+        if (queuedReason) {
+          void saveCurrentBanner(queuedReason);
+        }
+      }
+    },
+    [activeStylePresetId, bannerAssetVariantIndex, bannerName, bannerPositionIndex, draft, projectId],
+  );
+
   useEffect(() => {
+    if (initialProjectId) return;
     const savedBannerName = window.localStorage.getItem("cliplab-banner-name");
     const savedBannerDraft = window.localStorage.getItem("cliplab-banner-draft");
     const savedBannerStyleState = window.localStorage.getItem("cliplab-banner-style-state");
@@ -924,7 +1030,49 @@ export function BannerWorkspace() {
         setActiveStylePresetId(maybePreset.id);
       }
     }
-  }, []);
+  }, [initialProjectId]);
+
+  useEffect(() => {
+    if (didHydrateProject.current === initialProjectId) return;
+    didHydrateProject.current = initialProjectId;
+
+    if (!initialProjectId) {
+      setProjectId(null);
+      return;
+    }
+
+    setIsSaving(true);
+    setCloudStatus(`Loading banner ${initialProjectId}...`);
+
+    loadBannerProject(initialProjectId)
+      .then((project) => {
+        applySnapshot(
+          {
+            bannerName: project.name,
+            draft: project.payload.draft,
+            activeStylePresetId: project.payload.stylePresetId,
+            bannerPositionIndex: project.payload.bannerPositionIndex,
+            bannerAssetVariantIndex: project.payload.bannerAssetVariantIndex,
+          },
+          project.id,
+        );
+        lastSavedSignatureRef.current = JSON.stringify({
+          bannerName: project.name,
+          draft: project.payload.draft,
+          activeStylePresetId: project.payload.stylePresetId,
+          bannerPositionIndex: project.payload.bannerPositionIndex,
+          bannerAssetVariantIndex: project.payload.bannerAssetVariantIndex,
+        });
+        setCloudStatus(`Loaded "${project.name}".`);
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Could not load banner.";
+        setCloudStatus(message);
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
+  }, [applySnapshot, initialProjectId]);
 
   useEffect(() => {
     if (!previewAreaRef.current) return;
@@ -961,6 +1109,17 @@ export function BannerWorkspace() {
 
     return () => window.clearTimeout(timeoutId);
   }, [activeStylePresetId, bannerAssetVariantIndex, bannerName, bannerPositionIndex, draft]);
+
+  useEffect(() => {
+    if (initialProjectId && projectId !== initialProjectId) return;
+    if (projectSaveSignature === lastSavedSignatureRef.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void saveCurrentBanner("auto");
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [initialProjectId, projectId, projectSaveSignature, saveCurrentBanner]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -1013,6 +1172,10 @@ export function BannerWorkspace() {
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  const handleSaveBanner = () => {
+    void saveCurrentBanner("manual");
   };
 
   return (
@@ -1105,6 +1268,14 @@ export function BannerWorkspace() {
               </label>
               <button
                 type="button"
+                onClick={handleSaveBanner}
+                disabled={isSaving}
+                className="shrink-0 rounded-xl border border-sky-400/25 bg-sky-400/12 px-3 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/18 disabled:opacity-60"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
                 onClick={() => void handleDownload()}
                 disabled={isDownloading}
                 className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-60"
@@ -1112,6 +1283,7 @@ export function BannerWorkspace() {
                 {isDownloading ? "Downloading..." : "Download"}
               </button>
             </div>
+            {cloudStatus ? <p className="text-sm text-slate-400 xl:max-w-[320px] xl:text-right">{cloudStatus}</p> : null}
           </div>
         </section>
 

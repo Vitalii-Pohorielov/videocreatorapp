@@ -1,15 +1,28 @@
 "use client";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import type { BannerDraft } from "@/lib/bannerDefinitions";
+import type { BannerStylePresetId } from "@/lib/bannerStylePresets";
 import type { ExportSettings, SceneTrack } from "@/store/useStore";
 
-const PROJECTS_TABLE = "video_projects";
+const VIDEO_PROJECTS_TABLE = "video_projects";
+const BANNER_PROJECTS_TABLE = "banner_projects";
 const IMAGES_BUCKET = "project-images";
 
-type PersistedProjectRow = {
+type PersistedVideoProjectRow = {
   id: string;
   name: string;
   payload: PersistedProjectPayload;
+  user_id?: string | null;
+  deleted?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type PersistedBannerProjectRow = {
+  id: string;
+  name: string;
+  payload: PersistedBannerPayload;
   user_id?: string | null;
   deleted?: boolean;
   created_at?: string;
@@ -21,6 +34,18 @@ export type PersistedProjectPayload = {
   sceneTrack: SceneTrack;
   exportSettings: ExportSettings;
 };
+
+export type PersistedBannerPayload = {
+  version: 1;
+  draft: BannerDraft;
+  stylePresetId: BannerStylePresetId;
+  bannerPositionIndex: number;
+  bannerAssetVariantIndex: number;
+};
+
+function getMissingSchemaMessage(target: "video project" | "banner project") {
+  return `${target[0].toUpperCase()}${target.slice(1)} storage is not ready yet. Apply the updated schema from lib/projectSchema.sql first.`;
+}
 
 async function getAuthenticatedSupabase() {
   const supabase = getSupabaseBrowserClient();
@@ -82,10 +107,10 @@ export async function saveProject(input: {
   };
 
   const { data, error } = await supabase
-    .from(PROJECTS_TABLE)
+    .from(VIDEO_PROJECTS_TABLE)
     .upsert(row, { onConflict: "id" })
     .select("id, name, payload, updated_at")
-    .single<PersistedProjectRow>();
+    .single<PersistedVideoProjectRow>();
 
   if (error) {
     throw new Error(`Project save failed: ${error.message}`);
@@ -97,11 +122,11 @@ export async function saveProject(input: {
 export async function loadProject(projectId: string) {
   const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
-    .from(PROJECTS_TABLE)
+    .from(VIDEO_PROJECTS_TABLE)
     .select("id, name, payload, updated_at")
     .eq("id", projectId)
     .eq("deleted", false)
-    .single<PersistedProjectRow>();
+    .single<PersistedVideoProjectRow>();
 
   if (error) {
     throw new Error(`Project load failed: ${error.message}`);
@@ -113,12 +138,12 @@ export async function loadProject(projectId: string) {
 export async function listProjects(limit = 24) {
   const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
-    .from(PROJECTS_TABLE)
+    .from(VIDEO_PROJECTS_TABLE)
     .select("id, name, created_at, updated_at")
     .eq("deleted", false)
     .order("updated_at", { ascending: false })
     .limit(limit)
-    .returns<PersistedProjectRow[]>();
+    .returns<PersistedVideoProjectRow[]>();
 
   if (error) {
     throw new Error(`Project list failed: ${error.message}`);
@@ -130,7 +155,7 @@ export async function listProjects(limit = 24) {
 export async function deleteProject(projectId: string) {
   const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
-    .from(PROJECTS_TABLE)
+    .from(VIDEO_PROJECTS_TABLE)
     .update({ deleted: true })
     .eq("id", projectId)
     .select("id")
@@ -141,7 +166,7 @@ export async function deleteProject(projectId: string) {
   }
 
   if (!data?.id) {
-    throw new Error("Project delete did not complete. Apply the updated schema from lib/projectSchema.sql first.");
+    throw new Error(getMissingSchemaMessage("video project"));
   }
 }
 
@@ -150,7 +175,7 @@ export async function deleteProjects(projectIds: string[]) {
 
   const { supabase } = await getAuthenticatedSupabase();
   const { data, error } = await supabase
-    .from(PROJECTS_TABLE)
+    .from(VIDEO_PROJECTS_TABLE)
     .update({ deleted: true })
     .in("id", projectIds)
     .select("id")
@@ -161,6 +186,115 @@ export async function deleteProjects(projectIds: string[]) {
   }
 
   if (!data || data.length === 0) {
-    throw new Error("Project delete did not complete. Apply the updated schema from lib/projectSchema.sql first.");
+    throw new Error(getMissingSchemaMessage("video project"));
+  }
+}
+
+export async function saveBannerProject(input: {
+  projectId: string | null;
+  projectName: string;
+  draft: BannerDraft;
+  stylePresetId: BannerStylePresetId;
+  bannerPositionIndex: number;
+  bannerAssetVariantIndex: number;
+}) {
+  const { supabase, user } = await getAuthenticatedSupabase();
+  const payload: PersistedBannerPayload = {
+    version: 1,
+    draft: input.draft,
+    stylePresetId: input.stylePresetId,
+    bannerPositionIndex: input.bannerPositionIndex,
+    bannerAssetVariantIndex: input.bannerAssetVariantIndex,
+  };
+
+  const row = {
+    id: input.projectId ?? crypto.randomUUID(),
+    user_id: user.id,
+    name: input.projectName.trim() || "Untitled banner",
+    payload,
+    deleted: false,
+  };
+
+  const { data, error } = await supabase
+    .from(BANNER_PROJECTS_TABLE)
+    .upsert(row, { onConflict: "id" })
+    .select("id, name, payload, updated_at")
+    .single<PersistedBannerProjectRow>();
+
+  if (error) {
+    throw new Error(`Banner save failed: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function loadBannerProject(projectId: string) {
+  const { supabase } = await getAuthenticatedSupabase();
+  const { data, error } = await supabase
+    .from(BANNER_PROJECTS_TABLE)
+    .select("id, name, payload, updated_at")
+    .eq("id", projectId)
+    .eq("deleted", false)
+    .single<PersistedBannerProjectRow>();
+
+  if (error) {
+    throw new Error(`Banner load failed: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function listBannerProjects(limit = 24) {
+  const { supabase } = await getAuthenticatedSupabase();
+  const { data, error } = await supabase
+    .from(BANNER_PROJECTS_TABLE)
+    .select("id, name, created_at, updated_at")
+    .eq("deleted", false)
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+    .returns<PersistedBannerProjectRow[]>();
+
+  if (error) {
+    throw new Error(`Banner list failed: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function deleteBannerProject(projectId: string) {
+  const { supabase } = await getAuthenticatedSupabase();
+  const { data, error } = await supabase
+    .from(BANNER_PROJECTS_TABLE)
+    .update({ deleted: true })
+    .eq("id", projectId)
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (error) {
+    throw new Error(`Banner delete failed: ${error.message}`);
+  }
+
+  if (!data?.id) {
+    throw new Error(getMissingSchemaMessage("banner project"));
+  }
+}
+
+export async function deleteBannerProjects(projectIds: string[]) {
+  if (projectIds.length === 0) return;
+
+  const { supabase } = await getAuthenticatedSupabase();
+  const { data, error } = await supabase
+    .from(BANNER_PROJECTS_TABLE)
+    .update({ deleted: true })
+    .in("id", projectIds)
+    .select("id")
+    .returns<{ id: string }[]>();
+
+  if (error) {
+    throw new Error(`Banner delete failed: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error(getMissingSchemaMessage("banner project"));
   }
 }

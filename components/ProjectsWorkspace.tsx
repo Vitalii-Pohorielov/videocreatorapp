@@ -6,12 +6,14 @@ import { useMemo } from "react";
 import { useEffect, useState } from "react";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { deleteProject, deleteProjects, listProjects } from "@/lib/projectPersistence";
+import { deleteBannerProject, deleteBannerProjects, deleteProject, deleteProjects, listBannerProjects, listProjects } from "@/lib/projectPersistence";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
 import { usePremiumStatus } from "@/lib/usePremiumStatus";
 
-type ProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
+type VideoProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
+type BannerProjectListItem = Awaited<ReturnType<typeof listBannerProjects>>[number];
+type ProjectTab = "video" | "banner";
 
 function formatRelativeDate(value?: string) {
   if (!value) return "Unknown update";
@@ -30,7 +32,9 @@ export function ProjectsWorkspace() {
   const router = useRouter();
   const { user } = useAuthSession();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
-  const [projects, setProjects] = useState<ProjectListItem[]>([]);
+  const [activeTab, setActiveTab] = useState<ProjectTab>("video");
+  const [videoProjects, setVideoProjects] = useState<VideoProjectListItem[]>([]);
+  const [bannerProjects, setBannerProjects] = useState<BannerProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
@@ -47,15 +51,23 @@ export function ProjectsWorkspace() {
   useEffect(() => {
     let isActive = true;
 
-    listProjects()
-      .then((rows) => {
+    Promise.allSettled([listProjects(), listBannerProjects()])
+      .then(([videoResult, bannerResult]) => {
         if (!isActive) return;
-        setProjects(rows);
-      })
-      .catch((loadError) => {
-        if (!isActive) return;
-        const message = loadError instanceof Error ? loadError.message : "Could not load projects.";
-        setError(message);
+
+        if (videoResult.status === "fulfilled") {
+          setVideoProjects(videoResult.value);
+        }
+
+        if (bannerResult.status === "fulfilled") {
+          setBannerProjects(bannerResult.value);
+        }
+
+        const nextErrors = [videoResult, bannerResult]
+          .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+          .map((result) => (result.reason instanceof Error ? result.reason.message : "Could not load projects."));
+
+        setError(nextErrors[0] ?? null);
       })
       .finally(() => {
         if (!isActive) return;
@@ -67,12 +79,17 @@ export function ProjectsWorkspace() {
     };
   }, []);
 
-  const handleDeleteProject = async (projectId: string, projectName: string) => {
+  const handleDeleteProject = async (projectId: string) => {
     try {
       setBusyProjectId(projectId);
       setError(null);
-      await deleteProject(projectId);
-      setProjects((current) => current.filter((project) => project.id !== projectId));
+      if (activeTab === "banner") {
+        await deleteBannerProject(projectId);
+        setBannerProjects((current) => current.filter((project) => project.id !== projectId));
+      } else {
+        await deleteProject(projectId);
+        setVideoProjects((current) => current.filter((project) => project.id !== projectId));
+      }
     } catch (deleteError) {
       const message = deleteError instanceof Error ? deleteError.message : "Could not delete project.";
       setError(message);
@@ -81,6 +98,8 @@ export function ProjectsWorkspace() {
       setPendingDelete(null);
     }
   };
+
+  const projects = activeTab === "banner" ? bannerProjects : videoProjects;
 
   const filteredProjects = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -94,8 +113,14 @@ export function ProjectsWorkspace() {
     try {
       setIsDeletingAll(true);
       setError(null);
-      await deleteProjects(filteredProjects.map((project) => project.id));
-      setProjects((current) => current.filter((project) => !filteredProjects.some((visibleProject) => visibleProject.id === project.id)));
+      const projectIds = filteredProjects.map((project) => project.id);
+      if (activeTab === "banner") {
+        await deleteBannerProjects(projectIds);
+        setBannerProjects((current) => current.filter((project) => !projectIds.includes(project.id)));
+      } else {
+        await deleteProjects(projectIds);
+        setVideoProjects((current) => current.filter((project) => !projectIds.includes(project.id)));
+      }
     } catch (deleteError) {
       const message = deleteError instanceof Error ? deleteError.message : "Could not delete projects.";
       setError(message);
@@ -113,7 +138,7 @@ export function ProjectsWorkspace() {
               <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Workspace</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-white">Your projects, all in one place.</h1>
               <p className="mt-3 text-base leading-7 text-slate-300">
-                Start a new clip, reopen an existing draft, and jump back into editing without losing your flow.
+                Switch between video and banner drafts, save each separately, and jump back in without losing your flow.
               </p>
             </div>
 
@@ -129,7 +154,14 @@ export function ProjectsWorkspace() {
                 disabled={isPremiumLoading}
                 className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isPremiumLoading ? "Checking access..." : "New project"}
+                {isPremiumLoading ? "Checking access..." : "New video"}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/banner")}
+                className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/15"
+              >
+                New banner
               </button>
               <button
                 type="button"
@@ -147,15 +179,35 @@ export function ProjectsWorkspace() {
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Library</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Saved drafts</h2>
+              <div className="mt-4 inline-flex rounded-2xl border border-white/10 bg-white/[0.03] p-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("video")}
+                  className={`rounded-[14px] px-4 py-2 text-sm font-medium transition ${
+                    activeTab === "video" ? "bg-sky-400 text-slate-950" : "text-slate-300 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  Videos ({videoProjects.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("banner")}
+                  className={`rounded-[14px] px-4 py-2 text-sm font-medium transition ${
+                    activeTab === "banner" ? "bg-emerald-300 text-slate-950" : "text-slate-300 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  Banners ({bannerProjects.length})
+                </button>
+              </div>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative w-full sm:w-[320px]">
-                <span className="sr-only">Search projects</span>
+                <span className="sr-only">Search drafts</span>
                 <input
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search projects"
+                  placeholder={activeTab === "banner" ? "Search banners" : "Search videos"}
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
                 />
               </label>
@@ -184,7 +236,11 @@ export function ProjectsWorkspace() {
           {!isLoading && !error && projects.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center">
               <p className="text-lg font-medium text-white">No drafts yet.</p>
-              <p className="mt-2 text-sm text-slate-400">Create your first clip in the editor and it will appear here.</p>
+              <p className="mt-2 text-sm text-slate-400">
+                {activeTab === "banner"
+                  ? "Create your first banner and it will appear here."
+                  : "Create your first clip in the editor and it will appear here."}
+              </p>
             </div>
           ) : null}
 
@@ -207,8 +263,12 @@ export function ProjectsWorkspace() {
                   </div>
                   <div className="mt-auto flex gap-3 pt-5">
                     <Link
-                      href={`/editor?project=${project.id}`}
-                      className="flex-1 rounded-2xl bg-sky-400 px-4 py-2.5 text-center text-sm font-medium text-slate-950 transition hover:bg-sky-300"
+                      href={activeTab === "banner" ? `/banner?project=${project.id}` : `/editor?project=${project.id}`}
+                      className={`flex-1 rounded-2xl px-4 py-2.5 text-center text-sm font-medium transition ${
+                        activeTab === "banner"
+                          ? "bg-emerald-300 text-slate-950 hover:bg-emerald-200"
+                          : "bg-sky-400 text-slate-950 hover:bg-sky-300"
+                      }`}
                     >
                       Edit
                     </Link>
@@ -238,7 +298,7 @@ export function ProjectsWorkspace() {
         onClose={() => setPendingDelete(null)}
         onConfirm={() => {
           if (!pendingDelete) return;
-          void handleDeleteProject(pendingDelete.id, pendingDelete.name);
+          void handleDeleteProject(pendingDelete.id);
         }}
       />
     </main>

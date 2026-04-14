@@ -8,6 +8,7 @@ The app already includes:
 - a browser scene editor;
 - a browser banner builder;
 - project save/load via Supabase;
+- banner save/load via Supabase;
 - browser-side `.mp4` export;
 - deterministic draft generation from a website URL;
 - a second creation mode for announcement videos.
@@ -100,11 +101,11 @@ Banner config lives in [lib/bannerDefinitions.ts](/d:/VideoCreatorApp/lib/banner
   - accent color
   - text color
   - font choice
-  - image type: `business`, `saas`, `ai`, `travel`
+  - image type: `business`, `code`, `ai`, `travel`, `lawyer`, `finance`, `software`
 
 Important:
 
-- Banner creation is currently a standalone scaffold and does not yet reuse video project persistence.
+- Banner drafts now persist separately from video drafts in their own Supabase table.
 - The image-type selector is a placeholder art-direction control for future generation or upload logic.
 - Extend the banner flow in its own files first instead of mixing banner state into the video editor store.
 
