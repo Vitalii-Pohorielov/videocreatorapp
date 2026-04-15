@@ -514,7 +514,7 @@ function BannerCanvasEditor({
   if (!canRender || !activeBounds || !previewBounds) return null;
 
   return (
-    <div className="absolute inset-0 z-[80]">
+    <div className="absolute inset-0 z-[80]" data-export-ignore="true">
       <Stage
         width={previewBounds.width}
         height={previewBounds.height}
@@ -754,7 +754,10 @@ function TitleEditor({
   return (
     <div className="relative w-full max-w-full">
       <div className={`group relative w-full max-w-full ${bannerTitleAlignmentClassName[alignment]}`}>
-        <div className="pointer-events-none absolute left-1/2 top-0 z-50 flex max-w-[calc(100%-0.5rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center px-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 z-50 flex max-w-[calc(100%-0.5rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center px-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
+          data-export-ignore="true"
+        >
           <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full border border-white/10 bg-black/70 p-1.5 shadow-[0_14px_32px_rgba(0,0,0,0.35)] backdrop-blur-md">
             <span className="pl-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70" aria-hidden="true">
               T
@@ -831,7 +834,10 @@ function TitleEditor({
             userSelect: moveActive ? "none" : "text",
           }}
         />
-        <div className="pointer-events-none absolute bottom-0 left-1/2 z-50 flex -translate-x-1/2 translate-y-1/2 items-center justify-center">
+        <div
+          className="pointer-events-none absolute bottom-0 left-1/2 z-50 flex -translate-x-1/2 translate-y-1/2 items-center justify-center"
+          data-export-ignore="true"
+        >
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
@@ -1711,6 +1717,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
         cacheBust: true,
         pixelRatio: 2,
         backgroundColor: draft.backgroundColor,
+        filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === "true"),
       });
 
       const link = document.createElement("a");
@@ -1732,8 +1739,8 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
       <div className="mx-auto flex h-full max-w-7xl flex-col gap-6">
         <section className="relative z-40 overflow-visible rounded-[28px] border border-white/10 bg-slate-950/70 px-4 py-3 shadow-[0_16px_40px_rgba(2,6,23,0.28)] backdrop-blur">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between xl:gap-6">
-            <div className="flex min-w-0 flex-col gap-4 xl:flex-1 xl:gap-6">
-              <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-[22px] bg-[#0a1020]/90 p-2 shadow-[0_12px_24px_rgba(2,6,23,0.22)]">
+            <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between xl:flex-1 xl:gap-6">
+              <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-[22px] bg-[#0a1020]/90 p-2 shadow-[0_12px_24px_rgba(2,6,23,0.22)] lg:flex-nowrap">
                 <Link
                   href="/projects"
                   aria-label="Open all projects"
@@ -1762,7 +1769,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
                 </button>
               </div>
 
-              <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-3 lg:flex-nowrap">
                 <div ref={sizeMenuRef} className="relative hidden sm:block">
                   <button
                     type="button"
@@ -1838,7 +1845,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
               </div>
             </div>
 
-            <div className="flex justify-end xl:shrink-0">
+            <div className="flex justify-end lg:shrink-0">
               <button
                 type="button"
                 onClick={() => void handleDownload()}
@@ -1852,7 +1859,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
         </section>
 
         <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
-          <aside className="flex min-h-0 min-w-0 flex-col gap-6 overflow-y-auto xl:pr-1">
+          <aside className="flex min-h-0 min-w-0 flex-col gap-6 xl:pr-1">
             <ControlCard
               title="Generate banner"
               description="Build the banner from the chosen image, font, and title, then keep tweaking colors if you want."
