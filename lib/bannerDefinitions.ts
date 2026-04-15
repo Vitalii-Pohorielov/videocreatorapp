@@ -33,6 +33,7 @@ export const bannerSizeLabels = {
 export type BannerSize = keyof typeof bannerSizeLabels;
 
 export type BannerTitleAlignment = "left" | "center" | "right";
+export type BannerTitlePlateStyle = "solid" | "blur";
 
 export type BannerDraft = {
   eyebrow: string;
@@ -45,7 +46,24 @@ export type BannerDraft = {
   fontChoice: BannerFontChoice;
   titleScale: number;
   titleAlignment: BannerTitleAlignment;
+  titleTextColor: string;
+  titlePlateStyle: BannerTitlePlateStyle;
+  titlePlateColor: string;
   titleImageSwap: boolean;
+  titleOffset: {
+    x: number;
+    y: number;
+  };
+  imageOffset: {
+    x: number;
+    y: number;
+  };
+  imageWidthScale: number;
+  imageHeightScale: number;
+  decorOffset: {
+    x: number;
+    y: number;
+  };
   imageType: BannerImageType;
   size: BannerSize;
 };
@@ -61,7 +79,24 @@ export const defaultBannerDraft: BannerDraft = {
   fontChoice: "space",
   titleScale: 100,
   titleAlignment: "center",
+  titleTextColor: "#f8fafc",
+  titlePlateStyle: "solid",
+  titlePlateColor: "#111827",
   titleImageSwap: false,
+  titleOffset: {
+    x: 0,
+    y: 0,
+  },
+  imageOffset: {
+    x: 0,
+    y: 0,
+  },
+  imageWidthScale: 100,
+  imageHeightScale: 100,
+  decorOffset: {
+    x: 0,
+    y: 0,
+  },
   imageType: "code",
   size: "16:9",
 };
