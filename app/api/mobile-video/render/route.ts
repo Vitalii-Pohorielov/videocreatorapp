@@ -1,11 +1,11 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 
 import { NextResponse } from "next/server";
 
 import { toSafeMobileVideoFileName, type MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
+import { renderMobileVideoToFile } from "@/lib/mobileVideoServerRender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,36 +22,8 @@ function isMobileVideoRenderPayload(value: unknown): value is MobileVideoRenderP
   );
 }
 
-async function runMobileVideoRenderProcess(payloadPath: string, outputPath: string) {
-  const scriptPath = path.join(process.cwd(), "scripts", "render-mobile-video.cjs");
-
-  return new Promise<void>((resolve, reject) => {
-    const child = spawn(process.execPath, [scriptPath, payloadPath, outputPath], {
-      cwd: process.cwd(),
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    let stderr = "";
-
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(new Error(stderr.trim() || `Mobile video render process exited with code ${code}.`));
-    });
-  });
-}
-
 export async function POST(request: Request) {
   const renderDirectory = path.join(tmpdir(), "video-creator-app", "mobile-video-renders");
-  const payloadPath = path.join(renderDirectory, `${crypto.randomUUID()}.json`);
   const outputPath = path.join(renderDirectory, `${crypto.randomUUID()}.mp4`);
 
   try {
@@ -62,8 +34,7 @@ export async function POST(request: Request) {
     }
 
     await fs.mkdir(renderDirectory, { recursive: true });
-    await fs.writeFile(payloadPath, JSON.stringify(body), "utf8");
-    await runMobileVideoRenderProcess(payloadPath, outputPath);
+    await renderMobileVideoToFile(body, outputPath);
 
     const buffer = await fs.readFile(outputPath);
     const fileName = toSafeMobileVideoFileName(body.projectName);
@@ -80,7 +51,6 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Could not render mobile video.";
     return NextResponse.json({ error: message }, { status: 500 });
   } finally {
-    await fs.unlink(payloadPath).catch(() => undefined);
     await fs.unlink(outputPath).catch(() => undefined);
   }
 }
