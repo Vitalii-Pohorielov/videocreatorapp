@@ -17,6 +17,7 @@ import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneT
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
   initialVideoType?: VideoType;
+  workspaceBasePath?: string;
 };
 
 type WorkspaceSnapshot = {
@@ -52,7 +53,7 @@ function parseExpressCreatePrompt(prompt: string): ExpressCreateEntry[] {
     .filter((entry): entry is ExpressCreateEntry => Boolean(entry));
 }
 
-export function EditorWorkspace({ initialProjectId = null, initialVideoType = "promo" }: EditorWorkspaceProps) {
+export function EditorWorkspace({ initialProjectId = null, initialVideoType = "promo", workspaceBasePath = "/editor" }: EditorWorkspaceProps) {
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const projectId = useStore((state) => state.projectId);
   const projectName = useStore((state) => state.projectName);
@@ -354,7 +355,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
 
         updateProjectMeta({ id: project.id, name: project.name });
         syncSavedSignature();
-        window.history.replaceState({}, "", `/editor?project=${project.id}`);
+        window.history.replaceState({}, "", `${workspaceBasePath}?project=${project.id}`);
 
         if (reason === "manual") {
           setCloudStatus(`Saved "${project.name}".`);
@@ -375,7 +376,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
         }
       }
     },
-    [syncSavedSignature, updateProjectMeta],
+    [syncSavedSignature, updateProjectMeta, workspaceBasePath],
   );
 
   useEffect(() => {
@@ -486,7 +487,7 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
         sceneTrack: payload.sceneTrack,
         exportSettings: payload.exportSettings,
       });
-      window.history.replaceState({}, "", "/editor");
+      window.history.replaceState({}, "", workspaceBasePath);
       setCloudStatus(`Generated draft from ${trimmedUrl}.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not generate scenes from that URL.";

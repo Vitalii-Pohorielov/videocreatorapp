@@ -158,6 +158,14 @@ export function ProjectsWorkspace() {
               </button>
               <button
                 type="button"
+                onClick={() => router.push("/mobile-video")}
+                disabled={isPremiumLoading}
+                className="rounded-2xl border border-amber-300/25 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Mobile video lab
+              </button>
+              <button
+                type="button"
                 onClick={() => router.push("/banner")}
                 className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/15"
               >

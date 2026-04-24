@@ -108,6 +108,12 @@ export function LandingScreen() {
               >
                 Build Your First Video
               </Link>
+              <Link
+                href="/mobile-video"
+                className="rounded-full border border-amber-300/25 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15"
+              >
+                Open Mobile Video Lab
+              </Link>
               <a
                 href="#real-examples"
                 className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.06]"
@@ -223,6 +229,12 @@ export function LandingScreen() {
                   className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
                 >
                   Build Your First Video
+                </Link>
+                <Link
+                  href="/mobile-video"
+                  className="rounded-full border border-amber-300/25 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15"
+                >
+                  Open Mobile Video Lab
                 </Link>
                 <a
                   href="#real-examples"
