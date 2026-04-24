@@ -63,6 +63,7 @@ const nextConfig: NextConfig = {
       "./node_modules/watchpack/**/*",
       "./node_modules/webpack-sources/**/*",
       "./node_modules/which/**/*",
+      "./node_modules/isexe/**/*",
     ],
   },
 };
