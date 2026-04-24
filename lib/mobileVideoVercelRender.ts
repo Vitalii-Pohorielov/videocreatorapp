@@ -1,21 +1,40 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { Readable } from "node:stream";
 
-import { addBundleToSandbox, createSandbox, renderMediaOnVercel } from "@remotion/vercel";
+import { renderMediaOnVercel } from "@remotion/vercel";
+import { Sandbox } from "@vercel/sandbox";
 
 import { toSafeMobileVideoFileName, type MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
 
 const MOBILE_VIDEO_COMPOSITION_ID = "MobileVideo";
-const BUNDLE_DIR = ".remotion-vercel-bundle";
+const SNAPSHOT_FILE = path.join(process.cwd(), ".remotion-vercel-snapshot.json");
+
+async function restoreSandboxSnapshot() {
+  const file = await fs.readFile(SNAPSHOT_FILE, "utf8").catch(() => null);
+
+  if (!file) {
+    throw new Error("No Remotion sandbox snapshot was bundled with this deployment. Redeploy the app to rebuild it.");
+  }
+
+  const payload = JSON.parse(file) as { snapshotId?: string };
+
+  if (!payload.snapshotId) {
+    throw new Error("The bundled Remotion sandbox snapshot is invalid. Redeploy the app to refresh it.");
+  }
+
+  return Sandbox.create({
+    source: {
+      type: "snapshot",
+      snapshotId: payload.snapshotId,
+    },
+  });
+}
 
 export async function renderMobileVideoOnVercel(payload: MobileVideoRenderPayload) {
-  const sandbox = await createSandbox();
+  const sandbox = await restoreSandboxSnapshot();
 
   try {
-    await addBundleToSandbox({
-      sandbox,
-      bundleDir: BUNDLE_DIR,
-    });
-
     const { sandboxFilePath, contentType } = await renderMediaOnVercel({
       sandbox,
       compositionId: MOBILE_VIDEO_COMPOSITION_ID,

@@ -21,3 +21,4 @@ coverage/
 
 .vercel/
 .remotion-vercel-bundle/
+.remotion-vercel-snapshot.json
