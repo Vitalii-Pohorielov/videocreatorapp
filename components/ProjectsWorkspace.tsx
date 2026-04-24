@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { useEffect, useState } from "react";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { VideoWorkspaceModal } from "@/components/VideoWorkspaceModal";
 import { deleteBannerProject, deleteBannerProjects, deleteProject, deleteProjects, listBannerProjects, listProjects } from "@/lib/projectPersistence";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
@@ -41,6 +42,7 @@ export function ProjectsWorkspace() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isVideoWorkspaceModalOpen, setIsVideoWorkspaceModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -150,19 +152,11 @@ export function ProjectsWorkspace() {
               ) : null}
               <button
                 type="button"
-                onClick={() => router.push("/editor")}
+                onClick={() => setIsVideoWorkspaceModalOpen(true)}
                 disabled={isPremiumLoading}
                 className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPremiumLoading ? "Checking access..." : "New video"}
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/mobile-video")}
-                disabled={isPremiumLoading}
-                className="rounded-2xl border border-amber-300/25 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Mobile video lab
               </button>
               <button
                 type="button"
@@ -307,6 +301,14 @@ export function ProjectsWorkspace() {
         onConfirm={() => {
           if (!pendingDelete) return;
           void handleDeleteProject(pendingDelete.id);
+        }}
+      />
+      <VideoWorkspaceModal
+        isOpen={isVideoWorkspaceModalOpen}
+        onClose={() => setIsVideoWorkspaceModalOpen(false)}
+        onSelect={(workspace) => {
+          setIsVideoWorkspaceModalOpen(false);
+          router.push(workspace === "mobile" ? "/mobile-video" : "/editor");
         }}
       />
     </main>

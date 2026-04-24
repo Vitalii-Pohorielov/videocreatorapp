@@ -115,6 +115,7 @@ Routes and entry points:
 - It reuses [components/EditorWorkspace.tsx](/d:/VideoCreatorApp/components/EditorWorkspace.tsx) with:
   - `workspaceBasePath="/mobile-video"`
   - `exportMode="remotion-server"`
+- [app/editor/page.tsx](/d:/VideoCreatorApp/app/editor/page.tsx) now also uses `exportMode="remotion-server"` for the main promo-video workflow.
 - Client export helper lives in [lib/mobileVideoExport.ts](/d:/VideoCreatorApp/lib/mobileVideoExport.ts).
 - Server render entry lives in [app/api/mobile-video/render/route.ts](/d:/VideoCreatorApp/app/api/mobile-video/render/route.ts).
 - Shared timing and payload helpers live in [lib/mobileVideoRender.ts](/d:/VideoCreatorApp/lib/mobileVideoRender.ts).
@@ -127,6 +128,7 @@ The important architectural decision is:
 - mobile video does **not** bundle Remotion on-demand inside the Vercel function;
 - the Remotion bundle is prebuilt at deploy/build time;
 - the runtime API only renders a prebuilt bundle.
+- the main `/editor` promo-video flow now uses this same server-rendered export path.
 
 That flow exists because on-demand runtime bundling on Vercel proved too fragile and repeatedly failed due to traced dependency gaps and browser/runtime issues.
 

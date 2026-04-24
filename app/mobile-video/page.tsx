@@ -1,5 +1,5 @@
 import { AuthGate } from "@/components/AuthGate";
-import { EditorWorkspace } from "@/components/EditorWorkspace";
+import { MobileVideoWorkspace } from "@/components/MobileVideoWorkspace";
 
 export default async function MobileVideoPage({
   searchParams,
@@ -10,7 +10,7 @@ export default async function MobileVideoPage({
 
   return (
     <AuthGate title="Sign in to use mobile video lab" description="Google authentication is required before you can create or reopen mobile video experiments.">
-      <EditorWorkspace initialProjectId={params.project ?? null} workspaceBasePath="/mobile-video" exportMode="remotion-server" />
+      <MobileVideoWorkspace initialProjectId={params.project ?? null} />
     </AuthGate>
   );
 }

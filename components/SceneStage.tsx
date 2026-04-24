@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
+import { OffthreadVideo, staticFile } from "remotion";
 
 import { CodeEditorModal } from "@/components/CodeEditorModal";
 import { CodePreviewCard } from "@/components/CodePreviewCard";
@@ -1448,7 +1449,17 @@ export function SceneStage({
       {scene.type === "announcement-hero" && (
         <div className="relative flex h-full items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
-            {!exportRender ? (
+            {exportRender ? (
+              <OffthreadVideo
+                className="absolute inset-0 h-full w-full object-cover"
+                src={staticFile("scene-assets/announcement-backgrounds/announcement-hero-bg.mp4")}
+                muted
+                style={{
+                  opacity: 1,
+                  filter: "saturate(1.12) contrast(1.16) brightness(1.03)",
+                }}
+              />
+            ) : (
               <video
                 className="absolute inset-0 h-full w-full object-cover"
                 src="/scene-assets/announcement-backgrounds/announcement-hero-bg.mp4"
@@ -1463,7 +1474,7 @@ export function SceneStage({
                   filter: lightweightPreview ? "saturate(1.08) contrast(1.12) brightness(1.02)" : "saturate(1.12) contrast(1.16) brightness(1.03)",
                 }}
               />
-            ) : null}
+            )}
             {Array.from({ length: scene.projectCount ?? 8 }, (_, index) => {
               const totalProjects = scene.projectCount ?? 8;
               const shuffledIndexMap = getAnnouncementShuffledIndexMap(totalProjects);
@@ -1571,16 +1582,16 @@ export function SceneStage({
           <div className="flex h-full flex-col items-center justify-center text-center">
             <IntroLogoSlot scene={scene} entryProgress={sharedIn} outroProgress={introLogoOutro} compact={compact} editable={editable} onPickImage={onRequestLogoUpload} lightweightPreview={lightweightPreview} textColor={textColor} />
             <EditableText
-            as="h2"
-            value={introTitle}
-            editable={editable}
-            onCommit={updateIntroTitle}
-            className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title} normal-case`}
-            style={{ transform: `translateY(${40 * (1 - titleIn) - 42 * introTextOutro}px) scale(${0.9 + titleIn * 0.1 + introTextOutro * 0.04})`, opacity: titleIn * (1 - Math.min(1, introTextOutro * 1.6)), filter: `blur(${16 * blurMultiplier * (1 - titleIn) + 18 * introTextOutro}px)` }}
-            placeholder="Scene title"
-          />
-        </div>
-      )}
+              as="h2"
+              value={introTitle}
+              editable={editable}
+              onCommit={updateIntroTitle}
+              className={`mt-4 leading-[0.95] ${compact ? "text-2xl" : "text-7xl"} ${s.title} normal-case`}
+              style={{ transform: `translateY(${40 * (1 - titleIn) - 42 * introTextOutro}px) scale(${0.9 + titleIn * 0.1 + introTextOutro * 0.04})`, opacity: titleIn * (1 - Math.min(1, introTextOutro * 1.6)), filter: `blur(${16 * blurMultiplier * (1 - titleIn) + 18 * introTextOutro}px)` }}
+              placeholder="Scene title"
+            />
+          </div>
+        )}
 
         {scene.type === "brand-reveal-circle" && (() => {
           const circleIn = editable ? 1 : motion(progress, 0.06, 0.2);

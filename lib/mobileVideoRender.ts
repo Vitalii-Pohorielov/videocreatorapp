@@ -122,5 +122,5 @@ export function toSafeMobileVideoFileName(projectName?: string) {
     .replace(/\.+$/g, "")
     .trim();
 
-  return `${baseName || "mobile-video-project"}.mp4`;
+  return `${baseName || "video-project"}.mp4`;
 }

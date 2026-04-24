@@ -24,7 +24,7 @@ export function CreateModeSwitcher({ active, className = "" }: CreateModeSwitche
           }`}
         >
           <p className="text-sm font-semibold text-white">Create video</p>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Open the scene editor for promo videos and continue working with the existing save/export flow.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Open the scene editor for promo videos with the same server-rendered export pipeline used by the mobile studio.</p>
         </Link>
 
         <Link
@@ -36,7 +36,7 @@ export function CreateModeSwitcher({ active, className = "" }: CreateModeSwitche
           }`}
         >
           <p className="text-sm font-semibold text-white">Create mobile video</p>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Open a cloned video editor flow for mobile-focused experiments without touching the main workflow.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Open the mobile-focused editor flow that shares the same server-rendered export baseline.</p>
         </Link>
 
         <Link

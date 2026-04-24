@@ -18,7 +18,7 @@ export async function exportMobileVideo(payload: MobileVideoRenderPayload) {
   });
 
   if (!response.ok) {
-    let message = "Could not render mobile video.";
+    let message = "Could not render video.";
 
     try {
       const contentType = response.headers.get("content-type") ?? "";
@@ -40,7 +40,7 @@ export async function exportMobileVideo(payload: MobileVideoRenderPayload) {
   }
 
   const blob = await response.blob();
-  const fileName = getFileNameFromDisposition(response.headers.get("content-disposition")) ?? "mobile-video-project.mp4";
+  const fileName = getFileNameFromDisposition(response.headers.get("content-disposition")) ?? "video-project.mp4";
 
   return {
     url: URL.createObjectURL(blob),

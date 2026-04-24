@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as unknown;
 
     if (!isMobileVideoRenderPayload(body)) {
-      return NextResponse.json({ error: "Invalid mobile video render payload." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid video render payload." }, { status: 400 });
     }
 
     await fs.mkdir(renderDirectory, { recursive: true });
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not render mobile video.";
-    console.error("[mobile-video/render] Render failed", error);
+    const message = error instanceof Error ? error.message : "Could not render video.";
+    console.error("[video-render] Render failed", error);
     return NextResponse.json({ error: message }, { status: 500 });
   } finally {
     await fs.unlink(outputPath).catch(() => undefined);
