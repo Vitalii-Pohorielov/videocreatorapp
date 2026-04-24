@@ -15,7 +15,7 @@ async function restoreSnapshot() {
   const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
   if (!blobToken) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is not set.");
+    throw new Error("BLOB_READ_WRITE_TOKEN is not set. Attach Vercel Blob storage to enable mobile video rendering.");
   }
 
   const blob = await get(getSnapshotBlobKey(), {
@@ -44,7 +44,7 @@ export async function renderMobileVideoOnVercel(payload: MobileVideoRenderPayloa
   const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
   if (!blobToken) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is not set.");
+    throw new Error("BLOB_READ_WRITE_TOKEN is not set. Attach Vercel Blob storage to enable mobile video rendering.");
   }
 
   const sandbox = await restoreSnapshot();

@@ -25,7 +25,9 @@ async function main() {
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is not set.");
+    console.warn("[mobile-video snapshot] Skipping snapshot creation because BLOB_READ_WRITE_TOKEN is not set.");
+    console.warn("[mobile-video snapshot] Attach Vercel Blob storage to enable mobile video rendering in production.");
+    return;
   }
 
   const { addBundleToSandbox, createSandbox } = await import("@remotion/vercel");
