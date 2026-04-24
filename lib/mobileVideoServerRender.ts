@@ -24,6 +24,7 @@ async function getBrowserExecutable() {
   }
 
   const chromiumModule = (await import("@sparticuz/chromium")).default;
+  chromiumModule.setGraphicsMode = false;
   return chromiumModule.executablePath();
 }
 
@@ -78,6 +79,14 @@ export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload,
       id: MOBILE_VIDEO_COMPOSITION_ID,
       inputProps: { payload },
       browserExecutable,
+      chromiumOptions: {
+        gl: null,
+        enableMultiProcessOnLinux: false,
+      },
+      timeoutInMilliseconds: 120000,
+      mediaCacheSizeInBytes: 16 * 1024 * 1024,
+      offthreadVideoCacheSizeInBytes: 16 * 1024 * 1024,
+      offthreadVideoThreads: 1,
     }).catch((error) => {
       throw new Error(`Mobile video composition step failed: ${toErrorMessage(error, "could not select composition")}`);
     });
@@ -90,13 +99,19 @@ export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload,
       outputLocation: outputPath,
       overwrite: true,
       browserExecutable,
+      concurrency: 1,
+      disallowParallelEncoding: true,
       imageFormat: "jpeg",
       jpegQuality: 95,
       muted: true,
       chromiumOptions: {
-        gl: "swiftshader",
+        gl: null,
         enableMultiProcessOnLinux: false,
       },
+      timeoutInMilliseconds: 180000,
+      mediaCacheSizeInBytes: 16 * 1024 * 1024,
+      offthreadVideoCacheSizeInBytes: 16 * 1024 * 1024,
+      offthreadVideoThreads: 1,
     }).catch((error) => {
       throw new Error(`Mobile video render step failed: ${toErrorMessage(error, "could not render media")}`);
     });
