@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  serverExternalPackages: ["@remotion/renderer"],
+  serverExternalPackages: ["@remotion/renderer", "webpack", "source-map"],
   outputFileTracingIncludes: {
     "/api/mobile-video/render": [
       "./app/globals.css",
@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
       "./node_modules/@remotion/bundler/favicon.ico",
       "./node_modules/@remotion/studio/dist/renderEntry.js",
       "./node_modules/@remotion/studio/dist/esm/renderEntry.mjs",
+      "./node_modules/webpack/**/*",
+      "./node_modules/source-map/**/*",
     ],
   },
   outputFileTracingExcludes: {
