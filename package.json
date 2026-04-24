@@ -40,5 +40,9 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
+  },
+  "optionalDependencies": {
+    "@rspack/binding-linux-x64-gnu": "^1.7.6",
+    "@rspack/binding-linux-x64-musl": "^1.7.6"
   }
 }

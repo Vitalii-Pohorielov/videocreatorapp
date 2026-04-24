@@ -1,0 +1,119 @@
+Mobile video deploy issues on Vercel
+===================================
+
+Context
+-------
+- Feature: `/mobile-video` export flow
+- Route: `app/api/mobile-video/render/route.ts`
+- Goal: server-side mobile video export through Remotion
+
+What was happening
+------------------
+The Vercel deploy itself succeeded, but clicking Export in `/mobile-video` caused `POST /api/mobile-video/render` to return `500`.
+
+The first implementation used a subprocess:
+- API route wrote payload JSON to temp storage
+- API route launched `scripts/render-mobile-video.cjs`
+- That script required `@remotion/bundler` and `@remotion/renderer`
+
+This worked locally, but on Vercel the Serverless Function repeatedly missed runtime dependencies.
+
+Errors that appeared during debugging
+------------------------------------
+We hit a long chain of `MODULE_NOT_FOUND` errors inside Vercel:
+
+- `@remotion/bundler`
+- `webpack`
+- `react/jsx-runtime.js`
+- `@rspack/core`
+- `execa`
+- `cross-spawn`
+- `which`
+- `isexe`
+- `mimic-fn`
+- `debug`
+- `@rspack/binding`
+
+This showed that the subprocess-based Remotion runtime was not being packaged reliably by Vercel file tracing.
+
+Why it was failing
+------------------
+There were two separate problems:
+
+1. Subprocess packaging was fragile
+- `route.ts` spawned `scripts/render-mobile-video.cjs`
+- Vercel did not reliably trace and include the full transitive runtime needed by that script
+- Fixing one missing module just exposed the next missing module
+
+2. Manual tracing became too large
+- We temporarily added many `outputFileTracingIncludes` entries for Remotion and its dependency tree
+- That eventually made the function exceed Vercel's unzipped 250 MB size limit
+- The biggest offenders were platform binaries that should not be shipped for this environment, especially:
+  - `node_modules/.remotion/.../win64/...`
+  - `node_modules/@rspack/binding-win32-x64-msvc/...`
+
+What was changed
+----------------
+The final direction was to stop relying on the subprocess model and render directly inside the API route.
+
+Important code changes:
+
+- Added `lib/mobileVideoServerRender.ts`
+  - This bundles and renders the `MobileVideo` composition directly from server code
+
+- Updated `app/api/mobile-video/render/route.ts`
+  - Removed subprocess launch of `scripts/render-mobile-video.cjs`
+  - Removed temp payload JSON file usage
+  - Calls `renderMobileVideoToFile(...)` directly
+
+- Simplified `next.config.ts`
+  - Added:
+    - `serverExternalPackages: ["@remotion/bundler", "@remotion/renderer", "@rspack/core", "@rspack/binding"]`
+  - Reduced `outputFileTracingIncludes` to local project files needed by the route
+  - Added `outputFileTracingExcludes` to block bulky irrelevant binaries:
+    - `./node_modules/.remotion/**/*`
+    - `./node_modules/@rspack/binding-win32-*/**/*`
+    - `./node_modules/@remotion/compositor-win32-*/**/*`
+
+Current intended architecture
+-----------------------------
+- Client posts mobile render payload to `/api/mobile-video/render`
+- API route validates payload
+- API route renders directly through `lib/mobileVideoServerRender.ts`
+- Remotion is loaded as external server packages instead of through a spawned script
+
+Why this is better
+------------------
+- Fewer moving parts than subprocess execution
+- Less fragile for Vercel packaging
+- Easier to debug because failures happen in the route itself
+- Easier to control bundle size
+
+What to watch next
+------------------
+If deploy/export still fails, the next likely issue is no longer "random missing package after another".
+The likely remaining blockers would be:
+
+- Linux-specific Remotion or Rspack native binding problems
+- Chromium/browser availability for Remotion render on Vercel
+- Function timeout or memory limits during actual render
+
+Recommended next debugging steps
+--------------------------------
+1. Check fresh Vercel runtime logs for `/api/mobile-video/render`
+2. Confirm whether `@rspack/binding` resolves correctly in Linux on Vercel
+3. If runtime still fails, consider moving Remotion render out of standard Vercel Serverless into:
+   - a dedicated render worker/service
+   - Remotion Lambda
+   - another server environment with predictable native/runtime support
+
+Useful commits from this debugging session
+------------------------------------------
+- `b00ed04` - Render mobile video directly in API route
+- `f8d85cc` - Include Rspack bindings for direct mobile render
+- `b0846a0` - Exclude bulky platform binaries from mobile render
+
+Bottom line
+-----------
+The main problem was not the editor UI and not the payload format.
+The real problem was deployment/runtime packaging of Remotion plus Rspack inside Vercel for the mobile export route.
