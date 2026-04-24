@@ -1,4 +1,3 @@
-import path from "node:path";
 import { Readable } from "node:stream";
 
 import { addBundleToSandbox, createSandbox, renderMediaOnVercel } from "@remotion/vercel";
@@ -6,7 +5,7 @@ import { addBundleToSandbox, createSandbox, renderMediaOnVercel } from "@remotio
 import { toSafeMobileVideoFileName, type MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
 
 const MOBILE_VIDEO_COMPOSITION_ID = "MobileVideo";
-const BUNDLE_DIR = path.join(process.cwd(), ".remotion-vercel-bundle");
+const BUNDLE_DIR = ".remotion-vercel-bundle";
 
 export async function renderMobileVideoOnVercel(payload: MobileVideoRenderPayload) {
   const sandbox = await createSandbox();
