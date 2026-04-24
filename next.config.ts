@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
       "./node_modules/human-signals/**/*",
       "./node_modules/is-stream/**/*",
       "./node_modules/merge-stream/**/*",
+      "./node_modules/mimic-fn/**/*",
       "./node_modules/npm-run-path/**/*",
       "./node_modules/onetime/**/*",
       "./node_modules/path-key/**/*",
