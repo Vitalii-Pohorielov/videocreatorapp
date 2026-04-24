@@ -24,7 +24,10 @@ const nextConfig: NextConfig = {
       "./node_modules/merge-stream/**/*",
       "./node_modules/npm-run-path/**/*",
       "./node_modules/onetime/**/*",
+      "./node_modules/path-key/**/*",
       "./node_modules/remotion/**/*",
+      "./node_modules/shebang-command/**/*",
+      "./node_modules/shebang-regex/**/*",
       "./node_modules/signal-exit/**/*",
       "./node_modules/strip-final-newline/**/*",
       "./node_modules/extract-zip/**/*",
@@ -59,6 +62,7 @@ const nextConfig: NextConfig = {
       "./node_modules/terser-webpack-plugin/**/*",
       "./node_modules/watchpack/**/*",
       "./node_modules/webpack-sources/**/*",
+      "./node_modules/which/**/*",
     ],
   },
 };
