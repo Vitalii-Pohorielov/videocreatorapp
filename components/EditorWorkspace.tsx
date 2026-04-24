@@ -450,10 +450,7 @@ export function EditorWorkspace({
 
       const result =
         exportMode === "remotion-server"
-          ? await exportMobileVideo(createMobileVideoRenderPayload(projectName, scenes, exportSettings), ({ progress, phase, subtitle }) => {
-              setExportProgress(progress);
-              setCloudStatus(subtitle ? `${phase} ${subtitle}` : phase);
-            })
+          ? await exportMobileVideo(createMobileVideoRenderPayload(projectName, scenes, exportSettings))
           : await exportSlidesToVideo(scenes, exportSettings, setExportProgress, projectName);
 
       if (exportMode === "remotion-server") {

@@ -1,14 +1,15 @@
-const fs = require("node:fs/promises");
-const path = require("node:path");
+import path from "node:path";
 
-const { bundle } = require("@remotion/bundler");
-const { renderMedia, selectComposition } = require("@remotion/renderer");
+import { bundle } from "@remotion/bundler";
+import { renderMedia, selectComposition } from "@remotion/renderer";
+
+import type { MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
 
 const MOBILE_VIDEO_COMPOSITION_ID = "MobileVideo";
 
-let bundlePromise;
+let bundlePromise: Promise<string> | null = null;
 
-const ensureBundle = async () => {
+export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload, outputPath: string) {
   if (!bundlePromise) {
     bundlePromise = bundle({
       entryPoint: path.join(process.cwd(), "remotion", "root.tsx"),
@@ -28,17 +29,7 @@ const ensureBundle = async () => {
     });
   }
 
-  return bundlePromise;
-};
-
-const main = async () => {
-  const [, , payloadPath, outputPath] = process.argv;
-
-  if (!payloadPath || !outputPath) {
-    throw new Error("Usage: node scripts/render-mobile-video.cjs <payloadPath> <outputPath>");
-  }
-  const payload = JSON.parse(await fs.readFile(payloadPath, "utf8"));
-  const serveUrl = await ensureBundle();
+  const serveUrl = await bundlePromise;
   const composition = await selectComposition({
     serveUrl,
     id: MOBILE_VIDEO_COMPOSITION_ID,
@@ -59,10 +50,4 @@ const main = async () => {
       gl: "swiftshader",
     },
   });
-};
-
-main().catch((error) => {
-  const message = error instanceof Error ? error.stack || error.message : String(error);
-  process.stderr.write(message);
-  process.exit(1);
-});
+}

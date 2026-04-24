@@ -5,8 +5,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:vercel": "npm run build && node scripts/create-mobile-video-snapshot.mjs",
-    "create:mobile-video-snapshot": "node scripts/create-mobile-video-snapshot.mjs",
     "start": "next start",
     "lint": "next lint"
   },
@@ -19,13 +17,10 @@
     "@ffmpeg/core": "^0.12.6",
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",
-    "@remotion/bundler": "4.0.451",
-    "@remotion/renderer": "4.0.451",
-    "@remotion/vercel": "4.0.451",
+    "@remotion/bundler": "^4.0.451",
+    "@remotion/compositor-win32-x64-msvc": "^4.0.451",
+    "@remotion/renderer": "^4.0.451",
     "@supabase/supabase-js": "^2.100.0",
-    "@vercel/blob": "2.3.0",
-    "@vercel/functions": "3.4.1",
-    "@vercel/sandbox": "1.6.0",
     "emoji-mart": "^5.6.0",
     "html-to-image": "^1.11.13",
     "konva": "^10.2.5",
@@ -34,7 +29,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-konva": "^19.2.3",
-    "remotion": "4.0.451",
+    "remotion": "^4.0.451",
     "webpack": "^5.106.2",
     "zustand": "^5.0.3"
   },
@@ -46,11 +41,5 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
-  },
-  "optionalDependencies": {
-    "@remotion/compositor-linux-x64-gnu": "4.0.451",
-    "@remotion/compositor-linux-x64-musl": "4.0.451",
-    "@rspack/binding-linux-x64-gnu": "^1.7.6",
-    "@rspack/binding-linux-x64-musl": "^1.7.6"
   }
 }
