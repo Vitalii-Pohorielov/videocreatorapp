@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not render mobile video.";
+    console.error("[mobile-video/render] Render failed", error);
     return NextResponse.json({ error: message }, { status: 500 });
   } finally {
     await fs.unlink(outputPath).catch(() => undefined);
