@@ -16,6 +16,8 @@ const REMOTION_BUNDLER_DIST_DIR = path.join(REMOTION_BUNDLER_DIR, "dist");
 const REMOTION_STUDIO_DIR = path.join(process.cwd(), "node_modules", "@remotion", "studio");
 const REMOTION_ENTRY = path.join(REMOTION_STUDIO_DIR, "dist", "esm", "renderEntry.mjs");
 const REMOTION_BUNDLE_DIR = path.join(REMOTION_TMP_ROOT, "bundles", "mobile-video");
+const REMOTION_MINIMAL_PUBLIC_DIR = path.join(REMOTION_TMP_ROOT, "public-mobile-video");
+const MOBILE_VIDEO_PUBLIC_ASSETS = ["scene-assets/announcement-backgrounds/announcement-hero-bg.mp4"] as const;
 
 let bundlePromise: Promise<string> | null = null;
 
@@ -73,6 +75,7 @@ type WebpackOnlyModules = {
 async function ensureRemotionWritableDirectories() {
   await fs.mkdir(REMOTION_BROWSER_DOWNLOAD_DIR, { recursive: true });
   await fs.mkdir(REMOTION_BUNDLE_DIR, { recursive: true });
+  await fs.mkdir(REMOTION_MINIMAL_PUBLIC_DIR, { recursive: true });
 
   try {
     const runtimeRequire = eval("require") as (id: string) => unknown;
@@ -90,6 +93,30 @@ async function ensureRemotionWritableDirectories() {
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
+}
+
+async function syncMinimalPublicDir() {
+  await fs.rm(REMOTION_MINIMAL_PUBLIC_DIR, { recursive: true, force: true });
+  await fs.mkdir(REMOTION_MINIMAL_PUBLIC_DIR, { recursive: true });
+
+  await Promise.all(
+    MOBILE_VIDEO_PUBLIC_ASSETS.map(async (relativeAssetPath) => {
+      const sourcePath = path.join(process.cwd(), "public", relativeAssetPath);
+      const destinationPath = path.join(REMOTION_MINIMAL_PUBLIC_DIR, relativeAssetPath);
+
+      const exists = await fs
+        .stat(sourcePath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (!exists) {
+        return;
+      }
+
+      await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+      await fs.copyFile(sourcePath, destinationPath);
+    }),
+  );
 }
 
 async function validateEntryPoint(entryPoint: string) {
@@ -131,7 +158,8 @@ async function bundleMobileVideoWithWebpack(): Promise<string> {
   try {
     const publicPath = "/";
     const staticHash = "/public";
-    const publicDir = path.join(process.cwd(), "public");
+    await syncMinimalPublicDir();
+    const publicDir = REMOTION_MINIMAL_PUBLIC_DIR;
     const publicOutputDir = path.join(REMOTION_BUNDLE_DIR, "public");
 
     const [, webpackConfiguration] = await webpackConfig({
