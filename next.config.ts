@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
       "./node_modules/@remotion/studio/dist/esm/renderEntry.mjs",
       "./node_modules/webpack/**/*",
       "./node_modules/source-map/**/*",
+      "./node_modules/react/**/*",
+      "./node_modules/react-dom/**/*",
+      "./node_modules/remotion/**/*",
     ],
   },
   outputFileTracingExcludes: {
