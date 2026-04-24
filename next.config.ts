@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  serverExternalPackages: ["@remotion/renderer", "webpack", "source-map"],
+  serverExternalPackages: ["@remotion/renderer", "webpack", "webpack-sources", "source-map"],
   outputFileTracingIncludes: {
     "/api/mobile-video/render": [
       "./remotion/**/*",
@@ -17,12 +17,14 @@ const nextConfig: NextConfig = {
       "./lib/sceneDefinitions.ts",
       "./lib/sceneTransitions.ts",
       "./node_modules/@remotion/bundler/dist/**/*",
+      "./node_modules/@remotion/bundler/node_modules/webpack/**/*",
       "./node_modules/@remotion/bundler/css-loader/**/*",
       "./node_modules/@remotion/bundler/react-shim.js",
       "./node_modules/@remotion/bundler/favicon.ico",
       "./node_modules/@remotion/studio/dist/renderEntry.js",
       "./node_modules/@remotion/studio/dist/esm/renderEntry.mjs",
       "./node_modules/webpack/**/*",
+      "./node_modules/webpack-sources/**/*",
       "./node_modules/source-map/**/*",
       "./node_modules/react/**/*",
       "./node_modules/react-dom/**/*",
