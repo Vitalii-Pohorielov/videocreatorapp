@@ -21,8 +21,17 @@ export async function exportMobileVideo(payload: MobileVideoRenderPayload) {
     let message = "Could not render mobile video.";
 
     try {
-      const errorPayload = (await response.json()) as { error?: string };
-      if (errorPayload.error) message = errorPayload.error;
+      const contentType = response.headers.get("content-type") ?? "";
+
+      if (contentType.includes("application/json")) {
+        const errorPayload = (await response.json()) as { error?: string };
+        if (errorPayload.error) message = errorPayload.error;
+      } else {
+        const responseText = (await response.text()).trim();
+        if (responseText) {
+          message = responseText;
+        }
+      }
     } catch {
       // Ignore JSON parse failure and fall back to a generic message.
     }

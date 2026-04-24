@@ -446,6 +446,7 @@ export function EditorWorkspace({
     try {
       setIsExporting(true);
       setExportProgress(exportMode === "remotion-server" ? 0.1 : 0);
+      setCloudStatus(exportMode === "remotion-server" ? "Rendering mobile video..." : "Exporting video...");
       resetDownload();
 
       const result =
@@ -459,6 +460,11 @@ export function EditorWorkspace({
 
       setDownloadUrl(result.url);
       setDownloadFileName(result.fileName);
+      setCloudStatus(`Export complete: ${result.fileName}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not render mobile video.";
+      setCloudStatus(message);
+      console.error("[mobile-video/export] Export failed", error);
     } finally {
       setIsExporting(false);
     }
