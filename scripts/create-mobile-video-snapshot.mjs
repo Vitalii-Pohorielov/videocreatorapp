@@ -10,7 +10,8 @@ function getSnapshotBlobKey() {
 
 async function main() {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is required to create the mobile video sandbox snapshot.");
+    console.warn("[mobile-video snapshot] Skipping snapshot creation because BLOB_READ_WRITE_TOKEN is not set.");
+    return;
   }
 
   execFileSync(process.execPath, [path.join(process.cwd(), "scripts", "bundle-remotion-vercel.cjs")], {
