@@ -30,6 +30,21 @@ export async function exportMobileVideo(payload: MobileVideoRenderPayload) {
     throw new Error(message);
   }
 
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const json = (await response.json()) as { url?: string; fileName?: string };
+
+    if (!json.url) {
+      throw new Error("Mobile video render finished without a download URL.");
+    }
+
+    return {
+      url: json.url,
+      fileName: json.fileName ?? "mobile-video-project.mp4",
+    };
+  }
+
   const blob = await response.blob();
   const fileName = getFileNameFromDisposition(response.headers.get("content-disposition")) ?? "mobile-video-project.mp4";
 

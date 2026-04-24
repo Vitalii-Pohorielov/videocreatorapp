@@ -218,7 +218,7 @@ export function EditorWorkspace({
 
   useEffect(() => {
     return () => {
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+      if (downloadUrl?.startsWith("blob:")) URL.revokeObjectURL(downloadUrl);
     };
   }, [downloadUrl]);
 
@@ -304,10 +304,11 @@ export function EditorWorkspace({
   }, [exportSettings.preset, isAnnouncementWorkspace, isFreeMode, isPremiumLoading, updateExportSettings]);
 
   const resetDownload = useCallback(() => {
-    if (downloadUrl) {
+    if (downloadUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(downloadUrl);
-      setDownloadUrl(null);
     }
+
+    setDownloadUrl(null);
   }, [downloadUrl]);
 
   const captureSnapshot = useCallback(
