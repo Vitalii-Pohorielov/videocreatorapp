@@ -4,6 +4,15 @@
 
 :root {
   color-scheme: dark;
+  --font-plus-jakarta: "Plus Jakarta Sans";
+  --font-inter: "Inter";
+  --font-space-grotesk: "Space Grotesk";
+  --font-syne: "Syne";
+  --font-montserrat: "Montserrat";
+  --font-oswald: "Oswald";
+  --font-bebas-neue: "Bebas Neue";
+  --font-playfair-display: "Playfair Display";
+  --font-merriweather: "Merriweather";
 }
 
 * {

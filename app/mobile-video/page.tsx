@@ -10,7 +10,7 @@ export default async function MobileVideoPage({
 
   return (
     <AuthGate title="Sign in to use mobile video lab" description="Google authentication is required before you can create or reopen mobile video experiments.">
-      <EditorWorkspace initialProjectId={params.project ?? null} workspaceBasePath="/mobile-video" />
+      <EditorWorkspace initialProjectId={params.project ?? null} workspaceBasePath="/mobile-video" exportMode="remotion-server" />
     </AuthGate>
   );
 }

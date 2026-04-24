@@ -8,6 +8,7 @@ import { SceneTypeModal } from "@/components/SceneTypeModal";
 import { StudioPreview } from "@/components/StudioPreview";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
+import { createMobileVideoRenderPayload, exportMobileVideo } from "@/lib/mobileVideoExport";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
 import { createFreeInitialSceneTrack, createScene, freePromoSceneTypes, freeStylePresets } from "@/lib/sceneDefinitions";
 import { isAnnouncementScene } from "@/lib/sceneTransitions";
@@ -18,6 +19,7 @@ type EditorWorkspaceProps = {
   initialProjectId?: string | null;
   initialVideoType?: VideoType;
   workspaceBasePath?: string;
+  exportMode?: "browser" | "remotion-server";
 };
 
 type WorkspaceSnapshot = {
@@ -53,7 +55,12 @@ function parseExpressCreatePrompt(prompt: string): ExpressCreateEntry[] {
     .filter((entry): entry is ExpressCreateEntry => Boolean(entry));
 }
 
-export function EditorWorkspace({ initialProjectId = null, initialVideoType = "promo", workspaceBasePath = "/editor" }: EditorWorkspaceProps) {
+export function EditorWorkspace({
+  initialProjectId = null,
+  initialVideoType = "promo",
+  workspaceBasePath = "/editor",
+  exportMode = "browser",
+}: EditorWorkspaceProps) {
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const projectId = useStore((state) => state.projectId);
   const projectName = useStore((state) => state.projectName);
@@ -437,9 +444,18 @@ export function EditorWorkspace({ initialProjectId = null, initialVideoType = "p
 
     try {
       setIsExporting(true);
-      setExportProgress(0);
+      setExportProgress(exportMode === "remotion-server" ? 0.1 : 0);
       resetDownload();
-      const result = await exportSlidesToVideo(scenes, exportSettings, setExportProgress, projectName);
+
+      const result =
+        exportMode === "remotion-server"
+          ? await exportMobileVideo(createMobileVideoRenderPayload(projectName, scenes, exportSettings))
+          : await exportSlidesToVideo(scenes, exportSettings, setExportProgress, projectName);
+
+      if (exportMode === "remotion-server") {
+        setExportProgress(1);
+      }
+
       setDownloadUrl(result.url);
       setDownloadFileName(result.fileName);
     } finally {
