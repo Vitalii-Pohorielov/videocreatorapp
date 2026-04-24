@@ -7,9 +7,11 @@ The app already includes:
 
 - a browser scene editor;
 - a browser banner builder;
+- a server-rendered mobile video lab;
 - project save/load via Supabase;
 - banner save/load via Supabase;
 - browser-side `.mp4` export;
+- server-side mobile `.mp4` export through Remotion;
 - deterministic draft generation from a website URL;
 - a second creation mode for announcement videos.
 
@@ -28,6 +30,20 @@ Treat the current `main` branch HEAD as the recovery baseline when future work b
 2. If the editor, autosave, export, or URL generation breaks, use this baseline as the last trusted reference.
 3. When unsure whether a regression is old or new, diff from this baseline first.
 4. Keep `TECHNICAL_README.md` updated when a new trusted baseline is intentionally promoted.
+
+### Current trusted recovery point
+
+As of April 24, 2026, the current trusted baseline is the build where mobile-video export works through server-side Remotion render on Vercel.
+
+This baseline includes:
+
+- build-time prebundled Remotion assets for `/mobile-video`;
+- runtime render through `/api/mobile-video/render`;
+- writable temp Remotion runtime directories under `os.tmpdir()`;
+- `@sparticuz/chromium` as the serverless browser executable on Vercel;
+- the current hardening settings that made production export stable again.
+
+If future changes break mobile-video export, return to this baseline before attempting a new fix.
 
 ## What this project is
 
@@ -58,9 +74,11 @@ The user can:
 
 - [app/page.tsx](/d:/VideoCreatorApp/app/page.tsx) - landing page.
 - [app/editor/page.tsx](/d:/VideoCreatorApp/app/editor/page.tsx) - editor studio.
+- [app/mobile-video/page.tsx](/d:/VideoCreatorApp/app/mobile-video/page.tsx) - authenticated mobile-video studio.
 - [app/banner/page.tsx](/d:/VideoCreatorApp/app/banner/page.tsx) - banner builder.
 - [app/projects/page.tsx](/d:/VideoCreatorApp/app/projects/page.tsx) - project list.
 - [app/api/generate-from-url/route.ts](/d:/VideoCreatorApp/app/api/generate-from-url/route.ts) - server route for website-to-draft generation.
+- [app/api/mobile-video/render/route.ts](/d:/VideoCreatorApp/app/api/mobile-video/render/route.ts) - server route for Remotion mobile video render.
 
 ### Main orchestration layer
 
@@ -78,6 +96,7 @@ The user can:
 ### Core UI surfaces
 
 - [components/CreateModeSwitcher.tsx](/d:/VideoCreatorApp/components/CreateModeSwitcher.tsx) - top-level `Create video` / `Create banner` launcher.
+- [components/CreateModeSwitcher.tsx](/d:/VideoCreatorApp/components/CreateModeSwitcher.tsx) also links to `/mobile-video`.
 - [components/StudioPreview.tsx](/d:/VideoCreatorApp/components/StudioPreview.tsx) - top toolbar, playback preview, export controls, URL generation, Express Create modal.
 - [components/SceneTimeline.tsx](/d:/VideoCreatorApp/components/SceneTimeline.tsx) - single-track sortable scene list.
 - [components/SceneInspector.tsx](/d:/VideoCreatorApp/components/SceneInspector.tsx) - right-side scene and export settings editor.
@@ -85,6 +104,174 @@ The user can:
 - [components/SceneTypeModal.tsx](/d:/VideoCreatorApp/components/SceneTypeModal.tsx) - filtered scene catalog based on workspace mode.
 - [components/ProjectTypeModal.tsx](/d:/VideoCreatorApp/components/ProjectTypeModal.tsx) - currently hidden project type chooser kept in the codebase so announcement creation can be restored later.
 - [components/BannerWorkspace.tsx](/d:/VideoCreatorApp/components/BannerWorkspace.tsx) - banner editing surface with live preview and editable banner controls.
+
+## Mobile video lab
+
+This is the most deployment-sensitive part of the app.
+
+Routes and entry points:
+
+- [app/mobile-video/page.tsx](/d:/VideoCreatorApp/app/mobile-video/page.tsx) wraps the editor in `AuthGate`.
+- It reuses [components/EditorWorkspace.tsx](/d:/VideoCreatorApp/components/EditorWorkspace.tsx) with:
+  - `workspaceBasePath="/mobile-video"`
+  - `exportMode="remotion-server"`
+- Client export helper lives in [lib/mobileVideoExport.ts](/d:/VideoCreatorApp/lib/mobileVideoExport.ts).
+- Server render entry lives in [app/api/mobile-video/render/route.ts](/d:/VideoCreatorApp/app/api/mobile-video/render/route.ts).
+- Shared timing and payload helpers live in [lib/mobileVideoRender.ts](/d:/VideoCreatorApp/lib/mobileVideoRender.ts).
+- Remotion composition files live in [remotion/root.tsx](/d:/VideoCreatorApp/remotion/root.tsx) and [remotion/MobileVideoComposition.tsx](/d:/VideoCreatorApp/remotion/MobileVideoComposition.tsx).
+
+### Current mobile-video architecture
+
+The important architectural decision is:
+
+- mobile video does **not** bundle Remotion on-demand inside the Vercel function;
+- the Remotion bundle is prebuilt at deploy/build time;
+- the runtime API only renders a prebuilt bundle.
+
+That flow exists because on-demand runtime bundling on Vercel proved too fragile and repeatedly failed due to traced dependency gaps and browser/runtime issues.
+
+### Build-time bundling
+
+[scripts/build-mobile-video-bundle.cjs](/d:/VideoCreatorApp/scripts/build-mobile-video-bundle.cjs) runs before `next build`.
+
+Current `package.json` build pipeline:
+
+- `npm run build` -> `node scripts/build-mobile-video-bundle.cjs && next build`
+
+What the script does:
+
+- calls `@remotion/bundler.bundle(...)`;
+- uses [remotion/root.tsx](/d:/VideoCreatorApp/remotion/root.tsx) as the entry point;
+- writes the finished bundle into `public/remotion-bundles/mobile-video`;
+- copies only the minimal public assets needed for mobile-video instead of the whole `public/` tree.
+
+Important nuance:
+
+- `public/remotion-bundles/` is a generated artifact and is intentionally gitignored.
+- The deploy must run the real build step. If somebody bypasses `npm run build`, the mobile-video API route will fail because the prebuilt bundle will be missing.
+
+### Runtime server render
+
+[lib/mobileVideoServerRender.ts](/d:/VideoCreatorApp/lib/mobileVideoServerRender.ts) is the server render orchestrator.
+
+What it does:
+
+- checks that `public/remotion-bundles/mobile-video/index.html` exists;
+- configures writable Remotion temp directories under `os.tmpdir()`;
+- temporarily switches `process.cwd()` into a writable temp folder before `selectComposition()` and `renderMedia()`;
+- uses `@remotion/renderer` to select the `MobileVideo` composition and render the final `.mp4`.
+
+Why the writable temp cwd matters:
+
+- Vercel deploy code lives in a read-only filesystem under `/var/task`;
+- Remotion tries to create `.remotion` relative to the current working directory;
+- without the temp cwd redirect, production render fails trying to write into read-only deploy storage.
+
+### Browser strategy on Vercel
+
+Mobile-video render uses:
+
+- `@remotion/renderer`
+- `@sparticuz/chromium`
+- prebuilt Remotion bundle assets from `public/remotion-bundles/mobile-video`
+
+Important nuance:
+
+- On Vercel Linux we explicitly provide `browserExecutable` from `@sparticuz/chromium`.
+- We do **not** rely on Remotion downloading and launching its own default headless shell in production.
+
+Why:
+
+- the default Remotion browser path led to missing Linux shared-library issues like `libnspr4.so`;
+- `@sparticuz/chromium` is much more serverless-friendly for this environment.
+
+Current hardening settings in server render:
+
+- `concurrency: 1`
+- `disallowParallelEncoding: true`
+- `offthreadVideoThreads: 1`
+- reduced media and offthread cache sizes
+- `chromiumOptions.gl = null`
+- `enableMultiProcessOnLinux = false`
+
+These are deliberate stability settings for serverless.
+Do not "optimize" them upward casually without retesting production export.
+
+### Mobile-video payload and playback model
+
+[lib/mobileVideoRender.ts](/d:/VideoCreatorApp/lib/mobileVideoRender.ts) defines:
+
+- `MobileVideoRenderPayload`
+- playback state calculation
+- total duration calculation
+- transition-layer motion helpers
+- safe output filename generation
+
+Important behavior:
+
+- The payload contains only:
+  - `projectName`
+  - `scenes`
+  - `exportSettings`
+- Announcement transitions are enabled if any scene in the payload is an announcement scene.
+- Total render duration includes transition gaps when announcement transitions are active.
+
+### Remotion composition
+
+[remotion/MobileVideoComposition.tsx](/d:/VideoCreatorApp/remotion/MobileVideoComposition.tsx) renders the mobile export.
+
+Important implementation details:
+
+- It reuses [components/SceneStage.tsx](/d:/VideoCreatorApp/components/SceneStage.tsx) instead of creating a second independent renderer.
+- It renders `background` and `content` layers separately during transitions.
+- During non-transition frames it renders the active scene only.
+- `renderLayer` and `performanceMode="export"` must remain compatible with `SceneStage`.
+
+This shared renderer design is powerful, but it means changes in `SceneStage` can break:
+
+- browser preview;
+- browser export;
+- mobile Remotion export.
+
+### Vercel tracing and deployment rules
+
+[next.config.ts](/d:/VideoCreatorApp/next.config.ts) contains explicit server tracing rules for `/api/mobile-video/render`.
+
+Current include strategy:
+
+- include the prebuilt bundle under `public/remotion-bundles/mobile-video/**/*`
+- include `@remotion/renderer`
+- include `@sparticuz/chromium`
+- include the Linux compositor packages
+
+Current exclude strategy:
+
+- exclude `@remotion/bundler` from the route runtime
+- exclude bulky unrelated binaries like Windows and Darwin variants
+- exclude browser-only assets not needed by the mobile-video render route
+
+Important rule:
+
+- if someone reintroduces runtime bundling inside the API route, production will likely regress again.
+
+### Known production failure history
+
+Previous failed approaches included:
+
+- subprocess-based render scripts launched from the API route
+- runtime Remotion bundling inside Vercel serverless
+- relying on traced webpack/remotion dependency chains inside the runtime
+- relying on Remotion default downloaded headless shell on Vercel Linux
+
+Observed failure classes during development:
+
+- repeated `MODULE_NOT_FOUND` for Remotion/webpack transitive packages
+- bundle-size pressure from tracing the wrong native/platform binaries
+- read-only filesystem writes into `/var/task/.remotion`
+- browser startup failure due to missing Linux shared libraries
+- browser crash / `Target closed` under heavier render settings
+
+The current implementation exists specifically to avoid those classes of failures.
 
 ## Banner flow
 
