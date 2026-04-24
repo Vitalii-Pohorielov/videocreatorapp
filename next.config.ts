@@ -9,7 +9,13 @@ const nextConfig: NextConfig = {
       "./components/**/*",
       "./lib/**/*",
       "./remotion/**/*",
-      "./node_modules/@rspack/**/*",
+    ],
+  },
+  outputFileTracingExcludes: {
+    "/api/mobile-video/render": [
+      "./node_modules/.remotion/**/*",
+      "./node_modules/@rspack/binding-win32-*/**/*",
+      "./node_modules/@remotion/compositor-win32-*/**/*",
     ],
   },
 };
