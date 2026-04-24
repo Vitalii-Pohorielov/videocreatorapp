@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { NextResponse } from "next/server";
 
 import { toSafeMobileVideoFileName, type MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
-import { renderMobileVideoOnVercel } from "@/lib/mobileVideoVercelRender";
+import { renderMobileVideoToFile } from "@/lib/mobileVideoVercelRender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,20 +69,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid mobile video render payload." }, { status: 400 });
     }
 
-    if (process.env.VERCEL) {
-      const result = await renderMobileVideoOnVercel(body);
-      return new NextResponse(result.stream, {
-        status: 200,
-        headers: {
-          "content-type": result.contentType || "video/mp4",
-          "content-disposition": `attachment; filename="${result.fileName}"`,
-          "cache-control": "no-store",
-        },
-      });
-    }
-
     await fs.mkdir(renderDirectory, { recursive: true });
-    await renderMobileVideoLocally(body, outputPath);
+    await renderMobileVideoToFile(body, outputPath);
 
     const buffer = await fs.readFile(outputPath);
     const fileName = toSafeMobileVideoFileName(body.projectName);
