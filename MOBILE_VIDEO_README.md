@@ -11,7 +11,7 @@ This branch creates a safe experiment area for mobile video work without breakin
 Current product split:
 
 - `/editor` keeps the original browser export flow based on `ffmpeg.wasm`
-- `/mobile-video` reuses the current editor UI, but exports through a server-side Remotion pipeline
+- `/mobile-video` reuses the current editor UI, but exports through a Remotion Vercel Sandbox pipeline
 
 High-level target:
 
@@ -25,8 +25,9 @@ What is already done:
 - the mobile route uses the same `EditorWorkspace` UI as the main editor
 - mobile export is switched to `exportMode="remotion-server"`
 - editor state is serialized as JSON and posted to `/api/mobile-video/render`
-- the server route writes the payload to a temp file and launches a separate Node render process
-- the render process bundles a Remotion composition and renders an `.mp4`
+- the server route streams export progress over SSE
+- Vercel deploys render inside a Remotion sandbox instead of a standard Next.js function runtime
+- finished videos are uploaded to Vercel Blob and returned as a public download URL
 - builds pass with `npm run build`
 - direct script-based test renders produce a real `.mp4`
 - the current mobile export flow is working again after reverting the experimental polling-based progress system
@@ -98,14 +99,14 @@ Responsibilities:
 
 - create a `MobileVideoRenderPayload`
 - POST it to `/api/mobile-video/render`
-- receive the returned `.mp4`
-- create a browser download URL
+- receive streamed progress events from `/api/mobile-video/render`
+- return the uploaded Vercel Blob URL plus download filename
 
 Current behavior:
 
-- this is a single blocking request
-- the UI does not receive detailed render-time progress stages from the server right now
-- the simple export percent shown in the UI is only a lightweight placeholder for the mobile path
+- the client reads a `text/event-stream` response
+- export progress is driven by sandbox/render/upload phases from the server
+- the final download URL points to a Vercel Blob object instead of an inline response body
 
 Payload shape:
 

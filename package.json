@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "npm run build && node scripts/create-mobile-video-snapshot.cjs",
+    "create:mobile-video-snapshot": "node scripts/create-mobile-video-snapshot.cjs",
     "start": "next start",
     "lint": "next lint"
   },
@@ -21,6 +23,8 @@
     "@remotion/renderer": "^4.0.451",
     "@remotion/vercel": "^4.0.451",
     "@supabase/supabase-js": "^2.100.0",
+    "@vercel/blob": "^2.3.3",
+    "@vercel/functions": "^3.4.4",
     "@vercel/sandbox": "^1.10.0",
     "emoji-mart": "^5.6.0",
     "html-to-image": "^1.11.13",
