@@ -71,9 +71,11 @@ export async function POST(request: Request) {
 
     if (process.env.VERCEL) {
       const result = await renderMobileVideoOnVercel(body);
-      return NextResponse.json(result, {
+      return new NextResponse(new Uint8Array(result.buffer), {
         status: 200,
         headers: {
+          "content-type": result.contentType || "video/mp4",
+          "content-disposition": `attachment; filename="${result.fileName}"`,
           "cache-control": "no-store",
         },
       });
