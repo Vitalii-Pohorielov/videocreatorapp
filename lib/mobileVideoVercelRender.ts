@@ -1,43 +1,21 @@
 import path from "node:path";
 
-import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
 
 import type { MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
 
 const MOBILE_VIDEO_COMPOSITION_ID = "MobileVideo";
-
-let bundlePromise: Promise<string> | null = null;
+const PREBUILT_BUNDLE_DIR = path.join(process.cwd(), ".remotion-vercel-bundle");
 
 export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload, outputPath: string) {
-  if (!bundlePromise) {
-    bundlePromise = bundle({
-      entryPoint: path.join(process.cwd(), "remotion", "root.tsx"),
-      onProgress: () => undefined,
-      enableCaching: true,
-      rootDir: process.cwd(),
-      webpackOverride: (config) => ({
-        ...config,
-        resolve: {
-          ...(config.resolve || {}),
-          alias: {
-            ...((config.resolve && config.resolve.alias) || {}),
-            "@": process.cwd(),
-          },
-        },
-      }),
-    });
-  }
-
-  const serveUrl = await bundlePromise;
   const composition = await selectComposition({
-    serveUrl,
+    serveUrl: PREBUILT_BUNDLE_DIR,
     id: MOBILE_VIDEO_COMPOSITION_ID,
     inputProps: { payload },
   });
 
   await renderMedia({
-    serveUrl,
+    serveUrl: PREBUILT_BUNDLE_DIR,
     composition,
     inputProps: { payload },
     codec: "h264",
