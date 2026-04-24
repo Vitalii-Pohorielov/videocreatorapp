@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  serverExternalPackages: ["@remotion/renderer", "webpack", "webpack-sources", "source-map"],
+  serverExternalPackages: ["@remotion/bundler", "@remotion/renderer", "esbuild", "webpack", "webpack-sources", "source-map"],
   outputFileTracingIncludes: {
     "/api/mobile-video/render": [
       "./remotion/**/*",
@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
       "./node_modules/react/**/*",
       "./node_modules/react-dom/**/*",
       "./node_modules/remotion/**/*",
+      "./node_modules/esbuild/**/*",
+      "./node_modules/@esbuild/linux-x64/**/*",
     ],
   },
   outputFileTracingExcludes: {
