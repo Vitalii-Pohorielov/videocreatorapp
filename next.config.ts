@@ -2,13 +2,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  serverExternalPackages: ["@remotion/bundler", "@remotion/renderer", "@rspack/core", "@rspack/binding"],
+  serverExternalPackages: ["@remotion/renderer"],
   outputFileTracingIncludes: {
     "/api/mobile-video/render": [
       "./app/globals.css",
       "./components/**/*",
       "./lib/**/*",
       "./remotion/**/*",
+      "./node_modules/@remotion/bundler/dist/**/*",
+      "./node_modules/@remotion/bundler/css-loader/**/*",
+      "./node_modules/@remotion/bundler/react-shim.js",
+      "./node_modules/@remotion/bundler/favicon.ico",
+      "./node_modules/@remotion/studio/dist/renderEntry.js",
+      "./node_modules/@remotion/studio/dist/esm/renderEntry.mjs",
     ],
   },
   outputFileTracingExcludes: {
