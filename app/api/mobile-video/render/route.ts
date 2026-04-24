@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { NextResponse } from "next/server";
 
 import { toSafeMobileVideoFileName, type MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
-import { renderMobileVideoToFile } from "@/lib/mobileVideoServerRender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +30,7 @@ export async function POST(request: Request) {
     }
 
     await fs.mkdir(renderDirectory, { recursive: true });
+    const { renderMobileVideoToFile } = await import("@/lib/mobileVideoServerRender");
     await renderMobileVideoToFile(body, outputPath);
 
     const buffer = await fs.readFile(outputPath);

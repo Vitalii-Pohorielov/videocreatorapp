@@ -2,9 +2,6 @@ import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { bundle } from "@remotion/bundler";
-import { renderMedia, selectComposition } from "@remotion/renderer";
-
 import type { MobileVideoRenderPayload } from "@/lib/mobileVideoRender";
 
 const MOBILE_VIDEO_COMPOSITION_ID = "MobileVideo";
@@ -41,6 +38,10 @@ function toErrorMessage(error: unknown, fallback: string) {
 
 export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload, outputPath: string) {
   await ensureRemotionWritableDirectories();
+  const [{ bundle }, { renderMedia, selectComposition }] = await Promise.all([
+    import("@remotion/bundler"),
+    import("@remotion/renderer"),
+  ]);
 
   if (!bundlePromise) {
     bundlePromise = bundle({
