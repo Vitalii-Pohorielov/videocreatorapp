@@ -1,8 +1,8 @@
-const { execFileSync } = require("node:child_process");
-const path = require("node:path");
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 
-const { put } = require("@vercel/blob");
-const { addBundleToSandbox, createSandbox } = require("@remotion/vercel");
+import { put } from "@vercel/blob";
+import { addBundleToSandbox, createSandbox } from "@remotion/vercel";
 
 function getSnapshotBlobKey() {
   return `snapshot-cache/${process.env.VERCEL_DEPLOYMENT_ID ?? "local"}.json`;

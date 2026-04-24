@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:vercel": "npm run build && node scripts/create-mobile-video-snapshot.cjs",
-    "create:mobile-video-snapshot": "node scripts/create-mobile-video-snapshot.cjs",
+    "build:vercel": "npm run build && node scripts/create-mobile-video-snapshot.mjs",
+    "create:mobile-video-snapshot": "node scripts/create-mobile-video-snapshot.mjs",
     "start": "next start",
     "lint": "next lint"
   },

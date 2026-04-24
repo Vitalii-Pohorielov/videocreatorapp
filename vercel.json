@@ -1,3 +1,3 @@
 {
-  "buildCommand": "npm run build && node scripts/create-mobile-video-snapshot.cjs"
+  "buildCommand": "npm run build && node scripts/create-mobile-video-snapshot.mjs"
 }
