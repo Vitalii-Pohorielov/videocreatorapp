@@ -9,6 +9,7 @@ const PREBUILT_BUNDLE_DIR = path.join(process.cwd(), "public", "remotion-bundles
 const PREBUILT_BUNDLE_INDEX = path.join(PREBUILT_BUNDLE_DIR, "index.html");
 const REMOTION_TMP_ROOT = path.join(tmpdir(), "video-creator-app", "remotion");
 const REMOTION_BROWSER_DOWNLOAD_DIR = path.join(REMOTION_TMP_ROOT, "browser-downloads");
+const REMOTION_RUNTIME_CWD = path.join(REMOTION_TMP_ROOT, "runtime-cwd");
 const REMOTION_RENDERER_INTERNALS_DIR = path.join(process.cwd(), "node_modules", "@remotion", "renderer", "dist", "options");
 
 type RemotionOptionModule = {
@@ -21,7 +22,9 @@ function toErrorMessage(error: unknown, fallback: string) {
 }
 
 async function ensureRemotionWritableDirectories() {
+  await fs.mkdir(REMOTION_TMP_ROOT, { recursive: true });
   await fs.mkdir(REMOTION_BROWSER_DOWNLOAD_DIR, { recursive: true });
+  await fs.mkdir(REMOTION_RUNTIME_CWD, { recursive: true });
 
   try {
     const runtimeRequire = eval("require") as (id: string) => unknown;
@@ -53,30 +56,37 @@ export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload,
   await ensureRemotionWritableDirectories();
   const serveUrl = await getPrebuiltServeUrl();
   const { renderMedia, selectComposition } = await import("@remotion/renderer");
+  const currentCwd = process.cwd();
 
-  const composition = await selectComposition({
-    serveUrl,
-    id: MOBILE_VIDEO_COMPOSITION_ID,
-    inputProps: { payload },
-  }).catch((error) => {
-    throw new Error(`Mobile video composition step failed: ${toErrorMessage(error, "could not select composition")}`);
-  });
+  try {
+    process.chdir(REMOTION_RUNTIME_CWD);
 
-  await renderMedia({
-    serveUrl,
-    composition,
-    inputProps: { payload },
-    codec: "h264",
-    outputLocation: outputPath,
-    overwrite: true,
-    imageFormat: "jpeg",
-    jpegQuality: 95,
-    muted: true,
-    chromiumOptions: {
-      gl: "swiftshader",
-      enableMultiProcessOnLinux: false,
-    },
-  }).catch((error) => {
-    throw new Error(`Mobile video render step failed: ${toErrorMessage(error, "could not render media")}`);
-  });
+    const composition = await selectComposition({
+      serveUrl,
+      id: MOBILE_VIDEO_COMPOSITION_ID,
+      inputProps: { payload },
+    }).catch((error) => {
+      throw new Error(`Mobile video composition step failed: ${toErrorMessage(error, "could not select composition")}`);
+    });
+
+    await renderMedia({
+      serveUrl,
+      composition,
+      inputProps: { payload },
+      codec: "h264",
+      outputLocation: outputPath,
+      overwrite: true,
+      imageFormat: "jpeg",
+      jpegQuality: 95,
+      muted: true,
+      chromiumOptions: {
+        gl: "swiftshader",
+        enableMultiProcessOnLinux: false,
+      },
+    }).catch((error) => {
+      throw new Error(`Mobile video render step failed: ${toErrorMessage(error, "could not render media")}`);
+    });
+  } finally {
+    process.chdir(currentCwd);
+  }
 }
