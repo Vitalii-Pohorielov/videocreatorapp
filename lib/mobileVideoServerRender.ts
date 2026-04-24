@@ -15,6 +15,18 @@ type RemotionOptionModule = {
   setConfig: (value: string | null) => void;
 };
 
+function ensureRspackBindingAvailable() {
+  const runtimeRequire = eval("require") as NodeRequire;
+
+  try {
+    runtimeRequire.resolve("@rspack/binding");
+    runtimeRequire("@rspack/binding");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown rspack binding error";
+    throw new Error(`Rspack binding preload failed: ${message}`);
+  }
+}
+
 async function ensureRemotionWritableDirectories() {
   await fs.mkdir(REMOTION_BROWSER_DOWNLOAD_DIR, { recursive: true });
 
@@ -38,6 +50,7 @@ function toErrorMessage(error: unknown, fallback: string) {
 
 export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload, outputPath: string) {
   await ensureRemotionWritableDirectories();
+  ensureRspackBindingAvailable();
   const [{ bundle }, { renderMedia, selectComposition }] = await Promise.all([
     import("@remotion/bundler"),
     import("@remotion/renderer"),
