@@ -16,6 +16,17 @@ type RemotionOptionModule = {
   setConfig: (value: string | null) => void;
 };
 
+async function getBrowserExecutable() {
+  const isServerlessLinux = process.platform === "linux" && Boolean(process.env.VERCEL);
+
+  if (!isServerlessLinux) {
+    return null;
+  }
+
+  const chromiumModule = (await import("@sparticuz/chromium")).default;
+  return chromiumModule.executablePath();
+}
+
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
@@ -56,6 +67,7 @@ export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload,
   await ensureRemotionWritableDirectories();
   const serveUrl = await getPrebuiltServeUrl();
   const { renderMedia, selectComposition } = await import("@remotion/renderer");
+  const browserExecutable = await getBrowserExecutable();
   const currentCwd = process.cwd();
 
   try {
@@ -65,6 +77,7 @@ export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload,
       serveUrl,
       id: MOBILE_VIDEO_COMPOSITION_ID,
       inputProps: { payload },
+      browserExecutable,
     }).catch((error) => {
       throw new Error(`Mobile video composition step failed: ${toErrorMessage(error, "could not select composition")}`);
     });
@@ -76,6 +89,7 @@ export async function renderMobileVideoToFile(payload: MobileVideoRenderPayload,
       codec: "h264",
       outputLocation: outputPath,
       overwrite: true,
+      browserExecutable,
       imageFormat: "jpeg",
       jpegQuality: 95,
       muted: true,

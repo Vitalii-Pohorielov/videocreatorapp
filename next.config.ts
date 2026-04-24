@@ -2,11 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  serverExternalPackages: ["@remotion/renderer"],
+  serverExternalPackages: ["@remotion/renderer", "@sparticuz/chromium"],
   outputFileTracingIncludes: {
     "/api/mobile-video/render": [
       "./public/remotion-bundles/mobile-video/**/*",
       "./node_modules/@remotion/renderer/**/*",
+      "./node_modules/@sparticuz/chromium/**/*",
       "./node_modules/remotion/**/*",
       "./node_modules/@remotion/compositor-linux-x64-gnu/**/*",
       "./node_modules/@remotion/compositor-linux-x64-musl/**/*",
