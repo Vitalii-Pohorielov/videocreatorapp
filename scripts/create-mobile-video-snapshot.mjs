@@ -14,19 +14,19 @@ async function main() {
     return;
   }
 
-  execFileSync(process.execPath, [path.join(process.cwd(), "scripts", "bundle-remotion-vercel.cjs")], {
-    cwd: process.cwd(),
-    stdio: "inherit",
-  });
-
-  const sandbox = await createSandbox({
-    onProgress: ({ progress, message }) => {
-      const percent = Math.round(progress * 100);
-      console.log(`[mobile-video snapshot] ${message} (${percent}%)`);
-    },
-  });
-
   try {
+    execFileSync(process.execPath, [path.join(process.cwd(), "scripts", "bundle-remotion-vercel.cjs")], {
+      cwd: process.cwd(),
+      stdio: "inherit",
+    });
+
+    const sandbox = await createSandbox({
+      onProgress: ({ progress, message }) => {
+        const percent = Math.round(progress * 100);
+        console.log(`[mobile-video snapshot] ${message} (${percent}%)`);
+      },
+    });
+
     console.log("[mobile-video snapshot] Uploading Remotion bundle to sandbox...");
     await addBundleToSandbox({
       sandbox,
@@ -44,8 +44,10 @@ async function main() {
     });
 
     console.log(`[mobile-video snapshot] Snapshot saved: ${snapshot.snapshotId}`);
-  } finally {
     await sandbox.stop().catch(() => undefined);
+  } catch (error) {
+    const message = error instanceof Error ? error.stack || error.message : String(error);
+    console.warn(`[mobile-video snapshot] Snapshot creation failed, continuing without prebuilt snapshot.\n${message}`);
   }
 }
 
