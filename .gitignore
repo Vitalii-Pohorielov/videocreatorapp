@@ -21,3 +21,4 @@ coverage/
 
 .vercel/
 .remotion-vercel-bundle/
+public/remotion-bundles/
