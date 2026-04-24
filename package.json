@@ -18,7 +18,6 @@
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",
     "@remotion/bundler": "^4.0.451",
-    "@remotion/compositor-win32-x64-msvc": "^4.0.451",
     "@remotion/renderer": "^4.0.451",
     "@supabase/supabase-js": "^2.100.0",
     "emoji-mart": "^5.6.0",
@@ -41,5 +40,9 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
+  },
+  "optionalDependencies": {
+    "@remotion/compositor-linux-x64-gnu": "^4.0.451",
+    "@remotion/compositor-linux-x64-musl": "^4.0.451"
   }
 }
