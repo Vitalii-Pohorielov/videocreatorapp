@@ -49,6 +49,10 @@ export type BannerDraft = {
   titleTextColor: string;
   titlePlateStyle: BannerTitlePlateStyle;
   titlePlateColor: string;
+  titlePlateSize: {
+    width: number;
+    height: number;
+  } | null;
   titleImageSwap: boolean;
   titleOffset: {
     x: number;
@@ -82,6 +86,7 @@ export const defaultBannerDraft: BannerDraft = {
   titleTextColor: "#f8fafc",
   titlePlateStyle: "solid",
   titlePlateColor: "#111827",
+  titlePlateSize: null,
   titleImageSwap: false,
   titleOffset: {
     x: 0,

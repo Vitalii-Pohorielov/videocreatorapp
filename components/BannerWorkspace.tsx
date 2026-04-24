@@ -284,6 +284,13 @@ function normalizeBannerDraft(input: Partial<BannerDraft> | BannerDraft): Banner
     ...input,
     titlePlateStyle: normalizedTitlePlateStyle,
     titlePlateColor: normalizedTitlePlateColor,
+    titlePlateSize:
+      input.titlePlateSize && typeof input.titlePlateSize.width === "number" && typeof input.titlePlateSize.height === "number"
+        ? {
+            width: input.titlePlateSize.width,
+            height: input.titlePlateSize.height,
+          }
+        : defaultBannerDraft.titlePlateSize,
     titleOffset: {
       ...defaultBannerDraft.titleOffset,
       ...(input.titleOffset ?? {}),
@@ -372,6 +379,7 @@ function EditableText({
   value,
   onChange,
   editable = true,
+  elementRef,
   className,
   style,
   placeholder,
@@ -380,6 +388,7 @@ function EditableText({
   value: string;
   onChange: (value: string) => void;
   editable?: boolean;
+  elementRef?: Ref<HTMLDivElement>;
   className: string;
   style?: CSSProperties;
   placeholder: string;
@@ -389,6 +398,7 @@ function EditableText({
     <div
       role={editable ? "textbox" : undefined}
       aria-label={ariaLabel}
+      ref={elementRef}
       contentEditable={editable}
       suppressContentEditableWarning
       onInput={editable ? (event) => onChange(event.currentTarget.textContent ?? "") : undefined}
@@ -438,28 +448,34 @@ function getContrastingTitlePlateTextColor(backgroundColor: string) {
 
 function BannerCanvasEditor({
   selectedLayer,
+  titleEditMode,
   previewBounds,
   titleBounds,
+  titleTextBounds,
   imageBounds,
   titleOffset,
   imageOffset,
   imageWidthScale,
   imageHeightScale,
   onTitleOffsetChange,
+  onTitlePlateSizeChange,
   onImageOffsetChange,
   onImageWidthScaleChange,
   onImageHeightScaleChange,
   onClose,
 }: {
   selectedLayer: EditorLayer | null;
+  titleEditMode: "move" | "crop" | null;
   previewBounds: LayerBounds | null;
   titleBounds: LayerBounds | null;
+  titleTextBounds: LayerBounds | null;
   imageBounds: LayerBounds | null;
   titleOffset: { x: number; y: number };
   imageOffset: { x: number; y: number };
   imageWidthScale: number;
   imageHeightScale: number;
   onTitleOffsetChange: (value: { x: number; y: number }) => void;
+  onTitlePlateSizeChange: (value: BannerDraft["titlePlateSize"]) => void;
   onImageOffsetChange: (value: { x: number; y: number }) => void;
   onImageWidthScaleChange: (value: number) => void;
   onImageHeightScaleChange: (value: number) => void;
@@ -473,7 +489,7 @@ function BannerCanvasEditor({
 
   useEffect(() => {
     if (!transformerRef.current) return;
-    if (selectedLayer === "image" && shapeRef.current) {
+    if ((selectedLayer === "image" || (selectedLayer === "title" && titleEditMode === "crop")) && shapeRef.current) {
       transformerRef.current.nodes([shapeRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
       return;
@@ -490,6 +506,25 @@ function BannerCanvasEditor({
       });
     },
     [onTitleOffsetChange, titleOffset.x, titleOffset.y],
+  );
+
+  const commitTitleCrop = useCallback(
+    (nextX: number, nextY: number, nextWidth: number, nextHeight: number, sourceBounds: LayerBounds) => {
+      const currentCenterX = sourceBounds.x + sourceBounds.width / 2;
+      const currentCenterY = sourceBounds.y + sourceBounds.height / 2;
+      const nextCenterX = nextX + nextWidth / 2;
+      const nextCenterY = nextY + nextHeight / 2;
+
+      onTitleOffsetChange({
+        x: Math.round(titleOffset.x + (nextCenterX - currentCenterX)),
+        y: Math.round(titleOffset.y + (nextCenterY - currentCenterY)),
+      });
+      onTitlePlateSizeChange({
+        width: Math.round(nextWidth),
+        height: Math.round(nextHeight),
+      });
+    },
+    [onTitleOffsetChange, onTitlePlateSizeChange, titleOffset.x, titleOffset.y],
   );
 
   const commitImageTransform = useCallback(
@@ -536,24 +571,35 @@ function BannerCanvasEditor({
             y={activeBounds.y}
             width={activeBounds.width}
             height={activeBounds.height}
-            draggable
+            draggable={selectedLayer === "image" || (selectedLayer === "title" && titleEditMode === "move")}
             fill="rgba(56,189,248,0.08)"
             stroke={selectedLayer === "image" ? "#34d399" : "#38bdf8"}
             strokeWidth={2}
             dash={selectedLayer === "image" ? [] : [8, 6]}
             cornerRadius={selectedLayer === "image" ? 22 : 18}
             onDragMove={(event) => {
-              if (selectedLayer === "title") {
+              if (selectedLayer === "title" && titleEditMode === "move") {
                 commitTitleMove(event.target.x(), event.target.y(), activeBounds);
                 return;
               }
+              if (selectedLayer !== "image") return;
               commitImageTransform(event.target.x(), event.target.y(), activeBounds.width, activeBounds.height, activeBounds);
             }}
             onTransformEnd={(event) => {
-              if (selectedLayer !== "image") return;
               const node = event.target;
               const nextWidth = Math.max(48, node.width() * node.scaleX());
               const nextHeight = Math.max(48, node.height() * node.scaleY());
+              if (selectedLayer === "title" && titleEditMode === "crop") {
+                commitTitleCrop(node.x(), node.y(), nextWidth, nextHeight, activeBounds);
+                node.setAttrs({
+                  width: activeBounds.width,
+                  height: activeBounds.height,
+                  scaleX: 1,
+                  scaleY: 1,
+                });
+                return;
+              }
+              if (selectedLayer !== "image") return;
               commitImageTransform(node.x(), node.y(), nextWidth, nextHeight, activeBounds);
               node.setAttrs({
                 width: activeBounds.width,
@@ -563,17 +609,31 @@ function BannerCanvasEditor({
               });
             }}
           />
-          {selectedLayer === "image" ? (
+          {selectedLayer === "image" || (selectedLayer === "title" && titleEditMode === "crop") ? (
             <Transformer
               ref={transformerRef as never}
               rotateEnabled={false}
-              enabledAnchors={["top-left", "top-center", "top-right", "middle-right", "bottom-right", "bottom-center", "bottom-left", "middle-left"]}
-              borderStroke="#34d399"
-              anchorStroke="#34d399"
+              enabledAnchors={
+                selectedLayer === "title"
+                  ? ["top-center", "middle-right", "bottom-center", "middle-left"]
+                  : ["top-left", "top-center", "top-right", "middle-right", "bottom-right", "bottom-center", "bottom-left", "middle-left"]
+              }
+              borderStroke={selectedLayer === "image" ? "#34d399" : "#38bdf8"}
+              anchorStroke={selectedLayer === "image" ? "#34d399" : "#38bdf8"}
               anchorFill="#ffffff"
               anchorSize={10}
               boundBoxFunc={(oldBox, newBox) => {
-                if (newBox.width < 48 || newBox.height < 48) {
+                if (
+                  selectedLayer === "title" &&
+                  titleTextBounds &&
+                  (newBox.x > titleTextBounds.x ||
+                    newBox.y > titleTextBounds.y ||
+                    newBox.x + newBox.width < titleTextBounds.x + titleTextBounds.width ||
+                    newBox.y + newBox.height < titleTextBounds.y + titleTextBounds.height)
+                ) {
+                  return oldBox;
+                }
+                if (selectedLayer === "image" && (newBox.width < 48 || newBox.height < 48)) {
                   return oldBox;
                 }
                 return newBox;
@@ -725,10 +785,13 @@ function TitleEditor({
   onTextColorChange,
   plateStyle,
   plateColor,
+  textElementRef,
   onPlateStyleChange,
   onPlateColorChange,
   moveActive,
+  cropActive,
   onMoveToggle,
+  onCropToggle,
   className,
   style,
   placeholder,
@@ -742,10 +805,13 @@ function TitleEditor({
   onTextColorChange: (value: string) => void;
   plateStyle: BannerTitlePlateStyle;
   plateColor: string;
+  textElementRef?: Ref<HTMLDivElement>;
   onPlateStyleChange: (value: BannerTitlePlateStyle) => void;
   onPlateColorChange: (value: string) => void;
   moveActive: boolean;
+  cropActive: boolean;
   onMoveToggle: () => void;
+  onCropToggle: () => void;
   className: string;
   style?: CSSProperties;
   placeholder: string;
@@ -824,37 +890,57 @@ function TitleEditor({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          editable={!moveActive}
+          editable={!moveActive && !cropActive}
+          elementRef={textElementRef}
           className={className}
           style={{
             ...style,
             maxWidth: "100%",
             overflowWrap: "anywhere",
             textAlign: alignment,
-            userSelect: moveActive ? "none" : "text",
+            userSelect: moveActive || cropActive ? "none" : "text",
           }}
         />
         <div
           className="pointer-events-none absolute bottom-0 left-1/2 z-50 flex -translate-x-1/2 translate-y-1/2 items-center justify-center"
           data-export-ignore="true"
         >
-          <button
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={onMoveToggle}
-            className={`pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold uppercase tracking-[0.18em] transition ${
-              moveActive
-                ? "border-sky-300/35 bg-sky-300/18 text-sky-100 shadow-[0_12px_30px_rgba(14,165,233,0.22)]"
-                : "border-white/12 bg-black/65 text-white/70 hover:border-white/20 hover:bg-black/80 hover:text-white"
-            }`}
-            aria-pressed={moveActive}
-            aria-label={moveActive ? "Disable move mode" : "Enable move mode"}
-          >
-            <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-              <path d="M5.25 2.75 8 0l2.75 2.75M5.25 13.25 8 16l2.75-2.75M2.75 5.25 0 8l2.75 2.75M13.25 5.25 16 8l-2.75 2.75M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span>{moveActive ? "Move on" : "Move"}</span>
-          </button>
+          <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/12 bg-black/65 p-1 shadow-[0_12px_30px_rgba(2,6,23,0.24)] backdrop-blur-md">
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={onMoveToggle}
+              className={`inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                moveActive
+                  ? "bg-sky-300/18 text-sky-100"
+                  : "text-white/70 hover:bg-black/40 hover:text-white"
+              }`}
+              aria-pressed={moveActive}
+              aria-label={moveActive ? "Disable move mode" : "Enable move mode"}
+            >
+              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M5.25 2.75 8 0l2.75 2.75M5.25 13.25 8 16l2.75-2.75M2.75 5.25 0 8l2.75 2.75M13.25 5.25 16 8l-2.75 2.75M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{moveActive ? "Move on" : "Move"}</span>
+            </button>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={onCropToggle}
+              className={`inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                cropActive
+                  ? "bg-sky-300/18 text-sky-100"
+                  : "text-white/70 hover:bg-black/40 hover:text-white"
+              }`}
+              aria-pressed={cropActive}
+              aria-label={cropActive ? "Disable crop mode" : "Enable crop mode"}
+            >
+              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M3 2.5v9a1.5 1.5 0 0 0 1.5 1.5h9M2.5 5H11a1.5 1.5 0 0 1 1.5 1.5V15" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{cropActive ? "Crop on" : "Crop"}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -868,9 +954,12 @@ function BannerTemplatePreview({
   titleFontSizePx,
   previewBoundsRef,
   titleTargetRef,
+  titleTextRef,
   imageTargetRef,
   isTitleMoveActive,
+  isTitleCropActive,
   onTitleMoveToggle,
+  onTitleCropToggle,
   onImageEditActivate,
   onTitleChange,
   onTitleAlignmentChange,
@@ -889,9 +978,12 @@ function BannerTemplatePreview({
   titleFontSizePx: number;
   previewBoundsRef: RefObject<HTMLDivElement | null>;
   titleTargetRef: Ref<HTMLDivElement>;
+  titleTextRef: Ref<HTMLDivElement>;
   imageTargetRef: Ref<HTMLDivElement>;
   isTitleMoveActive: boolean;
+  isTitleCropActive: boolean;
   onTitleMoveToggle: () => void;
+  onTitleCropToggle: () => void;
   onImageEditActivate: () => void;
   onTitleChange: (value: string) => void;
   onTitleAlignmentChange: (alignment: BannerTitleAlignment) => void;
@@ -920,10 +1012,13 @@ function BannerTemplatePreview({
       onTextColorChange={onTitleTextColorChange}
       plateStyle={draft.titlePlateStyle}
       plateColor={draft.titlePlateColor}
+      textElementRef={titleTextRef}
       onPlateStyleChange={(value) => onTitlePlateStyleChange(value)}
       onPlateColorChange={(value) => onTitlePlateColorChange(value)}
       moveActive={isTitleMoveActive}
+      cropActive={isTitleCropActive}
       onMoveToggle={onTitleMoveToggle}
+      onCropToggle={onTitleCropToggle}
       className={titleClassName}
       style={{
         fontSize: `${titleFontSizePx}px`,
@@ -937,7 +1032,15 @@ function BannerTemplatePreview({
   const accentStyle = { backgroundColor: draft.accentColor };
   const accentBorderStyle = { borderColor: draft.accentColor };
   const titlePlateClassName = getTitlePlateClassName(draft.titlePlateStyle);
-  const titlePlateInlineStyle = draft.titlePlateStyle === "solid" ? { backgroundColor: draft.titlePlateColor } : {};
+  const titlePlateInlineStyle = {
+    ...(draft.titlePlateStyle === "solid" ? { backgroundColor: draft.titlePlateColor } : {}),
+    ...(draft.titlePlateSize
+      ? {
+          width: `${draft.titlePlateSize.width}px`,
+          height: `${draft.titlePlateSize.height}px`,
+        }
+      : {}),
+  };
   const titleOffsetStyle = {
     transform: `translate(${draft.titleOffset.x}px, ${draft.titleOffset.y}px)`,
   } satisfies CSSProperties;
@@ -1304,13 +1407,16 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
   const [previewAreaSize, setPreviewAreaSize] = useState({ width: 0, height: 0 });
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
   const [selectedEditorLayer, setSelectedEditorLayer] = useState<EditorLayer | null>(null);
+  const [titleEditMode, setTitleEditMode] = useState<"move" | "crop" | null>(null);
   const [titleLayerBounds, setTitleLayerBounds] = useState<LayerBounds | null>(null);
+  const [titleTextLayerBounds, setTitleTextLayerBounds] = useState<LayerBounds | null>(null);
   const [imageLayerBounds, setImageLayerBounds] = useState<LayerBounds | null>(null);
   const [previewLayerBounds, setPreviewLayerBounds] = useState<LayerBounds | null>(null);
   const previewFontFamily = fontFamilyMap[draft.fontChoice];
   const previewAreaRef = useRef<HTMLElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const titleTargetRef = useRef<HTMLDivElement | null>(null);
+  const titleTextRef = useRef<HTMLDivElement | null>(null);
   const imageTargetRef = useRef<HTMLDivElement | null>(null);
   const sizeMenuRef = useRef<HTMLDivElement | null>(null);
   const didHydrateProject = useRef<string | null | undefined>(undefined);
@@ -1421,6 +1527,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
       titleTextColor: nextPlateCombo.titleTextColor,
       titlePlateStyle: nextPlateCombo.titlePlateStyle,
       titlePlateColor: nextPlateCombo.titlePlateColor,
+      titlePlateSize: defaultBannerDraft.titlePlateSize,
       titleOffset: defaultBannerDraft.titleOffset,
       imageOffset: defaultBannerDraft.imageOffset,
       imageWidthScale: defaultBannerDraft.imageWidthScale,
@@ -1616,6 +1723,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
     if (!previewNode) {
       setPreviewLayerBounds(null);
       setTitleLayerBounds(null);
+      setTitleTextLayerBounds(null);
       setImageLayerBounds(null);
       return;
     }
@@ -1629,6 +1737,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
         height: previewRect.height,
       });
       setTitleLayerBounds(getRelativeLayerBounds(titleTargetRef.current, previewNode));
+      setTitleTextLayerBounds(getRelativeLayerBounds(titleTextRef.current, previewNode));
       setImageLayerBounds(getRelativeLayerBounds(imageTargetRef.current, previewNode));
     };
 
@@ -1637,6 +1746,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
     const observer = new ResizeObserver(updateBounds);
     observer.observe(previewNode);
     if (titleTargetRef.current) observer.observe(titleTargetRef.current);
+    if (titleTextRef.current) observer.observe(titleTextRef.current);
     if (imageTargetRef.current) observer.observe(imageTargetRef.current);
 
     const frameId = window.requestAnimationFrame(updateBounds);
@@ -1644,7 +1754,18 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
       window.cancelAnimationFrame(frameId);
       observer.disconnect();
     };
-  }, [activeStylePreset.layout, draft.imageHeightScale, draft.imageOffset.x, draft.imageOffset.y, draft.imageWidthScale, draft.size, draft.titleOffset.x, draft.titleOffset.y, titleFontSizePx]);
+  }, [
+    activeStylePreset.layout,
+    draft.imageHeightScale,
+    draft.imageOffset.x,
+    draft.imageOffset.y,
+    draft.imageWidthScale,
+    draft.size,
+    draft.titleOffset.x,
+    draft.titleOffset.y,
+    draft.titlePlateSize,
+    titleFontSizePx,
+  ]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -1686,6 +1807,7 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
         setIsSizeMenuOpen(false);
         setIsStylePopupOpen(false);
         setSelectedEditorLayer(null);
+        setTitleEditMode(null);
       }
     };
 
@@ -1947,10 +2069,24 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
                 titleFontSizePx={titleFontSizePx}
                 previewBoundsRef={previewRef}
                 titleTargetRef={titleTargetRef}
+                titleTextRef={titleTextRef}
                 imageTargetRef={imageTargetRef}
-                isTitleMoveActive={selectedEditorLayer === "title"}
-                onTitleMoveToggle={() => setSelectedEditorLayer((current) => (current === "title" ? null : "title"))}
-                onImageEditActivate={() => setSelectedEditorLayer("image")}
+                isTitleMoveActive={selectedEditorLayer === "title" && titleEditMode === "move"}
+                isTitleCropActive={selectedEditorLayer === "title" && titleEditMode === "crop"}
+                onTitleMoveToggle={() => {
+                  const nextActive = !(selectedEditorLayer === "title" && titleEditMode === "move");
+                  setSelectedEditorLayer(nextActive ? "title" : null);
+                  setTitleEditMode(nextActive ? "move" : null);
+                }}
+                onTitleCropToggle={() => {
+                  const nextActive = !(selectedEditorLayer === "title" && titleEditMode === "crop");
+                  setSelectedEditorLayer(nextActive ? "title" : null);
+                  setTitleEditMode(nextActive ? "crop" : null);
+                }}
+                onImageEditActivate={() => {
+                  setSelectedEditorLayer("image");
+                  setTitleEditMode(null);
+                }}
                 onTitleChange={(value) => updateField("title", value)}
                 onTitleAlignmentChange={(alignment) => updateField("titleAlignment", alignment)}
                 onTitleTextColorChange={(value) => updateField("titleTextColor", value)}
@@ -1964,14 +2100,17 @@ export function BannerWorkspace({ initialProjectId = null }: BannerWorkspaceProp
               />
               <BannerCanvasEditor
                 selectedLayer={selectedEditorLayer}
+                titleEditMode={titleEditMode}
                 previewBounds={previewLayerBounds}
                 titleBounds={titleLayerBounds}
+                titleTextBounds={titleTextLayerBounds}
                 imageBounds={imageLayerBounds}
                 titleOffset={draft.titleOffset}
                 imageOffset={draft.imageOffset}
                 imageWidthScale={draft.imageWidthScale}
                 imageHeightScale={draft.imageHeightScale}
                 onTitleOffsetChange={(value) => updateField("titleOffset", value)}
+                onTitlePlateSizeChange={(value) => updateField("titlePlateSize", value)}
                 onImageOffsetChange={(value) => updateField("imageOffset", value)}
                 onImageWidthScaleChange={(value) => updateField("imageWidthScale", value)}
                 onImageHeightScaleChange={(value) => updateField("imageHeightScale", value)}
