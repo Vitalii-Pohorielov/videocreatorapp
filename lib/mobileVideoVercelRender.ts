@@ -1,4 +1,5 @@
 import path from "node:path";
+import { Readable } from "node:stream";
 
 import { addBundleToSandbox, createSandbox, renderMediaOnVercel } from "@remotion/vercel";
 
@@ -29,20 +30,40 @@ export async function renderMobileVideoOnVercel(payload: MobileVideoRenderPayloa
       },
     });
 
-    const buffer = await sandbox.readFileToBuffer({
+    const stream = await sandbox.readFile({
       path: sandboxFilePath,
     });
 
-    if (!buffer) {
+    if (!stream) {
       throw new Error("Rendered video file was not found in the Vercel Sandbox.");
     }
 
+    let cleanedUp = false;
+    const cleanup = async () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      await sandbox.stop().catch(() => undefined);
+    };
+
+    stream.once("end", () => {
+      void cleanup();
+    });
+
+    stream.once("close", () => {
+      void cleanup();
+    });
+
+    stream.once("error", () => {
+      void cleanup();
+    });
+
     return {
-      buffer,
+      stream: Readable.toWeb(stream as Readable) as unknown as ReadableStream<Uint8Array>,
       contentType,
       fileName: toSafeMobileVideoFileName(payload.projectName),
     };
-  } finally {
+  } catch (error) {
     await sandbox.stop().catch(() => undefined);
+    throw error;
   }
 }
