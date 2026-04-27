@@ -625,8 +625,9 @@ Flow:
 
 1. The server fetches the website HTML with a browser-like user agent.
 2. It extracts title, description, headings, paragraphs, bullets, CTA text, and `og:image`.
-3. It builds a short deterministic scene draft.
-4. It assigns a random preset from current preset defaults.
+3. If `OPENAI_API_KEY` is configured, the server sends a compact site summary to OpenAI Responses API and requests a structured 4-scene promo plan.
+4. If OpenAI is unavailable or not configured, it falls back to the deterministic generator.
+5. It maps the plan into the existing scene templates and export settings.
 
 Current draft shape:
 
@@ -637,9 +638,9 @@ Current draft shape:
 
 Important limitations:
 
-- generation is deterministic, not LLM-based;
-- parsing is regex/string-based and can be noisy;
-- output quality depends heavily on site structure and metadata quality.
+- HTML parsing is still regex/string-based and can be noisy;
+- AI generation quality depends on site structure and metadata quality;
+- the OpenAI layer is optional and will fall back to deterministic generation on failure.
 
 ## Presets and styling
 
