@@ -6,6 +6,7 @@ import { createScene, presetDefaults, type ExportSettings, type Scene, type Scen
 type ScrapedSiteData = {
   sourceUrl: string;
   siteName: string;
+  pageName: string;
   title: string;
   description: string;
   headings: string[];
@@ -21,6 +22,16 @@ type GeneratedProjectPayload = {
   projectName: string;
   sceneTrack: SceneTrack;
   exportSettings: ExportSettings;
+};
+
+type ExtractedSiteBrief = {
+  name: string;
+  slogan: string[];
+  description: string;
+  price: string[];
+  stepsToUse: string[];
+  cta: string;
+  features: string[];
 };
 
 type GeneratedScenePlan = {
@@ -64,6 +75,7 @@ type SupportedGeneratedSceneType =
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const MAX_GENERATED_SCENES = 6;
 const introSceneTypes: IntroSceneType[] = ["brand-reveal", "brand-reveal-alt", "brand-reveal-circle"];
 const supportedGeneratedSceneTypes: SupportedGeneratedSceneType[] = [
   "brand-reveal",
@@ -245,6 +257,36 @@ function getDomainLabel(sourceUrl: string) {
   }
 }
 
+function getUrlPathname(sourceUrl: string) {
+  try {
+    return new URL(sourceUrl).pathname || "/";
+  } catch {
+    return "/";
+  }
+}
+
+function isSubpageUrl(sourceUrl: string) {
+  const pathname = getUrlPathname(sourceUrl);
+  return pathname !== "/" && pathname !== "";
+}
+
+function getPageSlugLabel(sourceUrl: string) {
+  try {
+    const pathname = new URL(sourceUrl).pathname;
+    const segments = pathname.split("/").filter(Boolean);
+    const lastSegment = segments[segments.length - 1] ?? "";
+    if (!lastSegment) return "";
+
+    return lastSegment
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  } catch {
+    return "";
+  }
+}
+
 function pickLikelySiteNameFromTitle(title: string, domainLabel: string) {
   const normalized = title.replace(/\s+/g, " ").trim();
   if (!normalized) return domainLabel;
@@ -277,6 +319,23 @@ function sanitizeProjectName(value: string, domainLabel: string) {
   if (!cleaned) return domainLabel;
   if (cleaned.length > 48) return pickLikelySiteNameFromTitle(cleaned, domainLabel);
   return cleaned;
+}
+
+function resolvePageName(url: string, siteName: string, title: string, headings: string[]) {
+  const domainLabel = getDomainLabel(url);
+  const slugLabel = getPageSlugLabel(url);
+  const subpage = isSubpageUrl(url);
+  const headingName = sanitizeProjectName(headings[0] || "", siteName || domainLabel);
+  const titleName = sanitizeProjectName(title || "", siteName || domainLabel);
+  const slugName = sanitizeProjectName(slugLabel || "", siteName || domainLabel);
+
+  if (subpage) {
+    const candidates = [headingName, titleName, slugName].filter(Boolean);
+    const specificCandidate = candidates.find((candidate) => candidate.toLowerCase() !== (siteName || "").toLowerCase());
+    return specificCandidate || candidates[0] || siteName || domainLabel;
+  }
+
+  return headingName || titleName || siteName || domainLabel;
 }
 
 async function scrapeSite(url: string): Promise<ScrapedSiteData> {
@@ -328,10 +387,12 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
   ).filter((item) => item.length < 60);
   const ogImageUrl = absolutizeUrl(findMetaContent(cleanedHtml, ["og:image", "twitter:image"]), url);
   const logoImageUrl = findLogoImageUrl(cleanedHtml, url);
+  const pageName = resolvePageName(url, siteName, title, headings);
 
   return {
     sourceUrl: url,
     siteName,
+    pageName,
     title,
     description,
     headings,
@@ -370,6 +431,16 @@ function compactMarketingLine(value: string, maxLength = 32) {
     .replace(/[,:;()]+/g, "")
     .trim()
     .slice(0, maxLength);
+}
+
+function dedupeTextOptions(values: string[], maxLength: number) {
+  return uniqueNonEmpty(
+    values
+      .map((value) => value.replace(/\s+/g, " ").trim())
+      .filter(Boolean)
+      .map((value) => value.slice(0, maxLength)),
+    values.length,
+  );
 }
 
 function pickShortSloganLines(values: string[], fallback: string) {
@@ -440,33 +511,74 @@ function withDuration(scene: Scene, durationSeconds = 2.7) {
   return { ...scene, durationSeconds };
 }
 
-function buildDeterministicProjectPlan(scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
-  const projectName = scraped.siteName || scraped.title || getDomainLabel(normalizedUrl);
-  const heroTitle = scraped.headings[0] || scraped.title || projectName;
+function buildDeterministicSiteBrief(scraped: ScrapedSiteData, normalizedUrl: string): ExtractedSiteBrief {
+  const pageSlugLabel = getPageSlugLabel(normalizedUrl);
+  const prefersSubpage = isSubpageUrl(normalizedUrl);
+  const projectName = prefersSubpage
+    ? sanitizeProjectName(scraped.pageName || scraped.headings[0] || scraped.title || pageSlugLabel || scraped.siteName || getDomainLabel(normalizedUrl), scraped.siteName || getDomainLabel(normalizedUrl))
+    : scraped.siteName || scraped.pageName || scraped.title || getDomainLabel(normalizedUrl);
+  const heroTitle = scraped.pageName || scraped.headings[0] || scraped.title || pageSlugLabel || projectName;
   const heroSubtitle = scraped.description || scraped.headings[1] || `Explore ${projectName}.`;
-  const featureBullets = takeBullets(scraped.featureCandidates.length ? scraped.featureCandidates : scraped.bullets.length ? scraped.bullets : scraped.headings.slice(1), 3);
-  const ctaLine = scraped.cta[0] || `Visit ${projectName}`;
   const supportingParagraph = scraped.paragraphs[0] || scraped.description;
-  const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const sloganLines = pickShortSloganLines(
     [scraped.headings[1] || "", scraped.headings[2] || "", scraped.headings[3] || "", scraped.description, supportingParagraph, heroTitle],
     projectName,
   );
-  const descriptionLine1 = toShortLine(sloganLines[0] || scraped.headings[1] || heroTitle, "Built for modern teams", 32);
-  const descriptionLine2 = toShortLine(sloganLines[1] || scraped.headings[2] || scraped.description || heroSubtitle, "Clear product communication", 32);
-  const descriptionLine3 = toShortLine(sloganLines[2] || scraped.headings[3] || supportingParagraph || `Explore ${projectName}`, "Fast demos and exports", 32);
-  const quoteSource = scraped.headings[1] || scraped.cta[0] || normalizedDomain;
-  const pricingTitles = ["Starter", "Pro", "Team"];
-  const pricingDescriptions = [
-    toShortLine(scraped.bullets[0] || "Launch quickly with the essentials.", "Launch quickly with the essentials.", 48),
-    toShortLine(scraped.bullets[1] || "Best balance of speed and polish.", "Best balance of speed and polish.", 48),
-    toShortLine(scraped.bullets[2] || "Built for growing teams.", "Built for growing teams.", 48),
-  ];
+  const featureBullets = takeBullets(scraped.featureCandidates.length ? scraped.featureCandidates : scraped.bullets.length ? scraped.bullets : scraped.headings.slice(1), 3);
+  const ctaLine = scraped.cta[0] || `Visit ${projectName}`;
+  const priceLines = takeBullets(
+    scraped.bullets.filter((item) => /\$|€|£|\/mo|\/month|free|pricing|plan|starter|pro|team/i.test(item)),
+    3,
+  );
+  const processCandidates = takeBullets(
+    [
+      ...scraped.headings.filter((item) => /how|step|workflow|process|start|setup|launch|create|export|upload|publish|share|analy/i.test(item)),
+      ...scraped.featureCandidates,
+      ...scraped.cta,
+      ...scraped.paragraphs.flatMap((item) => splitIntoPhrases(item)),
+    ],
+    6,
+  );
+  const processSteps =
+    processCandidates.length >= 3
+      ? processCandidates.slice(0, 3)
+      : [`Add ${projectName}`, "Shape the message", "Publish the result"];
 
   return {
-    projectName,
-    preset: randomChoice(generatedPresets),
-    scenes: [
+    name: projectName,
+    slogan: [
+      toShortLine(sloganLines[0] || scraped.headings[1] || heroTitle, "Built for modern teams", 32),
+      toShortLine(sloganLines[1] || scraped.headings[2] || scraped.description || heroSubtitle, "Clear product communication", 32),
+      toShortLine(sloganLines[2] || scraped.headings[3] || supportingParagraph || `Explore ${projectName}`, "Fast demos and exports", 32),
+    ],
+    description: toShortLine(scraped.description || supportingParagraph || heroSubtitle, `Explore ${projectName}.`, 180),
+    price:
+      priceLines.length > 0
+        ? priceLines
+        : ["Starter - Contact sales", "Pro - Custom pricing", "Team - Custom setup"],
+    stepsToUse: processSteps,
+    cta: ctaLine,
+    features:
+      featureBullets.length > 0
+        ? featureBullets
+        : ["Fast setup", "Clear workflow", "Polished output"],
+  };
+}
+
+function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
+  const projectName = brief.name || scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl);
+  const heroTitle = scraped.pageName || scraped.headings[0] || projectName;
+  const heroSubtitle = brief.description || scraped.description || `Explore ${projectName}.`;
+  const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const quoteSource = scraped.headings[1] || brief.cta || normalizedDomain;
+  const pricingTitles = ["Starter", "Pro", "Team"];
+  const pricingDescriptions = [
+    toShortLine(brief.price[0] || "Launch quickly with the essentials.", "Launch quickly with the essentials.", 48),
+    toShortLine(brief.price[1] || "Best balance of speed and polish.", "Best balance of speed and polish.", 48),
+    toShortLine(brief.price[2] || "Built for growing teams.", "Built for growing teams.", 48),
+  ];
+
+  const scenes: GeneratedScenePlan[] = [
       {
         type: "brand-reveal",
         eyebrow: getDomainLabel(normalizedUrl),
@@ -478,16 +590,16 @@ function buildDeterministicProjectPlan(scraped: ScrapedSiteData, normalizedUrl: 
       {
         type: "description",
         eyebrow: "Overview",
-        title: descriptionLine1,
-        subtitle: descriptionLine2,
-        description: descriptionLine3,
+        title: toShortLine(brief.slogan[0] || projectName, "Built for modern teams", 32),
+        subtitle: toShortLine(brief.slogan[1] || heroSubtitle, "Clear product communication", 32),
+        description: toShortLine(brief.slogan[2] || heroTitle, "Fast demos and exports", 32),
         bullets: [],
       },
       {
         type: "product-showcase",
         eyebrow: "Highlight",
-        title: heroTitle.slice(0, 90),
-        subtitle: heroSubtitle.slice(0, 120),
+        title: toShortLine(scraped.headings[1] || brief.features[0] || `${projectName} in action`, `${projectName} in action`, 90),
+        subtitle: toShortLine(scraped.paragraphs[0] || brief.description || heroSubtitle, brief.description || heroSubtitle, 120),
         description: "",
         bullets: [],
         mediaPosition: "right",
@@ -498,22 +610,19 @@ function buildDeterministicProjectPlan(scraped: ScrapedSiteData, normalizedUrl: 
         title: `Why ${projectName} stands out`,
         subtitle: "",
         description: "",
-        bullets:
-          featureBullets.length > 0
-            ? featureBullets
-            : takeBullets([scraped.headings[1] || "", scraped.headings[2] || "", heroSubtitle], 3),
+        bullets: takeBullets(brief.features, 3),
       },
       {
         type: "process",
         eyebrow: "Process",
         title: "How it works",
-        subtitle: toShortLine(scraped.description || "Three simple steps from idea to export.", "Three simple steps from idea to export.", 72),
+        subtitle: toShortLine(brief.description || "Three simple steps from idea to export.", "Three simple steps from idea to export.", 72),
         description: "",
-        bullets: ["Discover", "Decide", "Act"],
+        bullets: takeBullets(brief.stepsToUse, 3).length === 3 ? takeBullets(brief.stepsToUse, 3) : [`Add ${projectName}`, "Shape the message", "Publish the result"],
         processStepDescriptions: [
-          toShortLine(scraped.headings[0] || "See the core offer.", "See the core offer.", 48),
-          toShortLine(scraped.headings[1] || "Understand the value fast.", "Understand the value fast.", 48),
-          toShortLine(ctaLine || "Take the next step.", "Take the next step.", 48),
+          toShortLine(brief.stepsToUse[0] || scraped.headings[0] || "See the core offer.", "See the core offer.", 48),
+          toShortLine(brief.stepsToUse[1] || scraped.headings[1] || "Understand the value fast.", "Understand the value fast.", 48),
+          toShortLine(brief.stepsToUse[2] || brief.cta || "Take the next step.", "Take the next step.", 48),
         ],
       },
       {
@@ -529,7 +638,7 @@ function buildDeterministicProjectPlan(scraped: ScrapedSiteData, normalizedUrl: 
       {
         type: "quote",
         eyebrow: "Social proof",
-        title: `"${toShortLine(scraped.description || supportingParagraph || `Explore ${projectName}`, `Explore ${projectName}`, 72)}"`,
+        title: `"${toShortLine(brief.description || scraped.description || `Explore ${projectName}`, `Explore ${projectName}`, 72)}"`,
         subtitle: toShortLine(quoteSource, normalizedDomain, 56),
         description: "",
         bullets: [],
@@ -539,14 +648,14 @@ function buildDeterministicProjectPlan(scraped: ScrapedSiteData, normalizedUrl: 
         eyebrow: "Website",
         title: toShortLine(heroTitle, "See the product in motion", 64),
         subtitle: toShortLine(heroSubtitle, "Let the product story scroll in the background.", 72),
-        description: toShortLine(descriptionLine3, "Key copy stays readable in front.", 72),
+        description: toShortLine(brief.slogan[2] || brief.description, "Key copy stays readable in front.", 72),
         bullets: [],
         mediaPosition: "left",
       },
       {
         type: "cta-panel",
         eyebrow: "Next step",
-        title: ctaLine.slice(0, 90),
+        title: brief.cta.slice(0, 90),
         subtitle: normalizedDomain,
         description: "Get started",
         bullets: [],
@@ -559,7 +668,33 @@ function buildDeterministicProjectPlan(scraped: ScrapedSiteData, normalizedUrl: 
         description: "",
         bullets: [],
       },
-    ],
+    ];
+
+  return {
+    projectName,
+    preset: randomChoice(generatedPresets),
+    scenes: scenes.slice(0, MAX_GENERATED_SCENES),
+  };
+}
+
+function buildWebsiteSummary(scraped: ScrapedSiteData, normalizedUrl: string) {
+  return {
+    url: normalizedUrl,
+    domainLabel: getDomainLabel(normalizedUrl),
+    pathname: getUrlPathname(normalizedUrl),
+    isSubpage: isSubpageUrl(normalizedUrl),
+    pageSlugLabel: getPageSlugLabel(normalizedUrl),
+    siteName: scraped.siteName,
+    pageName: scraped.pageName,
+    title: scraped.title,
+    description: scraped.description,
+    headings: scraped.headings.slice(0, 6),
+    paragraphs: scraped.paragraphs.slice(0, 4),
+    bullets: scraped.bullets.slice(0, 6),
+    featureCandidates: scraped.featureCandidates.slice(0, 6),
+    cta: scraped.cta.slice(0, 4),
+    ogImageUrl: scraped.ogImageUrl,
+    logoImageUrl: scraped.logoImageUrl,
   };
 }
 
@@ -567,12 +702,80 @@ function normalizePlanValue(value: string | undefined, fallback: string, maxLeng
   return toShortLine(value ?? "", fallback, maxLength);
 }
 
+function buildSceneTextAlternatives(
+  sceneType: SupportedGeneratedSceneType,
+  scenePlan: GeneratedScenePlan,
+  scraped: ScrapedSiteData,
+  projectName: string,
+  normalizedDomain: string,
+) {
+  switch (sceneType) {
+    case "description":
+      return {
+        title: dedupeTextOptions([scenePlan.title, scraped.headings[1] || "", projectName], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.headings[2] || "", scraped.description || ""], 120),
+        description: dedupeTextOptions([scenePlan.description, scraped.headings[3] || "", scraped.paragraphs[0] || ""], 120),
+      };
+    case "product-showcase":
+      return {
+        title: dedupeTextOptions([scenePlan.title, scraped.headings[1] || "", scraped.featureCandidates[0] || "", `${projectName} in action`], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.paragraphs[0] || "", scraped.description || "", `Built around ${projectName}`], 120),
+        description: dedupeTextOptions([scenePlan.description, scraped.featureCandidates[1] || ""], 120),
+      };
+    case "process":
+      return {
+        title: dedupeTextOptions([scenePlan.title, `How to use ${projectName}`, "How it works"], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.description || "", `Three steps to use ${projectName}`], 120),
+        description: dedupeTextOptions([scenePlan.description, briefEmptyString()], 120),
+      };
+    case "feature-grid":
+      return {
+        title: dedupeTextOptions([scenePlan.title, `Why ${projectName} stands out`, "Core features"], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.description || ""], 120),
+        description: dedupeTextOptions([scenePlan.description], 120),
+      };
+    case "cta":
+    case "cta-panel":
+      return {
+        title: dedupeTextOptions([scenePlan.title, scenePlan.description || "", `Visit ${projectName}`], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, normalizedDomain], 120),
+        description: dedupeTextOptions([scenePlan.description, "Get started"], 120),
+      };
+    default:
+      return {
+        title: dedupeTextOptions([scenePlan.title, scraped.headings[0] || projectName], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.description || ""], 120),
+        description: dedupeTextOptions([scenePlan.description, scraped.paragraphs[0] || ""], 120),
+      };
+  }
+}
+
+function briefEmptyString() {
+  return "";
+}
+
+function chooseUniqueText(options: string[], used: Set<string>, fallback: string) {
+  for (const option of options) {
+    const normalized = option.replace(/\s+/g, " ").trim().toLowerCase();
+    if (!normalized) continue;
+    if (!used.has(normalized)) {
+      used.add(normalized);
+      return option;
+    }
+  }
+
+  const fallbackValue = fallback.replace(/\s+/g, " ").trim();
+  if (fallbackValue) used.add(fallbackValue.toLowerCase());
+  return fallback;
+}
+
 function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPayload {
-  const projectName = normalizePlanValue(plan.projectName, scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
+  const projectName = normalizePlanValue(plan.projectName, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const preset = generatedPresets.includes(plan.preset) ? plan.preset : "white";
   const presetColors = presetDefaults[preset];
   const scenes: Scene[] = [];
+  const usedSceneText = new Set<string>();
   const fallbackFeatureBullets = takeBullets(scraped.bullets.length ? scraped.bullets : scraped.headings.slice(1), 3);
   const featureFallbackSource = scraped.featureCandidates.length ? scraped.featureCandidates : fallbackFeatureBullets;
   const fallbackPricingTitles = ["Starter", "Pro", "Team"];
@@ -581,19 +784,37 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
     toShortLine(scraped.bullets[1] || "Best balance of speed and polish.", "Best balance of speed and polish.", 48),
     toShortLine(scraped.bullets[2] || "Built for growing teams.", "Built for growing teams.", 48),
   ];
-  const rawScenes = plan.scenes.length > 0 ? plan.scenes : buildDeterministicProjectPlan(scraped, normalizedUrl).scenes;
+  const fallbackPlan = buildDeterministicProjectPlanFromBrief(buildDeterministicSiteBrief(scraped, normalizedUrl), scraped, normalizedUrl);
+  const rawScenes = (plan.scenes.length > 0 ? plan.scenes : fallbackPlan.scenes).slice(0, MAX_GENERATED_SCENES);
   const normalizedScenePlans = introSceneTypes.includes(rawScenes[0]?.type as IntroSceneType)
     ? rawScenes
-    : [buildDeterministicProjectPlan(scraped, normalizedUrl).scenes[0], ...rawScenes];
+    : [fallbackPlan.scenes[0], ...rawScenes].slice(0, MAX_GENERATED_SCENES);
 
   normalizedScenePlans.forEach((scenePlan, index) => {
     const scene = createScene(scenePlan.type, scenes.length);
+    const textAlternatives = buildSceneTextAlternatives(scenePlan.type, scenePlan, scraped, projectName, normalizedDomain);
     const baseUpdates: Partial<Omit<Scene, "id" | "type">> = {
       name: `${sceneDisplayNames[scenePlan.type]} ${index + 1}`,
-      eyebrow: normalizePlanValue(scenePlan.eyebrow, scene.eyebrow, 32),
-      title: normalizePlanValue(scenePlan.title, projectName, 90),
-      subtitle: normalizePlanValue(scenePlan.subtitle, scene.subtitle || scraped.description || "", 120),
-      description: normalizePlanValue(scenePlan.description, scene.description || "", 120),
+      eyebrow: chooseUniqueText(
+        dedupeTextOptions([scenePlan.eyebrow, scene.eyebrow, sceneDisplayNames[scenePlan.type]], 32),
+        usedSceneText,
+        normalizePlanValue(scenePlan.eyebrow, scene.eyebrow, 32),
+      ),
+      title: chooseUniqueText(
+        textAlternatives.title,
+        usedSceneText,
+        normalizePlanValue(scenePlan.title, projectName, 90),
+      ),
+      subtitle: chooseUniqueText(
+        textAlternatives.subtitle,
+        usedSceneText,
+        normalizePlanValue(scenePlan.subtitle, scene.subtitle || scraped.description || "", 120),
+      ),
+      description: chooseUniqueText(
+        textAlternatives.description,
+        usedSceneText,
+        normalizePlanValue(scenePlan.description, scene.description || "", 120),
+      ),
       mediaPosition: scenePlan.mediaPosition ?? scene.mediaPosition,
     };
 
@@ -636,7 +857,7 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
         break;
       case "feature-grid": {
         const bullets = takeBullets(scenePlan.bullets, 3);
-        const nextBullets = bullets.length > 0 ? bullets : takeBullets(featureFallbackSource, 3);
+        const nextBullets = uniqueNonEmpty(bullets.length > 0 ? bullets : takeBullets(featureFallbackSource, 3), 3);
         const icons = getFeatureAnimatedIcons(Math.max(nextBullets.length, 1));
         scenes.push(
           withDuration(
@@ -670,13 +891,13 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
         break;
       }
       case "process": {
-        const bullets = takeBullets(scenePlan.bullets, 3);
-        const descriptions = (scenePlan.processStepDescriptions ?? []).map((item) => toShortLine(item, "", 56)).filter(Boolean).slice(0, 3);
+        const bullets = uniqueNonEmpty(takeBullets(scenePlan.bullets, 3), 3);
+        const descriptions = uniqueNonEmpty((scenePlan.processStepDescriptions ?? []).map((item) => toShortLine(item, "", 56)).filter(Boolean).slice(0, 3), 3);
         scenes.push(
           withDuration(
             applyScene(scene, {
               ...baseUpdates,
-              bullets: bullets.length === 3 ? bullets : ["Discover", "Decide", "Act"],
+              bullets: bullets.length === 3 ? bullets : [`Add ${projectName}`, "Shape the message", "Publish the result"],
               processStepDescriptions:
                 descriptions.length === 3
                   ? descriptions
@@ -714,116 +935,7 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
   };
 }
 
-async function requestOpenAiProjectPlan(scraped: ScrapedSiteData, normalizedUrl: string): Promise<GeneratedProjectPlan> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY.");
-  }
-
-  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
-  const websiteSummary = {
-    url: normalizedUrl,
-    domainLabel: getDomainLabel(normalizedUrl),
-    siteName: scraped.siteName,
-    title: scraped.title,
-    description: scraped.description,
-    headings: scraped.headings.slice(0, 6),
-    paragraphs: scraped.paragraphs.slice(0, 4),
-    bullets: scraped.bullets.slice(0, 6),
-    featureCandidates: scraped.featureCandidates.slice(0, 6),
-    cta: scraped.cta.slice(0, 4),
-    ogImageUrl: scraped.ogImageUrl,
-    logoImageUrl: scraped.logoImageUrl,
-  };
-
-  const response = await fetch(OPENAI_RESPONSES_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      reasoning: { effort: "medium" },
-      input: [
-        {
-          role: "system",
-          content: [
-            {
-              type: "input_text",
-              text:
-                "You create short promo video plans from website summaries. Return JSON only. Keep copy specific, concise, and grounded in the provided site data. Never invent pricing, customers, testimonials, or capabilities that are not supported by the website summary. The first scene must always be an intro scene. For description scenes, write a compact 3-line slogan, not long sentences.",
-            },
-          ],
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-               text: `Build a promo video plan for this website summary:\n${JSON.stringify(websiteSummary, null, 2)}\n\nRequirements:\n- Return 6 to 10 scenes\n- Scene 1 must be one of: ${introSceneTypes.join(", ")}\n- For the rest, you may use any of these scene types: ${supportedGeneratedSceneTypes.join(", ")}\n- Use a varied mix of scene types instead of repeating the same one unless it clearly helps\n- Use short lines that fit a motion-graphics promo video\n- Description scenes must read like a short slogan split across 3 lines: title, subtitle, description\n- Each description line should usually be under 32 characters when possible\n- If you use feature-grid, first rely on featureCandidates or obvious features/benefits from the site\n- If the site has no clean feature section, generate your own short feature bullets from the product value proposition\n- Feature bullets must be 1 to 3 items, each under 56 characters\n- If evidence is weak, stay generic instead of guessing\n- Process scenes must have exactly 3 bullets and 3 process step descriptions\n- Pricing scenes should use 3 plan titles and 3 plan descriptions only if the site gives enough signal; otherwise keep them generic\n- Website scroll scenes should be used only when a visual site showcase makes sense\n- Prefer the site's domain for the final website-url scene title`,
-            },
-          ],
-        },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "website_video_plan",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              projectName: { type: "string" },
-              preset: { type: "string", enum: generatedPresets },
-              scenes: {
-                type: "array",
-                minItems: 6,
-                maxItems: 10,
-                items: {
-                  type: "object",
-                  properties: {
-                    type: { type: "string", enum: supportedGeneratedSceneTypes },
-                    eyebrow: { type: "string" },
-                    title: { type: "string" },
-                    subtitle: { type: "string" },
-                    description: { type: "string" },
-                    bullets: {
-                      type: "array",
-                      items: { type: "string" },
-                      maxItems: 3,
-                    },
-                    pricingPlanTitles: {
-                      type: "array",
-                      items: { type: "string" },
-                      maxItems: 3,
-                    },
-                    pricingPlanDescriptions: {
-                      type: "array",
-                      items: { type: "string" },
-                      maxItems: 3,
-                    },
-                    processStepDescriptions: {
-                      type: "array",
-                      items: { type: "string" },
-                      maxItems: 3,
-                    },
-                    mediaPosition: { type: "string", enum: ["left", "right", "bottom"] },
-                  },
-                  required: ["type", "eyebrow", "title", "subtitle", "description", "bullets"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["projectName", "preset", "scenes"],
-            additionalProperties: false,
-          },
-        },
-      },
-    }),
-    signal: AbortSignal.timeout(30000),
-  });
-
+async function readOpenAiJsonResponse<T>(response: Response, model: string, errorContext: string): Promise<T> {
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     throw new Error(`OpenAI request failed: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ""}`);
@@ -849,17 +961,98 @@ async function requestOpenAiProjectPlan(scraped: ScrapedSiteData, normalizedUrl:
     "";
 
   if (!responseText) {
-    throw new Error(`OpenAI returned an empty plan for model ${model}.`);
+    throw new Error(`OpenAI returned an empty ${errorContext} for model ${model}.`);
   }
 
-  let parsedPlan: unknown;
   try {
-    parsedPlan = JSON.parse(responseText);
+    return JSON.parse(responseText) as T;
   } catch {
     throw new Error(`OpenAI returned invalid JSON for model ${model}.`);
   }
+}
 
-  const plan = parsedPlan as Partial<GeneratedProjectPlan>;
+async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: string): Promise<GeneratedProjectPlan> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing OPENAI_API_KEY.");
+  }
+
+  const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+  const websiteSummary = buildWebsiteSummary(scraped, normalizedUrl);
+
+  const response = await fetch(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      reasoning: { effort: "medium" },
+      input: [
+        {
+          role: "system",
+          content: [
+            {
+              type: "input_text",
+              text:
+                "You create short promo video scene plans directly from website summaries. Return JSON only. Write scene-specific copy for every scene instead of a shared brief. Ground each scene in the site summary when possible. If the site is missing information, infer conservatively from the product value proposition without inventing customers, testimonials, case studies, or unsupported claims. If the URL is a subpage, analyze that exact page and its specific entity, not the website homepage or brand in general. Every scene should move the story forward with distinct messaging.",
+            },
+          ],
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `Create a promo video scene plan from this website summary:\n${JSON.stringify(websiteSummary, null, 2)}\n\nRequirements:\n- Return 4 to 6 scenes\n- Scene 1 must be one of: ${introSceneTypes.join(", ")}\n- For the rest, you may use any of these scene types: ${supportedGeneratedSceneTypes.join(", ")}\n- Generate text directly for each scene: eyebrow, title, subtitle, description, bullets, and optional pricing/process fields\n- Each scene must have a different communication role such as intro, explanation, feature proof, workflow, offer, CTA, or visual website moment\n- Avoid repeating the same headline, subtitle, description, or bullet text across scenes\n- Intro scenes should identify the product or page-specific entity clearly\n- Description scenes should feel like a compact 3-line message, with each line usually under 32 characters when possible\n- Product-showcase scenes should focus on one concrete benefit or outcome\n- Feature-grid scenes should use 1 to 3 concise feature bullets, preferably grounded in featureCandidates or clear site benefits\n- Process scenes must include exactly 3 bullets and 3 processStepDescriptions that explain a clear user flow\n- Pricing scenes may use generic plan framing if the site does not expose exact pricing, but do not invent exact unsupported price amounts\n- CTA scenes should be action-oriented and distinct from intro copy\n- Website scenes should make sense visually and still include scene-specific text\n- If the URL is a subpage, focus on that page's tool/product/entity rather than the parent site in general\n- Prefer concise, motion-graphics-friendly copy throughout`,
+            },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "website_video_plan",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              projectName: { type: "string" },
+              preset: { type: "string", enum: generatedPresets },
+              scenes: {
+                type: "array",
+                minItems: 4,
+                maxItems: 6,
+                items: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", enum: supportedGeneratedSceneTypes },
+                    eyebrow: { type: "string" },
+                    title: { type: "string" },
+                    subtitle: { type: "string" },
+                    description: { type: "string" },
+                    bullets: { type: "array", items: { type: "string" }, maxItems: 3 },
+                    pricingPlanTitles: { type: "array", items: { type: "string" }, maxItems: 3 },
+                    pricingPlanDescriptions: { type: "array", items: { type: "string" }, maxItems: 3 },
+                    processStepDescriptions: { type: "array", items: { type: "string" }, maxItems: 3 },
+                    mediaPosition: { type: "string", enum: ["left", "right", "bottom"] },
+                  },
+                  required: ["type", "eyebrow", "title", "subtitle", "description", "bullets"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["projectName", "preset", "scenes"],
+            additionalProperties: false,
+          },
+        },
+      },
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  const plan = await readOpenAiJsonResponse<Partial<GeneratedProjectPlan>>(response, model, "scene plan");
   if (
     !plan.projectName ||
     !plan.preset ||
@@ -888,14 +1081,15 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   }
 
   const scraped = await scrapeSite(normalizedUrl);
-  const fallbackPlan = buildDeterministicProjectPlan(scraped, normalizedUrl);
+  const fallbackBrief = buildDeterministicSiteBrief(scraped, normalizedUrl);
+  const fallbackPlan = buildDeterministicProjectPlanFromBrief(fallbackBrief, scraped, normalizedUrl);
 
   if (!process.env.OPENAI_API_KEY) {
     return buildProjectPayloadFromPlan(fallbackPlan, scraped, normalizedUrl);
   }
 
   try {
-    const aiPlan = await requestOpenAiProjectPlan(scraped, normalizedUrl);
+    const aiPlan = await requestOpenAiScenePlan(scraped, normalizedUrl);
     return buildProjectPayloadFromPlan(aiPlan, scraped, normalizedUrl);
   } catch (error) {
     console.error("[generate-from-url] OpenAI enhancement failed, using deterministic fallback.", error);
