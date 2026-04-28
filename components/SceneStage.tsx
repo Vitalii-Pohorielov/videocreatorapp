@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties, type ElementType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
-import { OffthreadVideo, staticFile } from "remotion";
 
 import { CodeEditorModal } from "@/components/CodeEditorModal";
 import { CodePreviewCard } from "@/components/CodePreviewCard";
@@ -444,6 +443,23 @@ function getLogoFrameMetrics(naturalSize: { width: number; height: number } | nu
     innerWidth: Math.round(outerWidth * innerWidthScale),
     innerHeight: Math.round(outerHeight * innerHeightScale),
   };
+}
+
+function getDescriptionLineFontSize(lines: string[], compact: boolean) {
+  const longestLineLength = Math.max(...lines.map((line) => line.replace(/\s+/g, " ").trim().length), 0);
+
+  if (compact) {
+    if (longestLineLength >= 38) return "1.8rem";
+    if (longestLineLength >= 30) return "2.15rem";
+    if (longestLineLength >= 22) return "2.55rem";
+    return "3rem";
+  }
+
+  if (longestLineLength >= 44) return "3.15rem";
+  if (longestLineLength >= 36) return "3.85rem";
+  if (longestLineLength >= 28) return "4.75rem";
+  if (longestLineLength >= 22) return "5.6rem";
+  return "6.9rem";
 }
 
 function IntroLogo({
@@ -1193,6 +1209,7 @@ export function SceneStage({
   const ctaFade = editable ? 0 : outroMotion(progress, 0.88, 0.1);
   const titleSize = compact ? "text-lg" : "text-5xl";
   const midSize = compact ? "text-xs" : "text-lg";
+  const descriptionSceneFontSize = getDescriptionLineFontSize([scene.title, scene.subtitle, scene.description], compact);
   const smallSize = compact ? "text-[9px]" : "text-xs";
   const showcaseMediaFirst = scene.mediaPosition === "left";
   const showcaseImageBottom = scene.mediaPosition === "bottom";
@@ -1450,13 +1467,13 @@ export function SceneStage({
         <div className="relative flex h-full items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
             {exportRender ? (
-              <OffthreadVideo
-                className="absolute inset-0 h-full w-full object-cover"
-                src={staticFile("scene-assets/announcement-backgrounds/announcement-hero-bg.mp4")}
-                muted
+              <div
+                aria-hidden="true"
+                className="absolute inset-0"
                 style={{
                   opacity: 1,
-                  filter: "saturate(1.12) contrast(1.16) brightness(1.03)",
+                  background:
+                    "linear-gradient(180deg, rgba(5,10,20,0.08), rgba(5,10,20,0.18)), radial-gradient(circle at 50% 24%, rgba(255,255,255,0.08), transparent 34%), linear-gradient(180deg, rgba(10,16,28,0.86), rgba(8,12,22,0.92))",
                 }}
               />
             ) : (
@@ -2236,8 +2253,11 @@ export function SceneStage({
                 value={scene.title}
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ title: value })}
-                className={`${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.98] tracking-[-0.07em]`}
-                style={revealStyle(editable ? 1 : motion(progress, 0.18, 0.14), { y: 20, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                className={`${s.title} max-w-[96%] leading-[0.98] tracking-[-0.07em]`}
+                style={{
+                  ...revealStyle(editable ? 1 : motion(progress, 0.18, 0.14), { y: 20, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 }),
+                  fontSize: descriptionSceneFontSize,
+                }}
                 placeholder="Line 1"
               />
               <EditableText
@@ -2245,8 +2265,11 @@ export function SceneStage({
                 value={scene.subtitle}
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ subtitle: value })}
-                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.98] tracking-[-0.07em]`}
-                style={revealStyle(editable ? 1 : motion(progress, 0.38, 0.14), { y: 22, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                className={`mt-3 max-w-[96%] ${s.title} leading-[0.98] tracking-[-0.07em]`}
+                style={{
+                  ...revealStyle(editable ? 1 : motion(progress, 0.38, 0.14), { y: 22, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 }),
+                  fontSize: descriptionSceneFontSize,
+                }}
                 placeholder="Line 2"
               />
               <EditableText
@@ -2254,8 +2277,11 @@ export function SceneStage({
                 value={scene.description}
                 editable={editable}
                 onCommit={(value) => onSceneChange?.({ description: value })}
-                className={`mt-3 ${compact ? "text-4xl" : "text-7xl md:text-8xl"} ${s.title} leading-[0.98] tracking-[-0.07em]`}
-                style={revealStyle(editable ? 1 : motion(progress, 0.58, 0.14), { y: 24, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 })}
+                className={`mt-3 max-w-[96%] ${s.title} leading-[0.98] tracking-[-0.07em]`}
+                style={{
+                  ...revealStyle(editable ? 1 : motion(progress, 0.58, 0.14), { y: 24, blur: optimizedLightRender ? 0 : 8, minOpacity: 0 }),
+                  fontSize: descriptionSceneFontSize,
+                }}
                 placeholder="Line 3"
               />
             </div>
