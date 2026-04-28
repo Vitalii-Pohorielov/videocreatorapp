@@ -578,7 +578,7 @@ function findLogoImageUrl(html: string, sourceUrl: string) {
     if (/icon/.test(joined)) score += 1;
     if (/avatar|author|banner|product|screenshot/.test(joined)) score -= 3;
     if (/\.(svg|png|webp|jpg|jpeg)(\?|$)/i.test(src)) score += 1;
-    if (score > 0) candidates.push({ score, src });
+    if (score > 0) candidates.push({ score, src: absolutizeUrl(decodeHtml(src), sourceUrl) });
   }
 
   const bestImageCandidate = candidates.sort((a, b) => b.score - a.score)[0]?.src ?? "";
@@ -1417,6 +1417,8 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
           withDuration(
             applyScene(scene, {
               ...baseUpdates,
+              title: normalizePlanValue(brief?.name, projectName, 90),
+              subtitle: normalizePlanValue(scenePlan.subtitle, brief?.description || scraped.description || "", 120),
               logoImageUrl: scraped.logoImageUrl,
             }),
             scene.durationSeconds,
@@ -1811,7 +1813,7 @@ async function requestOpenAiVideoScript(
       },
       null,
       2,
-    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nMarketing package:\n${JSON.stringify(marketing, null, 2)}\n\nRequirements:\n- Return exactly 5 scenes when marketing.brief.stepsToUse is empty\n- Return exactly 6 scenes when marketing.brief.stepsToUse has 3 items\n- Scene order must be: intro, description, feature-grid, optional process, cta-panel, website-url\n- Scene 1 type must be one of: ${introSceneTypes.join(", ")}\n- Only use these types: brand-reveal, brand-reveal-alt, brand-reveal-circle, description, feature-grid, process, cta-panel, website-url\n- Every scene needs: scene, type, text, visual, voiceover, duration, eyebrow, title, subtitle, description, bullets\n- description scene must use the 3 slogan lines from the brief across title, subtitle, description\n- each description line should stay very short, ideally under 24 characters\n- feature-grid must use exactly 3 bullets from brief.features\n- process scene must include exactly 3 bullets and 3 processStepDescriptions, only if the brief has process steps\n- URL scene title must contain only the clean url label without protocol`,
+    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nMarketing package:\n${JSON.stringify(marketing, null, 2)}\n\nRequirements:\n- Return exactly 5 scenes when marketing.brief.stepsToUse is empty\n- Return exactly 6 scenes when marketing.brief.stepsToUse has 3 items\n- Scene order must be: intro, description, feature-grid, optional process, cta-panel, website-url\n- Scene 1 type must be one of: ${introSceneTypes.join(", ")}\n- Only use these types: brand-reveal, brand-reveal-alt, brand-reveal-circle, description, feature-grid, process, cta-panel, website-url\n- Every scene needs: scene, type, text, visual, voiceover, duration, eyebrow, title, subtitle, description, bullets\n- intro scene title must be the exact product name from marketing.brief.name, not a marketing hook\n- description scene must use the 3 slogan lines from the brief across title, subtitle, description\n- each description line should stay very short, ideally under 24 characters\n- feature-grid must use exactly 3 bullets from brief.features\n- process scene must include exactly 3 bullets and 3 processStepDescriptions, only if the brief has process steps\n- URL scene title must contain only the clean url label without protocol`,
     schema: {
       type: "object",
       properties: {
