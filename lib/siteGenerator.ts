@@ -310,6 +310,27 @@ function isLowValueSiteText(value: string) {
   return false;
 }
 
+function isUiOrNavigationNoise(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim().toLowerCase();
+  if (!normalized) return true;
+
+  if (
+    /^new:/i.test(normalized) ||
+    /^why [a-z0-9\s'-]+ choose\b/i.test(normalized) ||
+    /^how it works$/i.test(normalized) ||
+    /^pricing$/i.test(normalized) ||
+    /^blog$/i.test(normalized) ||
+    /^build brand$/i.test(normalized) ||
+    /^free brand audit$/i.test(normalized) ||
+    /^why glyph$/i.test(normalized)
+  ) {
+    return true;
+  }
+
+  const navTokenMatches = normalized.match(/\b(pricing|blog|build brand|get started|sign in|login|why glyph|how it works)\b/g) ?? [];
+  return navTokenMatches.length >= 2;
+}
+
 function splitIntoPhrases(value: string) {
   return value
     .split(/[.!?;:\n\r|]+/)
@@ -465,7 +486,7 @@ function extractReadableProseBlocks(html: string) {
   );
 }
 
-function extractFocusedReadableText(html: string, sourceUrl: string, titleHint: string, pageHint: string) {
+function extractFocusedReadableText(html: string, sourceUrl: string, titleHint: string, pageHint: string, primaryHeading: string) {
   const readableText = htmlToReadableText(html);
   if (!readableText) return "";
 
@@ -475,7 +496,7 @@ function extractFocusedReadableText(html: string, sourceUrl: string, titleHint: 
     .filter(Boolean);
 
   const lowerLines = lines.map((line) => line.toLowerCase());
-  const focusHints = uniqueNonEmpty([pageHint, titleHint]).map((value) => value.toLowerCase());
+  const focusHints = uniqueNonEmpty([primaryHeading, pageHint, titleHint]).map((value) => value.toLowerCase());
   const stopPatterns = [
     /^classified in$/i,
     /^comments, support and feedback$/i,
@@ -518,6 +539,7 @@ function extractFocusedReadableText(html: string, sourceUrl: string, titleHint: 
       const normalized = line.toLowerCase();
       if (sourceHost && normalized === sourceHost) return false;
       if (normalized.includes("dev hunt") && normalized !== pageHint.toLowerCase()) return false;
+      if (isUiOrNavigationNoise(line)) return false;
       return true;
     }),
     24,
@@ -758,8 +780,9 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
     ].filter((item) => !isLowValueSiteText(item)),
     8,
   );
+  const primaryHeading = tentativeHeadings[0] || "";
   const tentativePageName = resolvePageName(url, siteName, title, tentativeHeadings);
-  const focusedReadableText = extractFocusedReadableText(cleanedHtml, url, title, tentativePageName);
+  const focusedReadableText = extractFocusedReadableText(cleanedHtml, url, title, tentativePageName, primaryHeading);
   const proseBlocks = extractReadableProseBlocks(cleanedHtml);
   const proseParagraphs = proseBlocks.flatMap((block) => extractParagraphsFromReadableText(block));
   const proseBullets = proseBlocks.flatMap((block) => extractBulletLines(block));
@@ -775,8 +798,14 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
   const headings = tentativeHeadings;
   const paragraphSource = focusedParagraphs.length > 0 ? focusedParagraphs : proseParagraphs.length > 0 ? proseParagraphs : matchAllTagText(cleanedHtml, "p", 12);
   const bulletSource = focusedBullets.length > 0 ? focusedBullets : proseBullets.length > 0 ? proseBullets : matchAllTagText(cleanedHtml, "li", 12);
-  const paragraphs = uniqueNonEmpty(paragraphSource.filter((item) => item.length > 35 && !isLowValueSiteText(item)), 12);
-  const bullets = uniqueNonEmpty(bulletSource.filter((item) => item.length > 8 && !isLowValueSiteText(item)), 12);
+  const paragraphs = uniqueNonEmpty(
+    paragraphSource.filter((item) => item.length > 35 && !isLowValueSiteText(item) && !isUiOrNavigationNoise(item)),
+    12,
+  );
+  const bullets = uniqueNonEmpty(
+    bulletSource.filter((item) => item.length > 8 && !isLowValueSiteText(item) && !isUiOrNavigationNoise(item)),
+    12,
+  );
   const featureCandidates = extractFeatureCandidates(headings, bullets, paragraphs);
   const cta = uniqueNonEmpty(
     [
@@ -824,7 +853,7 @@ function applyScene(scene: Scene, updates: Partial<Omit<Scene, "id" | "type">>) 
 }
 
 function takeBullets(values: string[], maxItems = 3) {
-  return uniqueNonEmpty(values.filter((item) => item.length <= 90), maxItems).slice(0, maxItems);
+  return uniqueNonEmpty(values.map((item) => normalizeReadableCopy(item, 90)).filter(Boolean), maxItems).slice(0, maxItems);
 }
 
 function randomChoice<T>(values: T[]) {
@@ -834,17 +863,40 @@ function randomChoice<T>(values: T[]) {
 const generatedPresets = Object.keys(presetDefaults) as TemplatePreset[];
 const templatePresetEnum = generatedPresets.map((preset) => `"${preset}"`).join(" | ");
 
-function toShortLine(value: string, fallback: string, maxLength: number) {
+function removeDanglingEnding(value: string) {
+  return value
+    .replace(/\s+(and|or|but|with|for|to|of|in|on|at|by|from|than|that|which|who|whose)$/i, "")
+    .replace(/[-,:;\/]+$/g, "")
+    .trim();
+}
+
+function truncateAtWordBoundary(value: string, maxLength: number) {
   const normalized = value.replace(/\s+/g, " ").trim();
-  return (normalized || fallback).slice(0, maxLength);
+  if (normalized.length <= maxLength) return normalized;
+
+  const sliced = normalized.slice(0, maxLength + 1);
+  const boundaryMatch = sliced.match(/^(.+?)(?:\s+\S*)?$/);
+  const boundaryValue = boundaryMatch?.[1]?.trim() || normalized.slice(0, maxLength).trim();
+  return removeDanglingEnding(boundaryValue);
+}
+
+function normalizeReadableCopy(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  const cleaned = removeDanglingEnding(truncateAtWordBoundary(normalized, maxLength));
+  return cleaned.length >= 2 ? cleaned : "";
+}
+
+function toShortLine(value: string, fallback: string, maxLength: number) {
+  return normalizeReadableCopy(value, maxLength) || normalizeReadableCopy(fallback, maxLength);
 }
 
 function compactMarketingLine(value: string, maxLength = 32) {
-  return value
+  const cleaned = value
     .replace(/\s+/g, " ")
     .replace(/[,:;()]+/g, "")
-    .trim()
-    .slice(0, maxLength);
+    .trim();
+  return normalizeReadableCopy(cleaned, maxLength);
 }
 
 function toDescriptionSceneLine(value: string, fallback: string) {
@@ -854,9 +906,9 @@ function toDescriptionSceneLine(value: string, fallback: string) {
 function dedupeTextOptions(values: string[], maxLength: number) {
   return uniqueNonEmpty(
     values
-      .map((value) => value.replace(/\s+/g, " ").trim())
+      .map((value) => normalizeReadableCopy(value, maxLength))
       .filter(Boolean)
-      .map((value) => value.slice(0, maxLength)),
+      .map((value) => value),
     values.length,
   );
 }
@@ -890,12 +942,58 @@ function pickShortSloganLines(values: string[], fallback: string) {
 }
 
 function shortenFeatureText(value: string) {
-  return value
+  return normalizeReadableCopy(
+    value
     .replace(/\s+/g, " ")
     .replace(/^[\-\u2022*]+\s*/, "")
     .replace(/[.]+$/g, "")
-    .trim()
-    .slice(0, 56);
+    .trim(),
+    56,
+  );
+}
+
+function isWeakMarketingCopy(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return true;
+  if (isUiOrNavigationNoise(normalized)) return true;
+  if (/^(why|how|what|new)\b/i.test(normalized)) return true;
+  if (normalized.split(" ").length < 2) return true;
+  return false;
+}
+
+function extractBenefitStatements(values: string[], maxItems = 6) {
+  return uniqueNonEmpty(
+    values
+      .flatMap((value) => splitIntoPhrases(value))
+      .map((value) => normalizeReadableCopy(value, 72))
+      .filter((value) => value.length >= 12 && !isWeakMarketingCopy(value))
+      .filter((value) => /built|create|generate|export|launch|design|brand|system|code|workflow|team|fast|simple|complete|developers|founders/i.test(value)),
+    maxItems,
+  ).slice(0, maxItems);
+}
+
+function buildMeaningfulSloganLines(values: string[], fallbackName: string) {
+  const phraseCandidates = uniqueNonEmpty(
+    values
+      .flatMap((value) => splitIntoPhrases(value))
+      .map((line) => toDescriptionSceneLine(line, fallbackName))
+      .filter((line) => !isWeakMarketingCopy(line)),
+    12,
+  );
+  const chunkCandidates = pickShortSloganLines(values, fallbackName)
+    .map((line) => toDescriptionSceneLine(line, fallbackName))
+    .filter((line) => !isWeakMarketingCopy(line));
+
+  const uniqueCandidates = uniqueNonEmpty([...phraseCandidates, ...chunkCandidates], 3);
+  if (uniqueCandidates.length >= 3) return uniqueCandidates.slice(0, 3);
+
+  const fallbacks = [
+    toDescriptionSceneLine("Complete brand system", "Complete brand system"),
+    toDescriptionSceneLine("Built for developers", "Built for developers"),
+    toDescriptionSceneLine("Ready to ship", "Ready to ship"),
+  ].filter((line) => !isWeakMarketingCopy(line));
+
+  return uniqueNonEmpty([...uniqueCandidates, ...fallbacks], 3).slice(0, 3);
 }
 
 function extractFeatureCandidates(headings: string[], bullets: string[], paragraphs: string[]) {
@@ -1086,6 +1184,13 @@ function buildCompactSiteText(snapshot: ExtractedSiteSnapshot) {
 
 function buildDeterministicSemanticAnalysis(snapshot: ExtractedSiteSnapshot, brief: ExtractedSiteBrief): SemanticAnalysis {
   const processSteps = takeBullets(brief.stepsToUse, 3);
+  const benefitStatements = extractBenefitStatements([
+    snapshot.description,
+    snapshot.longDescription,
+    ...snapshot.paragraphs,
+    ...snapshot.featureCandidates,
+    ...snapshot.bullets,
+  ]);
 
   return {
     productName: brief.name || snapshot.productName,
@@ -1094,7 +1199,7 @@ function buildDeterministicSemanticAnalysis(snapshot: ExtractedSiteSnapshot, bri
     mainProblem: toShortLine(snapshot.paragraphs[0] || "Manual work slows down understanding and adoption.", "Manual work slows down understanding and adoption.", 140),
     mainValueProposition: toShortLine(brief.description || snapshot.description || `Explore ${brief.name}.`, `Explore ${brief.name}.`, 160),
     emotionalHook: toShortLine(brief.slogan[0] || snapshot.headings[1] || brief.name, brief.name, 64),
-    keyBenefits: takeBullets(brief.features, 3),
+    keyBenefits: takeBullets(brief.features.length ? brief.features : benefitStatements, 3),
     proofPoints: takeBullets([...snapshot.priceLines, ...snapshot.contactDetails, ...snapshot.featureCandidates], 3),
     adTone: /luxury|premium|exclusive/i.test(snapshot.longDescription) ? "luxury" : /fun|playful|creative/i.test(snapshot.longDescription) ? "playful" : "corporate",
     callToAction: toShortLine(brief.cta || snapshot.cta[0] || `Visit ${brief.name}`, `Visit ${brief.name}`, 90),
@@ -1110,6 +1215,14 @@ function buildDeterministicMarketingPackage(
   normalizedUrl: string,
 ): MarketingPackage {
   const urlLabel = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const fallbackBenefits = extractBenefitStatements([
+    semantic.mainValueProposition,
+    semantic.whatItIs,
+    snapshot.description,
+    snapshot.longDescription,
+    ...snapshot.paragraphs,
+    ...snapshot.featureCandidates,
+  ]);
   const slogans = [
     toDescriptionSceneLine(brief.slogan[0] || semantic.emotionalHook, semantic.emotionalHook),
     toDescriptionSceneLine(brief.slogan[1] || semantic.mainValueProposition, semantic.mainValueProposition),
@@ -1141,7 +1254,7 @@ function buildDeterministicMarketingPackage(
       name: semantic.productName,
       slogan: slogans,
       description: toShortLine(semantic.mainValueProposition, semantic.whatItIs, 180),
-      features: takeBullets(semantic.keyBenefits, 3),
+      features: takeBullets(semantic.keyBenefits.length ? semantic.keyBenefits : fallbackBenefits, 3),
       stepsToUse: semantic.hasProcess ? takeBullets(semantic.processSteps, 3) : [],
       cta: semantic.callToAction,
       urlLabel,
@@ -1341,10 +1454,28 @@ function chooseUniqueText(options: string[], used: Set<string>, fallback: string
 }
 
 function buildProjectPlanFromVideoScript(marketing: MarketingPackage, script: VideoScript): GeneratedProjectPlan {
+  const cleanSlogans = buildMeaningfulSloganLines(
+    [
+      ...marketing.brief.slogan,
+      marketing.brief.description,
+      ...marketing.brief.features,
+      marketing.primaryNarrative,
+      marketing.coreAngle,
+    ],
+    marketing.brief.name,
+  );
+  const cleanFeatures = takeBullets(marketing.brief.features.filter((line) => !isWeakMarketingCopy(line)), 3);
+  const cleanSteps = takeBullets(marketing.brief.stepsToUse.filter((line) => !isWeakMarketingCopy(line)), 3);
+
   return {
     projectName: script.projectName || marketing.brief.name,
     preset: generatedPresets.includes(script.preset) ? script.preset : randomChoice(generatedPresets),
-    brief: marketing.brief,
+    brief: {
+      ...marketing.brief,
+      slogan: cleanSlogans,
+      features: cleanFeatures.length === 3 ? cleanFeatures : marketing.brief.features,
+      stepsToUse: cleanSteps.length === 3 ? cleanSteps : marketing.brief.stepsToUse,
+    },
     scenes: script.scenes.map((scene) => ({
       type: scene.type,
       eyebrow: scene.eyebrow,
@@ -1437,11 +1568,21 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
             applyScene(scene, {
               ...baseUpdates,
               title:
-                scenePlan.type === "website-url"
+                scenePlan.type === "description"
+                  ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
+                  : scenePlan.type === "website-url"
                   ? normalizePlanValue(scenePlan.title, brief?.urlLabel || normalizedDomain, 90)
                   : scenePlan.type === "cta-panel"
                     ? normalizePlanValue(scenePlan.title, brief?.cta || `Visit ${projectName}`, 90)
                     : baseUpdates.title,
+              subtitle:
+                scenePlan.type === "description"
+                  ? normalizePlanValue(brief?.slogan?.[1], baseUpdates.subtitle || scraped.description || "", 120)
+                  : baseUpdates.subtitle,
+              description:
+                scenePlan.type === "description"
+                  ? normalizePlanValue(brief?.slogan?.[2], baseUpdates.description || "", 120)
+                  : baseUpdates.description,
             }),
             scene.durationSeconds,
           ),
@@ -1657,7 +1798,7 @@ async function requestOpenAiSemanticAnalysis(snapshot: ExtractedSiteSnapshot, mo
       },
       null,
       2,
-    )}\n\nReturn fields:\n- productName\n- whatItIs\n- targetAudience\n- mainProblem\n- mainValueProposition\n- emotionalHook\n- keyBenefits (3 items)\n- proofPoints (0-3 items)\n- adTone\n- callToAction\n- hasProcess\n- processSteps (exactly 3 only if clearly supported, else empty array)`,
+    )}\n\nRules:\n- Ignore navigation labels, menu items, banner announcements, login/signup prompts, blog links, and section headings unless they contain real product meaning\n- keyBenefits must be complete standalone phrases with clear meaning, not labels or fragments\n- Never return unfinished clauses ending in words like and, with, for, to\n\nReturn fields:\n- productName\n- whatItIs\n- targetAudience\n- mainProblem\n- mainValueProposition\n- emotionalHook\n- keyBenefits (3 items)\n- proofPoints (0-3 items)\n- adTone\n- callToAction\n- hasProcess\n- processSteps (exactly 3 only if clearly supported, else empty array)`,
     schema: {
       type: "object",
       properties: {
@@ -1736,7 +1877,7 @@ async function requestOpenAiMarketingPackage(
       },
       null,
       2,
-    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nRequirements:\n- hooks: 3 to 5 ad hooks\n- coreAngle: one main marketing angle\n- slogans: exactly 3 short lines, usually 2 to 3 words each, ideally under 24 characters per line\n- primaryNarrative: one concise summary paragraph for the overall ad story\n- sceneStrategy: 5 to 6 short scene intentions in order\n- brief must contain name, slogan, description, features, stepsToUse, cta, urlLabel\n- brief.features must be exactly 3 benefits\n- brief.stepsToUse must be exactly 3 items only when semantic.hasProcess is true, else empty array\n- brief.urlLabel must remove protocol noise like https://`,
+    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nRequirements:\n- hooks: 3 to 5 ad hooks\n- coreAngle: one main marketing angle\n- slogans: exactly 3 short lines, usually 2 to 3 words each, ideally under 24 characters per line\n- primaryNarrative: one concise summary paragraph for the overall ad story\n- sceneStrategy: 5 to 6 short scene intentions in order\n- brief must contain name, slogan, description, features, stepsToUse, cta, urlLabel\n- brief.features must be exactly 3 benefits\n- brief.stepsToUse must be exactly 3 items only when semantic.hasProcess is true, else empty array\n- brief.urlLabel must remove protocol noise like https://\n- slogans and features must be complete, meaningful, self-contained phrases\n- do not return section labels, menu labels, announcement copy, or unfinished fragments`,
     schema: {
       type: "object",
       properties: {
