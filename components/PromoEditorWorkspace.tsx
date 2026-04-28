@@ -632,5 +632,5 @@ function OldPromoWorkspace({ initialProjectId = null }: { initialProjectId?: str
 }
 
 export function PromoEditorWorkspace({ initialProjectId = null, initialVideoType = "promo" }: PromoEditorWorkspaceProps) {
-  return <EditorWorkspace initialProjectId={initialProjectId} initialVideoType="announcement" workspaceBasePath="/editor" exportMode="remotion-server" />;
+  return <EditorWorkspace initialProjectId={initialProjectId} initialVideoType={initialVideoType} workspaceBasePath="/editor" exportMode="remotion-server" />;
 }

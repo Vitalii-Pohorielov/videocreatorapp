@@ -1085,8 +1085,6 @@ function buildDeterministicSiteBrief(scraped: ScrapedSiteData, normalizedUrl: st
 function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
   const projectName = brief.name || scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const processBullets = takeBullets(brief.stepsToUse, 3);
-  const hasProcess = processBullets.length === 3;
   const aiLikeBrief: GeneratedBrandBrief = {
     name: projectName,
     slogan: [
@@ -1096,7 +1094,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
     ],
     description: toShortLine(brief.description || `Explore ${projectName}.`, `Explore ${projectName}.`, 180),
     features: takeBullets(brief.features, 3),
-    stepsToUse: hasProcess ? processBullets : [],
+    stepsToUse: [],
     cta: toShortLine(brief.cta || `Visit ${projectName}`, `Visit ${projectName}`, 90),
     urlLabel: normalizedDomain,
   };
@@ -1126,19 +1124,6 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
       description: "",
       bullets: aiLikeBrief.features,
     },
-    ...(hasProcess
-      ? [
-          {
-            type: "process" as const,
-            eyebrow: "How it works",
-            title: `Use ${projectName} in 3 steps`,
-            subtitle: aiLikeBrief.description.slice(0, 72),
-            description: "",
-            bullets: aiLikeBrief.stepsToUse,
-            processStepDescriptions: aiLikeBrief.stepsToUse.map((step) => toShortLine(step, step, 48)),
-          },
-        ]
-      : []),
     {
       type: "cta-panel",
       eyebrow: "Call to action",
@@ -1486,6 +1471,71 @@ function buildProjectPlanFromVideoScript(marketing: MarketingPackage, script: Vi
       processStepDescriptions: scene.processStepDescriptions,
       mediaPosition: scene.mediaPosition,
     })),
+  };
+}
+
+function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
+  const projectName = normalizePlanValue(brief.name, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
+  const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const cleanBrief: GeneratedBrandBrief = {
+    name: projectName,
+    slogan: buildMeaningfulSloganLines(
+      [brief.slogan[0] || "", brief.slogan[1] || "", brief.slogan[2] || "", brief.description || "", ...brief.features],
+      projectName,
+    ),
+    description: toShortLine(brief.description || scraped.description || `Explore ${projectName}.`, `Explore ${projectName}.`, 180),
+    features: takeBullets(brief.features, 3),
+    stepsToUse: [],
+    cta: toShortLine(brief.cta || `Visit ${projectName}`, `Visit ${projectName}`, 90),
+    urlLabel: normalizeReadableCopy(brief.urlLabel || normalizedDomain, 90) || normalizedDomain,
+  };
+
+  return {
+    projectName,
+    preset: randomChoice(generatedPresets),
+    brief: cleanBrief,
+    scenes: [
+      {
+        type: "brand-reveal",
+        eyebrow: getDomainLabel(normalizedUrl),
+        title: cleanBrief.name,
+        subtitle: cleanBrief.description.slice(0, 110),
+        description: "",
+        bullets: [],
+      },
+      {
+        type: "description",
+        eyebrow: "Slogan",
+        title: cleanBrief.slogan[0] || cleanBrief.name,
+        subtitle: cleanBrief.slogan[1] || cleanBrief.description,
+        description: cleanBrief.slogan[2] || cleanBrief.description,
+        bullets: [],
+      },
+      {
+        type: "feature-grid",
+        eyebrow: "Features",
+        title: `Why ${cleanBrief.name} stands out`,
+        subtitle: cleanBrief.description.slice(0, 120),
+        description: "",
+        bullets: cleanBrief.features,
+      },
+      {
+        type: "cta-panel",
+        eyebrow: "Call to action",
+        title: cleanBrief.cta,
+        subtitle: cleanBrief.urlLabel,
+        description: "Get started",
+        bullets: [],
+      },
+      {
+        type: "website-url",
+        eyebrow: "Website",
+        title: cleanBrief.urlLabel.toLowerCase(),
+        subtitle: "",
+        description: "",
+        bullets: [],
+      },
+    ],
   };
 }
 
@@ -2021,10 +2071,69 @@ async function requestOpenAiVideoScript(
 async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: string): Promise<GeneratedProjectPlan> {
   const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
   const snapshot = buildExtractedSiteSnapshot(scraped, normalizedUrl);
-  const semantic = await requestOpenAiSemanticAnalysis(snapshot, model);
-  const marketing = await requestOpenAiMarketingPackage(snapshot, semantic, model);
-  const script = await requestOpenAiVideoScript(snapshot, semantic, marketing, model);
-  return buildProjectPlanFromVideoScript(marketing, script);
+  const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const brief = await requestOpenAiStructuredJson<Partial<GeneratedBrandBrief>>({
+    model,
+    schemaName: "website_simple_brand_brief",
+    systemPrompt:
+      "You create a minimal website brand brief for short promo videos. Return valid JSON only. Keep every field concise, complete, and grounded in the analyzed website. Do not invent facts. Do not return unfinished fragments. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy.",
+    userPrompt: `Analyze this website snapshot and return only the core video inputs.\n\nInput:\n${JSON.stringify(
+      {
+        productName: snapshot.productName,
+        title: snapshot.title,
+        description: snapshot.description,
+        longDescription: snapshot.longDescription,
+        headings: snapshot.headings,
+        paragraphs: snapshot.paragraphs,
+        featureCandidates: snapshot.featureCandidates,
+        cta: snapshot.cta,
+        compactText: buildCompactSiteText(snapshot),
+        urlLabel: normalizedDomain,
+      },
+      null,
+      2,
+    )}\n\nReturn fields:\n- name\n- slogan: exactly 3 short complete lines, each usually 2 to 3 words\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nRules:\n- all text must be complete and self-contained\n- do not return labels like "Why choose", "How it works", "Pricing", "Blog"\n- do not end lines with dangling words like and, with, for, to`,
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        slogan: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
+        description: { type: "string" },
+        features: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
+        cta: { type: "string" },
+        urlLabel: { type: "string" },
+      },
+      required: ["name", "slogan", "description", "features", "cta", "urlLabel"],
+      additionalProperties: false,
+    },
+  });
+
+  if (
+    !brief.name ||
+    !Array.isArray(brief.slogan) ||
+    brief.slogan.length !== 3 ||
+    !brief.description ||
+    !Array.isArray(brief.features) ||
+    brief.features.length !== 3 ||
+    !brief.cta ||
+    !brief.urlLabel
+  ) {
+    throw new Error("OpenAI returned an incomplete brand brief.");
+  }
+
+  return buildFixedProjectPlanFromBrandBrief(
+    {
+      name: brief.name,
+      slogan: brief.slogan,
+      description: brief.description,
+      features: brief.features,
+      stepsToUse: [],
+      cta: brief.cta,
+      urlLabel: brief.urlLabel,
+    },
+    scraped,
+    normalizedUrl,
+  );
 }
 
 export async function generateProjectFromUrl(inputUrl: string): Promise<GeneratedProjectPayload> {
