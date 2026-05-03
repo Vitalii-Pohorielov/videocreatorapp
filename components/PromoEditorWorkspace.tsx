@@ -15,6 +15,7 @@ import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneT
 type PromoEditorWorkspaceProps = {
   initialProjectId?: string | null;
   initialVideoType?: VideoType;
+  openVideoTypeModal?: boolean;
 };
 
 type WorkspaceSnapshot = {
@@ -631,6 +632,6 @@ function OldPromoWorkspace({ initialProjectId = null }: { initialProjectId?: str
   );
 }
 
-export function PromoEditorWorkspace({ initialProjectId = null, initialVideoType = "promo" }: PromoEditorWorkspaceProps) {
-  return <EditorWorkspace initialProjectId={initialProjectId} initialVideoType={initialVideoType} workspaceBasePath="/editor" exportMode="remotion-server" />;
+export function PromoEditorWorkspace({ initialProjectId = null, initialVideoType = "promo", openVideoTypeModal = false }: PromoEditorWorkspaceProps) {
+  return <EditorWorkspace initialProjectId={initialProjectId} initialVideoType={initialVideoType} openVideoTypeModal={openVideoTypeModal} workspaceBasePath="/editor" exportMode="remotion-server" />;
 }

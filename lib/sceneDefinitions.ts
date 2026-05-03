@@ -160,7 +160,7 @@ export const presetLabels: Record<TemplatePreset, string> = {
   "mint-pop": "Mint Pop",
   terminal: "Terminal",
   blueprint: "Blueprint",
-  "chrome-sport": "Chrome Sport",
+  "chrome-sport": "Chrome",
   "solar-archive": "Signal Mesh",
   "acid-pop": "Acid Pop",
   "retro-print": "Retro Print",

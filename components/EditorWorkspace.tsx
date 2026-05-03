@@ -1,11 +1,14 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Route } from "next";
 
 import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
 import { SceneTypeModal } from "@/components/SceneTypeModal";
 import { StudioPreview } from "@/components/StudioPreview";
+import { VideoWorkspaceModal } from "@/components/VideoWorkspaceModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { createMobileVideoRenderPayload, exportMobileVideo } from "@/lib/mobileVideoExport";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
@@ -17,6 +20,7 @@ import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneT
 type EditorWorkspaceProps = {
   initialProjectId?: string | null;
   initialVideoType?: VideoType;
+  openVideoTypeModal?: boolean;
   workspaceBasePath?: string;
   exportMode?: "browser" | "remotion-server";
 };
@@ -57,9 +61,11 @@ function parseExpressCreatePrompt(prompt: string): ExpressCreateEntry[] {
 export function EditorWorkspace({
   initialProjectId = null,
   initialVideoType = "promo",
+  openVideoTypeModal = false,
   workspaceBasePath = "/editor",
   exportMode = "browser",
 }: EditorWorkspaceProps) {
+  const router = useRouter();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const projectId = useStore((state) => state.projectId);
   const projectName = useStore((state) => state.projectName);
@@ -82,6 +88,7 @@ export function EditorWorkspace({
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState("video-project.mp4");
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
+  const [isVideoWorkspaceModalOpen, setIsVideoWorkspaceModalOpen] = useState(openVideoTypeModal);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [sourceUrl, setSourceUrl] = useState("");
@@ -92,7 +99,7 @@ export function EditorWorkspace({
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
   const [imageUploadCount, setImageUploadCount] = useState(0);
   const [imageUploadLabel, setImageUploadLabel] = useState<string | null>(null);
-  const didHydrateProject = useRef<string | null | undefined>(undefined);
+  const didHydrateProject = useRef<string | null>(null);
   const currentTimeRef = useRef(0);
   const undoStackRef = useRef<WorkspaceSnapshot[]>([]);
   const redoStackRef = useRef<WorkspaceSnapshot[]>([]);
@@ -177,6 +184,10 @@ export function EditorWorkspace({
   }, [currentTime]);
 
   useEffect(() => {
+    setIsVideoWorkspaceModalOpen(openVideoTypeModal);
+  }, [openVideoTypeModal]);
+
+  useEffect(() => {
     if (!isPlaying) return;
     let frameId = 0;
     let lastTimestamp: number | null = null;
@@ -237,8 +248,9 @@ export function EditorWorkspace({
   }, []);
 
   useEffect(() => {
-    if (didHydrateProject.current === initialProjectId) return;
-    didHydrateProject.current = initialProjectId;
+    const hydrationKey = `${initialProjectId ?? "new"}:${initialVideoType}`;
+    if (didHydrateProject.current === hydrationKey) return;
+    didHydrateProject.current = hydrationKey;
 
     resetProject(initialVideoType);
     setIsPlaying(false);
@@ -831,6 +843,14 @@ export function EditorWorkspace({
         isAnnouncementWorkspace={isAnnouncementWorkspace}
         onClose={() => setIsSceneModalOpen(false)}
         onSelect={handleSceneTypeSelect}
+      />
+      <VideoWorkspaceModal
+        isOpen={isVideoWorkspaceModalOpen}
+        onClose={() => setIsVideoWorkspaceModalOpen(false)}
+        onSelect={(workspace) => {
+          setIsVideoWorkspaceModalOpen(false);
+          router.replace(`${workspaceBasePath}?videoType=${workspace}` as Route);
+        }}
       />
       {isGenerateConfirmOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4">

@@ -103,7 +103,7 @@ export function LandingScreen() {
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
               <Link
-                href="/editor?videoType=promo"
+                href="/editor?chooseVideoType=1"
                 className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
               >
                 Build Your First Video
@@ -219,7 +219,7 @@ export function LandingScreen() {
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link
-                  href="/editor?videoType=promo"
+                  href="/editor?chooseVideoType=1"
                   className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
                 >
                   Build Your First Video
