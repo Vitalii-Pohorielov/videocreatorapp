@@ -230,6 +230,36 @@ function presetStyles(preset: TemplatePreset, lightweight = false) {
         title: "font-semibold tracking-[-0.05em]",
         italic: "",
       };
+    case "aurora":
+      return {
+        card: lightweight
+          ? "bg-[#09253f]/76 border-[#6cf6d8]/28 shadow-[0_14px_38px_rgba(108,246,216,0.14)]"
+          : "bg-[linear-gradient(135deg,rgba(108,246,216,0.18),rgba(174,127,255,0.12),rgba(9,37,63,0.84))] border-[#6cf6d8]/30 backdrop-blur-xl shadow-[0_28px_90px_rgba(19,226,190,0.18)]",
+        accent: "bg-[#6cf6d8]",
+        title: "font-black tracking-[-0.06em]",
+        italic: "",
+      };
+    case "magma":
+      return {
+        card: "bg-[linear-gradient(180deg,rgba(255,70,31,0.22),rgba(35,4,5,0.9))] border-[#ffb000]/28 shadow-[0_26px_90px_rgba(255,47,31,0.22)]",
+        accent: "bg-[#ff2f1f]",
+        title: "font-black uppercase tracking-[-0.03em]",
+        italic: "",
+      };
+    case "bubblegum":
+      return {
+        card: "bg-white/66 border-[#00b8ff]/30 shadow-[12px_12px_0_rgba(255,91,191,0.18)]",
+        accent: "bg-[#00b8ff]",
+        title: "font-black tracking-[-0.07em]",
+        italic: "",
+      };
+    case "porcelain":
+      return {
+        card: "bg-[#ffffff]/92 border-[#151a22]/12 shadow-[0_18px_60px_rgba(21,26,34,0.08)]",
+        accent: "bg-[#e11937]",
+        title: "font-serif font-semibold tracking-[-0.04em]",
+        italic: "",
+      };
   }
 }
 
@@ -275,6 +305,14 @@ function presetAccentColor(preset: TemplatePreset) {
       return "#aa5a31";
     case "ember-glow":
       return "#d97440";
+    case "aurora":
+      return "#6cf6d8";
+    case "magma":
+      return "#ff2f1f";
+    case "bubblegum":
+      return "#00b8ff";
+    case "porcelain":
+      return "#e11937";
   }
 }
 
@@ -462,6 +500,224 @@ function getDescriptionLineFontSize(lines: string[], compact: boolean) {
   if (longestLineLength >= 28) return "4.75rem";
   if (longestLineLength >= 22) return "5.6rem";
   return "6.9rem";
+}
+
+function StylePresetDecorations({
+  preset,
+  progress,
+  compact,
+  lightweightPreview,
+  accentColor,
+}: {
+  preset: TemplatePreset;
+  progress: number;
+  compact: boolean;
+  lightweightPreview: boolean;
+  accentColor: string;
+}) {
+  const animatedProgress = clamp(progress);
+  const sizeScale = compact ? 0.62 : 1;
+  const drift = lightweightPreview ? 0 : Math.sin(animatedProgress * Math.PI * 2);
+
+  if (preset === "aurora") {
+    const ribbons = [
+      { top: "8%", left: "-12%", rotate: -10, color: "#6cf6d8", delay: 0 },
+      { top: "31%", left: "42%", rotate: 12, color: "#ae7fff", delay: 0.13 },
+      { top: "64%", left: "5%", rotate: -4, color: "#5ed7ff", delay: 0.26 },
+    ];
+
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {ribbons.map((ribbon, index) => (
+          <div
+            key={`aurora-ribbon-${index}`}
+            className="absolute rounded-full"
+            style={{
+              left: ribbon.left,
+              top: ribbon.top,
+              width: `${520 * sizeScale}px`,
+              height: `${54 * sizeScale}px`,
+              background: `linear-gradient(90deg, transparent, ${hexToRgba(ribbon.color, lightweightPreview ? 0.32 : 0.52)}, transparent)`,
+              transform: `translateX(${(motion(animatedProgress, ribbon.delay, 0.52) - 0.5) * 70}px) translateY(${drift * (index + 1) * 6}px) rotate(${ribbon.rotate}deg)`,
+              opacity: lightweightPreview ? 0.58 : 0.86,
+              filter: lightweightPreview ? "none" : `drop-shadow(0 0 20px ${hexToRgba(ribbon.color, 0.24)})`,
+            }}
+          />
+        ))}
+        {Array.from({ length: lightweightPreview ? 8 : 14 }, (_, index) => (
+          <span
+            key={`aurora-spark-${index}`}
+            className="absolute rounded-full"
+            style={{
+              left: `${8 + ((index * 17) % 84)}%`,
+              top: `${12 + ((index * 23) % 72)}%`,
+              width: `${(index % 3 === 0 ? 6 : 3) * sizeScale}px`,
+              height: `${(index % 3 === 0 ? 6 : 3) * sizeScale}px`,
+              backgroundColor: index % 2 === 0 ? "#e9fff8" : accentColor,
+              opacity: 0.24 + motion(animatedProgress, index * 0.018, 0.28) * 0.45,
+              transform: `translateY(${drift * (index % 4)}px)`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (preset === "magma") {
+    const slashes = [
+      { left: "-7%", top: "14%", width: 52, rotate: -16, color: "#ff2f1f" },
+      { left: "67%", top: "4%", width: 40, rotate: 18, color: "#ffb000" },
+      { left: "54%", top: "72%", width: 58, rotate: -10, color: "#ff5f2f" },
+      { left: "7%", top: "78%", width: 34, rotate: 20, color: "#fff0d4" },
+    ];
+
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {slashes.map((slash, index) => (
+          <div
+            key={`magma-slash-${index}`}
+            className="absolute"
+            style={{
+              left: slash.left,
+              top: slash.top,
+              width: `${slash.width * sizeScale}%`,
+              height: `${compact ? 18 : 30}px`,
+              background: `linear-gradient(90deg, transparent 0 4%, ${hexToRgba(slash.color, 0.88)} 4% 82%, transparent 82% 100%)`,
+              clipPath: "polygon(5% 0, 100% 0, 92% 100%, 0 100%)",
+              transform: `translateX(${(motion(animatedProgress, index * 0.05, 0.42) - 0.5) * 46}px) rotate(${slash.rotate}deg)`,
+              opacity: lightweightPreview ? 0.42 : 0.72,
+              boxShadow: lightweightPreview ? "none" : `0 0 34px ${hexToRgba(slash.color, 0.22)}`,
+            }}
+          />
+        ))}
+        {Array.from({ length: lightweightPreview ? 6 : 12 }, (_, index) => (
+          <span
+            key={`magma-chip-${index}`}
+            className="absolute"
+            style={{
+              left: `${10 + ((index * 19) % 78)}%`,
+              top: `${8 + ((index * 29) % 82)}%`,
+              width: `${(compact ? 7 : 11) + (index % 3) * 3}px`,
+              height: `${(compact ? 7 : 11) + (index % 2) * 4}px`,
+              backgroundColor: index % 3 === 0 ? "#ffb000" : "#ff2f1f",
+              clipPath: "polygon(50% 0, 100% 62%, 68% 100%, 0 72%, 14% 18%)",
+              opacity: 0.24 + motion(animatedProgress, 0.08 + index * 0.02, 0.28) * 0.36,
+              transform: `translateY(${drift * (index % 5) * -1}px) rotate(${index * 23}deg)`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (preset === "bubblegum") {
+    const stickers = [
+      { left: "6%", top: "13%", size: 118, color: "#ff5bbf", radius: "44% 56% 48% 52%" },
+      { left: "76%", top: "16%", size: 92, color: "#00b8ff", radius: "58% 42% 54% 46%" },
+      { left: "68%", top: "70%", size: 142, color: "#ffd43b", radius: "42% 58% 52% 48%" },
+    ];
+
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-x-[-8%] top-[54%]"
+          style={{
+            height: compact ? "22px" : "34px",
+            background: `repeating-linear-gradient(90deg, ${hexToRgba("#32105c", 0.18)} 0 22px, transparent 22px 40px)`,
+            transform: `rotate(-6deg) translateX(${drift * 10}px)`,
+            opacity: 0.62,
+          }}
+        />
+        {stickers.map((sticker, index) => (
+          <div
+            key={`bubblegum-sticker-${index}`}
+            className="absolute border"
+            style={{
+              left: sticker.left,
+              top: sticker.top,
+              width: `${sticker.size * sizeScale}px`,
+              height: `${sticker.size * sizeScale}px`,
+              borderRadius: sticker.radius,
+              borderColor: hexToRgba("#32105c", 0.16),
+              backgroundColor: hexToRgba(sticker.color, lightweightPreview ? 0.32 : 0.5),
+              transform: `translate(${drift * (index + 1) * 4}px, ${Math.cos(animatedProgress * Math.PI * 2) * (index + 1) * 3}px) rotate(${index % 2 === 0 ? -8 : 10}deg)`,
+              boxShadow: lightweightPreview ? "none" : `10px 10px 0 ${hexToRgba(accentColor, 0.16)}`,
+            }}
+          />
+        ))}
+        {Array.from({ length: lightweightPreview ? 7 : 15 }, (_, index) => (
+          <span
+            key={`bubblegum-dot-${index}`}
+            className="absolute rounded-full"
+            style={{
+              left: `${4 + ((index * 13) % 90)}%`,
+              top: `${7 + ((index * 31) % 84)}%`,
+              width: `${(index % 2 === 0 ? 10 : 5) * sizeScale}px`,
+              height: `${(index % 2 === 0 ? 10 : 5) * sizeScale}px`,
+              backgroundColor: index % 3 === 0 ? "#00b8ff" : index % 3 === 1 ? "#ff5bbf" : "#32105c",
+              opacity: 0.18 + motion(animatedProgress, index * 0.018, 0.34) * 0.26,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (preset === "porcelain") {
+    const plates = [
+      { left: "8%", top: "11%", width: 150, rotate: -12, color: "#e11937" },
+      { left: "78%", top: "18%", width: 110, rotate: 16, color: "#2563eb" },
+      { left: "58%", top: "76%", width: 178, rotate: -8, color: "#151a22" },
+    ];
+
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(21,26,34,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(21,26,34,0.045) 1px, transparent 1px)",
+            backgroundSize: compact ? "30px 30px" : "42px 42px",
+            opacity: 0.72,
+          }}
+        />
+        <div
+          className="absolute inset-x-[-5%] top-[24%]"
+          style={{
+            height: compact ? "7px" : "10px",
+            background: "linear-gradient(90deg, transparent, rgba(225,25,55,0.72), rgba(37,99,235,0.56), transparent)",
+            transform: `rotate(-2deg) translateX(${drift * 6}px)`,
+          }}
+        />
+        <div
+          className="absolute inset-x-[-5%] bottom-[21%]"
+          style={{
+            height: compact ? "5px" : "8px",
+            background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.46), rgba(225,25,55,0.58), transparent)",
+            transform: `rotate(2deg) translateX(${drift * -5}px)`,
+          }}
+        />
+        {plates.map((plate, index) => (
+          <div
+            key={`porcelain-plate-${index}`}
+            className="absolute rounded-full border"
+            style={{
+              left: plate.left,
+              top: plate.top,
+              width: `${plate.width * sizeScale}px`,
+              height: `${plate.width * 0.42 * sizeScale}px`,
+              borderColor: hexToRgba(plate.color, 0.34),
+              background: `linear-gradient(135deg, rgba(255,255,255,0.56), ${hexToRgba(plate.color, 0.08)})`,
+              transform: `rotate(${plate.rotate}deg) translateY(${drift * (index + 1) * 2}px)`,
+              boxShadow: "0 12px 32px rgba(21,26,34,0.06)",
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function IntroLogo({
@@ -1336,6 +1592,26 @@ export function SceneStage({
             background:
               "radial-gradient(circle at 20% 18%, rgba(255,138,76,0.22), transparent 20%), radial-gradient(circle at 82% 22%, rgba(255,217,191,0.12), transparent 18%), linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 46%), linear-gradient(135deg, rgba(255,90,31,0.08) 0 14%, transparent 14% 100%)",
           }
+      : preset === "aurora"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(233,255,248,0.08), rgba(7,27,47,0.02) 45%, rgba(174,127,255,0.1)), linear-gradient(118deg, rgba(108,246,216,0.12) 0 16%, transparent 16% 35%, rgba(174,127,255,0.1) 35% 48%, transparent 48% 100%)",
+          }
+      : preset === "magma"
+        ? {
+            background:
+              "radial-gradient(circle at 20% 78%, rgba(255,176,0,0.26), transparent 18%), radial-gradient(circle at 84% 18%, rgba(255,47,31,0.24), transparent 18%), linear-gradient(138deg, rgba(255,47,31,0.16) 0 12%, transparent 12% 34%, rgba(255,176,0,0.1) 34% 42%, transparent 42% 100%)",
+          }
+      : preset === "bubblegum"
+        ? {
+            background:
+              "radial-gradient(circle at 18% 20%, rgba(255,91,191,0.32), transparent 16%), radial-gradient(circle at 84% 24%, rgba(0,184,255,0.24), transparent 18%), linear-gradient(135deg, rgba(50,16,92,0.08) 0 12%, transparent 12% 28%, rgba(255,91,191,0.12) 28% 38%, transparent 38% 100%)",
+          }
+      : preset === "porcelain"
+        ? {
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.54), rgba(248,251,255,0.12) 48%, rgba(225,25,55,0.04)), radial-gradient(circle at 16% 18%, rgba(225,25,55,0.14), transparent 14%), radial-gradient(circle at 84% 22%, rgba(37,99,235,0.12), transparent 16%)",
+          }
       : preset === "paper-cut"
         ? {
             background:
@@ -1390,6 +1666,14 @@ export function SceneStage({
         ? "border-[#c96b3b]/20"
       : preset === "ember-glow"
         ? "border-[#ff8a4c]/22"
+      : preset === "aurora"
+        ? "border-[#6cf6d8]/24"
+      : preset === "magma"
+        ? "border-[#ffb000]/24"
+      : preset === "bubblegum"
+        ? "border-[#32105c]/18"
+      : preset === "porcelain"
+        ? "border-[#e11937]/18"
       : preset === "paper-cut"
         ? "border-[#d95734]/16"
         : preset === "velvet-noir"
@@ -1423,6 +1707,15 @@ export function SceneStage({
   return (
     <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer} lightweightPreview={lightweightPreview}>
       {showSceneBackground && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
+      {showSceneBackground ? (
+        <StylePresetDecorations
+          preset={preset}
+          progress={progress}
+          compact={compact}
+          lightweightPreview={optimizedLightRender}
+          accentColor={resolvedAccentColor}
+        />
+      ) : null}
       {showSceneBackground ? (
         <>
           <div

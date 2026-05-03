@@ -24,7 +24,11 @@ export type TemplatePreset =
   | "solar-archive"
   | "acid-pop"
   | "retro-print"
-  | "ember-glow";
+  | "ember-glow"
+  | "aurora"
+  | "magma"
+  | "bubblegum"
+  | "porcelain";
 
 const templatePresets = [
   "white",
@@ -47,6 +51,10 @@ const templatePresets = [
   "acid-pop",
   "retro-print",
   "ember-glow",
+  "aurora",
+  "magma",
+  "bubblegum",
+  "porcelain",
 ] as const satisfies readonly TemplatePreset[];
 
 export type ExportResolution = "480p" | "540p" | "720p";
@@ -157,6 +165,10 @@ export const presetLabels: Record<TemplatePreset, string> = {
   "acid-pop": "Acid Pop",
   "retro-print": "Retro Print",
   "ember-glow": "Ember Glow",
+  aurora: "Aurora",
+  magma: "Magma",
+  bubblegum: "Bubblegum",
+  porcelain: "Porcelain",
 };
 
 export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgroundColor" | "textColor" | "accentColor">> = {
@@ -180,6 +192,10 @@ export const presetDefaults: Record<TemplatePreset, Pick<ExportSettings, "backgr
   "acid-pop": { backgroundColor: "#d6ff3f", textColor: "#161616", accentColor: "#d93fb8" },
   "retro-print": { backgroundColor: "#f6dfc8", textColor: "#3e2418", accentColor: "#aa5a31" },
   "ember-glow": { backgroundColor: "#1b0a07", textColor: "#ffd9bf", accentColor: "#d97440" },
+  aurora: { backgroundColor: "#071b2f", textColor: "#e9fff8", accentColor: "#6cf6d8" },
+  magma: { backgroundColor: "#180304", textColor: "#fff0d4", accentColor: "#ff2f1f" },
+  bubblegum: { backgroundColor: "#ffe1f2", textColor: "#32105c", accentColor: "#00b8ff" },
+  porcelain: { backgroundColor: "#f8fbff", textColor: "#151a22", accentColor: "#e11937" },
 };
 
 export function normalizeTemplatePreset(preset: string | undefined | null): TemplatePreset {

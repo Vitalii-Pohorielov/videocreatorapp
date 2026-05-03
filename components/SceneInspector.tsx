@@ -29,6 +29,10 @@ const presetOptions: TemplatePreset[] = [
   "acid-pop",
   "retro-print",
   "ember-glow",
+  "aurora",
+  "magma",
+  "bubblegum",
+  "porcelain",
 ];
 
 const premiumPresetOptions = presetOptions.filter((preset) => !freeStylePresets.includes(preset));
@@ -113,6 +117,22 @@ const presetChipStyles: Record<TemplatePreset, { idle: string; active: string }>
   "ember-glow": {
     idle: "border-[#ff8a4c]/35 bg-[#1b0a07] text-[#ffd9bf] hover:bg-[#27100b]",
     active: "border-[#ff8a4c] bg-[#27100b] text-[#ffe7d4] ring-2 ring-[#ff8a4c]/22",
+  },
+  aurora: {
+    idle: "border-[#6cf6d8]/38 bg-[#071b2f] text-[#e9fff8] hover:bg-[#0b2845]",
+    active: "border-[#6cf6d8] bg-[#0b2845] text-white ring-2 ring-[#6cf6d8]/28",
+  },
+  magma: {
+    idle: "border-[#ff2f1f]/42 bg-[#180304] text-[#fff0d4] hover:bg-[#260607]",
+    active: "border-[#ffb000] bg-[#260607] text-[#fff7df] ring-2 ring-[#ff2f1f]/26",
+  },
+  bubblegum: {
+    idle: "border-[#ff5bbf]/40 bg-[#ffe1f2] text-[#32105c] hover:bg-[#ffd1eb]",
+    active: "border-[#00b8ff] bg-[#ffd1eb] text-[#250947] ring-2 ring-[#00b8ff]/26",
+  },
+  porcelain: {
+    idle: "border-[#cfd8e3] bg-[#f8fbff] text-[#151a22] hover:bg-white",
+    active: "border-[#e11937] bg-white text-[#151a22] ring-2 ring-[#e11937]/24",
   },
 };
 
