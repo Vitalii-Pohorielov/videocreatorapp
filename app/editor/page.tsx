@@ -8,7 +8,7 @@ export default async function EditorPage({
   searchParams: Promise<{ project?: string; videoType?: string }>;
 }) {
   const params = await searchParams;
-  const initialVideoType: VideoType = "announcement";
+  const initialVideoType: VideoType = params.videoType === "announcement" ? "announcement" : "promo";
 
   return (
     <AuthGate title="Sign in to use the editor" description="Google authentication is required before you can create videos or reopen saved drafts.">

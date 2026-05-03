@@ -1,6 +1,6 @@
 "use client";
 
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
 
 import { SceneStage } from "@/components/SceneStage";
 import {
@@ -22,6 +22,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
   const playbackState = getMobileVideoPlaybackState(payload, currentTimeInSeconds);
   const activeScene = playbackState.scene;
   const isTransitioning = Boolean(activeScene && playbackState.nextScene && playbackState.transitionProgress > 0);
+  const announcementVideoBackgroundSrc = staticFile("scene-assets/announcement-backgrounds/announcement-hero-bg.mp4");
 
   if (!activeScene) {
     return <AbsoluteFill style={{ backgroundColor: exportSettings.backgroundColor }} />;
@@ -44,6 +45,8 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 progress={1}
                 uploadResolution={exportSettings.resolution}
                 uploadProfile={exportSettings.profile}
+                renderVideoBackground
+                videoBackgroundSrc={announcementVideoBackgroundSrc}
               />
             </AbsoluteFill>
             <AbsoluteFill>
@@ -58,6 +61,8 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 progress={1}
                 uploadResolution={exportSettings.resolution}
                 uploadProfile={exportSettings.profile}
+                renderVideoBackground
+                videoBackgroundSrc={announcementVideoBackgroundSrc}
               />
             </AbsoluteFill>
           </AbsoluteFill>
@@ -75,6 +80,8 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 progress={1}
                 uploadResolution={exportSettings.resolution}
                 uploadProfile={exportSettings.profile}
+                renderVideoBackground
+                videoBackgroundSrc={announcementVideoBackgroundSrc}
               />
             </AbsoluteFill>
             <AbsoluteFill>
@@ -89,6 +96,8 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 progress={0}
                 uploadResolution={exportSettings.resolution}
                 uploadProfile={exportSettings.profile}
+                renderVideoBackground
+                videoBackgroundSrc={announcementVideoBackgroundSrc}
               />
             </AbsoluteFill>
           </AbsoluteFill>
@@ -107,6 +116,8 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
               progress={1}
               uploadResolution={exportSettings.resolution}
               uploadProfile={exportSettings.profile}
+              renderVideoBackground
+              videoBackgroundSrc={announcementVideoBackgroundSrc}
             />
           </AbsoluteFill>
           <AbsoluteFill>
@@ -121,6 +132,8 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
               progress={playbackState.progress}
               uploadResolution={exportSettings.resolution}
               uploadProfile={exportSettings.profile}
+              renderVideoBackground
+              videoBackgroundSrc={announcementVideoBackgroundSrc}
             />
           </AbsoluteFill>
         </>

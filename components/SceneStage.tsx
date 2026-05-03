@@ -26,6 +26,8 @@ type SceneStageProps = {
   onRequestAuthorUpload?: () => void;
   uploadResolution?: ExportResolution;
   uploadProfile?: ExportProfile;
+  renderVideoBackground?: boolean;
+  videoBackgroundSrc?: string;
 };
 
 function getRenderableImageUrl(value?: string) {
@@ -1156,6 +1158,8 @@ export function SceneStage({
   onRequestAuthorUpload,
   uploadResolution = "540p",
   uploadProfile = "standard",
+  renderVideoBackground = false,
+  videoBackgroundSrc = "/scene-assets/announcement-backgrounds/announcement-hero-bg.mp4",
 }: SceneStageProps) {
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState(scene.code ?? scene.description);
@@ -1466,7 +1470,7 @@ export function SceneStage({
       {scene.type === "announcement-hero" && (
         <div className="relative flex h-full items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
-            {exportRender ? (
+            {exportRender && !renderVideoBackground ? (
               <div
                 aria-hidden="true"
                 className="absolute inset-0"
@@ -1479,7 +1483,7 @@ export function SceneStage({
             ) : (
               <video
                 className="absolute inset-0 h-full w-full object-cover"
-                src="/scene-assets/announcement-backgrounds/announcement-hero-bg.mp4"
+                src={videoBackgroundSrc}
                 muted
                 playsInline
                 autoPlay

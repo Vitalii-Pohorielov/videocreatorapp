@@ -103,16 +103,10 @@ export function LandingScreen() {
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
               <Link
-                href="/editor"
+                href="/editor?videoType=promo"
                 className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
               >
                 Build Your First Video
-              </Link>
-              <Link
-                href="/mobile-video"
-                className="rounded-full border border-amber-300/25 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15"
-              >
-                Open Mobile Video Lab
               </Link>
               <a
                 href="#real-examples"
@@ -225,16 +219,10 @@ export function LandingScreen() {
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link
-                  href="/editor"
+                  href="/editor?videoType=promo"
                   className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
                 >
                   Build Your First Video
-                </Link>
-                <Link
-                  href="/mobile-video"
-                  className="rounded-full border border-amber-300/25 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15"
-                >
-                  Open Mobile Video Lab
                 </Link>
                 <a
                   href="#real-examples"

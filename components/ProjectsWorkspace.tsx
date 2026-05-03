@@ -308,7 +308,7 @@ export function ProjectsWorkspace() {
         onClose={() => setIsVideoWorkspaceModalOpen(false)}
         onSelect={(workspace) => {
           setIsVideoWorkspaceModalOpen(false);
-          router.push(workspace === "mobile" ? "/mobile-video" : "/editor");
+          router.push(`/editor?videoType=${workspace}`);
         }}
       />
     </main>

@@ -70,12 +70,6 @@ export function AppHeader() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/mobile-video"
-            className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100 transition hover:bg-amber-300/15 sm:px-4 sm:text-sm"
-          >
-            Mobile video lab
-          </Link>
-          <Link
             href="/banner"
             className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/15 sm:px-4 sm:text-sm"
           >
