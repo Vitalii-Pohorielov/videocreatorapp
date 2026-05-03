@@ -6,7 +6,6 @@ import { SceneInspector } from "@/components/SceneInspector";
 import { SceneTimeline } from "@/components/SceneTimeline";
 import { SceneTypeModal } from "@/components/SceneTypeModal";
 import { StudioPreview } from "@/components/StudioPreview";
-import { ConfirmModal } from "@/components/ConfirmModal";
 import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import { createMobileVideoRenderPayload, exportMobileVideo } from "@/lib/mobileVideoExport";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
@@ -470,7 +469,7 @@ export function EditorWorkspace({
     }
   };
 
-  const runGenerateFromUrl = async () => {
+  const runGenerateFromUrl = async (mode: "current" | "new") => {
     const trimmedUrl = sourceUrl.trim();
     if (!trimmedUrl) {
       setCloudStatus("Add a website URL first.");
@@ -504,14 +503,34 @@ export function EditorWorkspace({
         throw new Error(payload.error || "Could not generate scenes from that URL.");
       }
 
-      hydrateProject({
-        id: null,
-        name: payload.projectName,
-        sceneTrack: payload.sceneTrack,
-        exportSettings: payload.exportSettings,
-      });
-      window.history.replaceState({}, "", workspaceBasePath);
-      setCloudStatus(`Generated draft from ${trimmedUrl}.`);
+      if (mode === "new") {
+        const project = await saveProject({
+          projectId: null,
+          projectName: payload.projectName,
+          sceneTrack: payload.sceneTrack,
+          exportSettings: payload.exportSettings,
+        });
+
+        hydrateProject({
+          id: project.id,
+          name: project.name,
+          sceneTrack: project.payload.sceneTrack,
+          exportSettings: project.payload.exportSettings,
+        });
+        syncSavedSignature();
+        window.history.replaceState({}, "", `${workspaceBasePath}?project=${project.id}`);
+        setCloudStatus(`Created new video from ${trimmedUrl}.`);
+      } else {
+        const currentProjectId = useStore.getState().projectId;
+        hydrateProject({
+          id: currentProjectId,
+          name: payload.projectName,
+          sceneTrack: payload.sceneTrack,
+          exportSettings: payload.exportSettings,
+        });
+        window.history.replaceState({}, "", currentProjectId ? `${workspaceBasePath}?project=${currentProjectId}` : workspaceBasePath);
+        setCloudStatus(`Generated draft from ${trimmedUrl}.`);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not generate scenes from that URL.";
       setCloudStatus(message);
@@ -811,19 +830,48 @@ export function EditorWorkspace({
         onClose={() => setIsSceneModalOpen(false)}
         onSelect={handleSceneTypeSelect}
       />
-      <ConfirmModal
-        isOpen={isGenerateConfirmOpen}
-        title="Replace current draft?"
-        description="Generate a new scene draft from this website. Unsaved editor changes will be replaced."
-        confirmLabel="Generate draft"
-        cancelLabel="Keep current"
-        isBusy={isGeneratingFromUrl}
-        onClose={() => setIsGenerateConfirmOpen(false)}
-        onConfirm={() => {
-          setIsGenerateConfirmOpen(false);
-          void runGenerateFromUrl();
-        }}
-      />
+      {isGenerateConfirmOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[28px] border border-white/10 bg-slate-950/95 p-6 text-slate-100 shadow-[0_24px_80px_rgba(2,6,23,0.55)]">
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Generate video</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">How should we generate it?</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">Choose whether to update this template or create a separate video.</p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsGenerateConfirmOpen(false);
+                  void runGenerateFromUrl("current");
+                }}
+                disabled={isGeneratingFromUrl}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Use current template
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsGenerateConfirmOpen(false);
+                  void runGenerateFromUrl("new");
+                }}
+                disabled={isGeneratingFromUrl}
+                className="rounded-2xl border border-sky-400/20 bg-sky-400 px-4 py-3 text-left text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Create new video
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsGenerateConfirmOpen(false)}
+              disabled={isGeneratingFromUrl}
+              className="mt-3 w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

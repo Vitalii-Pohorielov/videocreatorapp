@@ -616,9 +616,9 @@ function OldPromoWorkspace({ initialProjectId = null }: { initialProjectId?: str
       <PromoSceneTypeModal isOpen={isSceneModalOpen} onClose={() => setIsSceneModalOpen(false)} onSelect={handleSceneTypeSelect} />
       <ConfirmModal
         isOpen={isGenerateConfirmOpen}
-        title="Replace current draft?"
-        description="Generate a new scene draft from this website. Unsaved editor changes will be replaced."
-        confirmLabel="Generate draft"
+        title="Generate new video?"
+        description="Replace the current draft?"
+        confirmLabel="Replace"
         cancelLabel="Keep current"
         isBusy={isGeneratingFromUrl}
         onClose={() => setIsGenerateConfirmOpen(false)}
