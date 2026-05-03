@@ -183,10 +183,10 @@ export const SceneTimeline = memo(function SceneTimeline({ track, selectedSceneI
   }, [scenes.length]);
 
   return (
-    <section className="shrink-0 border-t border-white/10 bg-slate-950/90 px-4 py-1 shadow-[0_-12px_32px_rgba(2,6,23,0.35)]">
+    <section className="shrink-0 border-t border-white/10 bg-slate-950/90 px-3 py-2 shadow-[0_-12px_32px_rgba(2,6,23,0.35)] sm:px-4 sm:py-1">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <SortableContext items={sceneIds} strategy={horizontalListSortingStrategy}>
-          <div className="flex gap-2.5 overflow-x-auto pb-0.5">
+          <div className="flex touch-pan-x gap-2.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
             {scenes.map((scene, index) => (
               <SortableSceneCard
                 key={scene.id}

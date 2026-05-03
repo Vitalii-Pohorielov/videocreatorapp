@@ -752,10 +752,10 @@ export function EditorWorkspace({
   }, [handleRedo, handleUndo]);
 
   return (
-    <main className="h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_26%),linear-gradient(180deg,#060b16_0%,#0b1220_42%,#0f172a_100%)] px-4 py-4 text-slate-100">
-      <div className="mx-auto flex h-full max-w-[1600px] flex-col">
+    <main className="min-h-[calc(100svh-72px)] overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_26%),linear-gradient(180deg,#060b16_0%,#0b1220_42%,#0f172a_100%)] px-3 py-3 text-slate-100 sm:px-4 sm:py-4 xl:h-[calc(100vh-72px)] xl:overflow-hidden">
+      <div className="mx-auto flex min-h-0 max-w-[1600px] flex-col xl:h-full">
         <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-white/10 bg-slate-950/70 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur sm:rounded-3xl">
             <StudioPreview
               projectId={projectId}
               projectName={projectName}
@@ -812,15 +812,17 @@ export function EditorWorkspace({
             />
           </div>
 
-          <SceneInspector
-            scene={selectedScene}
-            settings={exportSettings}
-            isAnnouncementWorkspace={isAnnouncementWorkspace}
-            onUpdate={handleInspectorSceneUpdate}
-            onUpdateSettings={handleExportSettingsUpdate}
-            onImageUploadStart={startImageUpload}
-            onImageUploadEnd={finishImageUpload}
-          />
+          <div className="min-h-0 xl:h-full">
+            <SceneInspector
+              scene={selectedScene}
+              settings={exportSettings}
+              isAnnouncementWorkspace={isAnnouncementWorkspace}
+              onUpdate={handleInspectorSceneUpdate}
+              onUpdateSettings={handleExportSettingsUpdate}
+              onImageUploadStart={startImageUpload}
+              onImageUploadEnd={finishImageUpload}
+            />
+          </div>
         </section>
       </div>
 
@@ -831,8 +833,8 @@ export function EditorWorkspace({
         onSelect={handleSceneTypeSelect}
       />
       {isGenerateConfirmOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[28px] border border-white/10 bg-slate-950/95 p-6 text-slate-100 shadow-[0_24px_80px_rgba(2,6,23,0.55)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4">
+          <div className="w-full max-w-lg rounded-[24px] border border-white/10 bg-slate-950/95 p-5 text-slate-100 shadow-[0_24px_80px_rgba(2,6,23,0.55)] sm:rounded-[28px] sm:p-6">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Generate video</p>
             <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">How should we generate it?</h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">Choose whether to update this template or create a separate video.</p>

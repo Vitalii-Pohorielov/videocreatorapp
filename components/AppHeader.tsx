@@ -58,20 +58,20 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/75 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-[72px] w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex min-h-[72px] w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
               <Image src="/logo.png" alt="ClipLab logo" width={32} height={32} className="h-8 w-8 object-contain" priority />
             </div>
-            <p className="text-sm font-semibold tracking-[-0.02em] text-white sm:text-base">ClipLab</p>
+            <p className="hidden text-sm font-semibold tracking-[-0.02em] text-white min-[380px]:block sm:text-base">ClipLab</p>
           </Link>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Link
             href="/banner"
-            className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/15 sm:px-4 sm:text-sm"
+            className="hidden rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/15 sm:inline-flex sm:px-4 sm:text-sm"
           >
             Create banner
           </Link>
@@ -79,7 +79,7 @@ export function AppHeader() {
             <GoogleSignInButton
               redirectPath="/projects"
               label="Sign in"
-              className="rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
+              className="rounded-full bg-sky-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70 sm:px-4"
             />
           ) : null}
           {user ? (
@@ -100,7 +100,7 @@ export function AppHeader() {
               </button>
 
               {isMenuOpen ? (
-                <div className="absolute right-0 top-[calc(100%+0.75rem)] w-64 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/95 p-2 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-xl">
+                <div className="absolute right-0 top-[calc(100%+0.75rem)] w-64 max-w-[calc(100vw-1rem)] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/95 p-2 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-xl">
                   <div className="border-b border-white/10 px-3 py-3">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium text-white">{user.user_metadata?.full_name ?? user.user_metadata?.name ?? "User"}</p>

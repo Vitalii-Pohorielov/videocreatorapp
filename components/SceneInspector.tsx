@@ -233,7 +233,7 @@ export const SceneInspector = memo(function SceneInspector({
 
   if (!scene) {
     return (
-      <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
+      <aside className="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur sm:rounded-3xl xl:h-full">
         <div className="mb-4 shrink-0">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Inspector</p>
           <h2 className="mt-1 text-lg font-semibold text-white">No scene selected</h2>
@@ -374,14 +374,14 @@ export const SceneInspector = memo(function SceneInspector({
   };
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur">
+    <aside className="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-white/10 bg-slate-950/70 p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] backdrop-blur sm:rounded-3xl xl:h-full">
       <div className="mb-4 shrink-0">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Inspector</p>
         <h2 className="mt-1 text-lg font-semibold text-white">{scene.name}</h2>
         <p className="mt-1 text-sm text-slate-400">{sceneTypeLabels[scene.type]}</p>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-4 pr-1 [scrollbar-gutter:stable] [scrollbar-color:rgba(148,163,184,0.45)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-400/40 [&::-webkit-scrollbar-thumb:hover]:bg-slate-300/55">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4 pr-1 [scrollbar-gutter:stable] [scrollbar-color:rgba(148,163,184,0.45)_transparent] [scrollbar-width:thin] xl:max-h-none [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-400/40 [&::-webkit-scrollbar-thumb:hover]:bg-slate-300/55">
         <div className="space-y-3">
         {!isAnnouncementWorkspace ? (
           <InspectorSection title="Style preset" description="Choose the visual direction for the whole video." defaultOpen>

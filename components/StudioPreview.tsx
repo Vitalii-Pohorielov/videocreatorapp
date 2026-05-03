@@ -144,13 +144,13 @@ export function StudioPreview({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col border-b border-white/10">
-      <div className="border-b border-white/10 px-4 py-3">
+      <div className="border-b border-white/10 px-3 py-3 sm:px-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between xl:gap-6">
-          <div className="flex min-w-0 flex-wrap items-center gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:gap-3">
+          <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 xl:flex xl:flex-[0_1_auto] xl:flex-nowrap xl:gap-3">
             <Link
               href="/projects"
               aria-label="Open projects"
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-2.5 text-slate-200 transition hover:bg-white/[0.08]"
+              className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5 text-slate-200 transition hover:bg-white/[0.08] sm:rounded-2xl"
             >
               <span className="grid grid-cols-2 gap-1" aria-hidden="true">
                 <span className="h-2.5 w-2.5 rounded-[2px] bg-current" />
@@ -162,7 +162,7 @@ export function StudioPreview({
             <input
               value={projectName}
               onChange={(event) => onProjectNameChange(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400 sm:min-w-[160px] xl:w-[175px] xl:flex-none"
+              className="min-w-0 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-sky-400 xl:w-[175px] xl:flex-none"
               placeholder="Project name"
             />
             <button
@@ -235,12 +235,12 @@ export function StudioPreview({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-start xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
             {downloadUrl ? (
               <a
                 href={downloadUrl}
                 download={downloadFileName}
-                className="inline-flex w-[116px] items-center justify-center gap-2 rounded-xl border border-white/30 bg-white px-3 py-2 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/30 bg-white px-3 py-2 text-sm font-medium text-slate-950 transition hover:bg-slate-100 sm:w-[116px]"
               >
                 <span aria-hidden="true" className="text-base leading-none">
                   ↓
@@ -251,7 +251,7 @@ export function StudioPreview({
               <button
                 type="button"
                 disabled
-                className="inline-flex w-[116px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-500"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-500 sm:w-[116px]"
               >
                 <span aria-hidden="true" className="text-base leading-none">
                   ↓
@@ -264,7 +264,7 @@ export function StudioPreview({
               type="button"
               onClick={onExport}
               disabled={isExporting || !hasScene}
-              className="w-[136px] whitespace-nowrap rounded-xl bg-sky-400 px-3 py-2 text-center text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70"
+              className="w-full whitespace-nowrap rounded-xl bg-sky-400 px-3 py-2 text-center text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-70 sm:w-[136px]"
             >
               {isExporting ? `Exporting ${Math.round(exportProgress * 100)}%` : "Export"}
             </button>
@@ -305,7 +305,7 @@ export function StudioPreview({
         />
       ) : null}
 
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-2 sm:p-0">
         <input
           ref={logoInputRef}
           type="file"
@@ -336,9 +336,9 @@ export function StudioPreview({
             event.target.value = "";
           }}
         />
-        <div className="flex h-full w-full max-w-6xl flex-col rounded-[28px] border border-white/10 bg-slate-950 shadow-[0_16px_40px_rgba(2,6,23,0.45)]">
-          <div className="flex flex-1 items-center justify-center overflow-hidden bg-black">
-            <div className="relative aspect-video h-full max-h-full w-full max-w-full overflow-hidden bg-black">
+        <div className="flex w-full max-w-6xl flex-col rounded-[20px] border border-white/10 bg-slate-950 shadow-[0_16px_40px_rgba(2,6,23,0.45)] sm:rounded-[28px] xl:h-full">
+          <div className="flex min-h-[220px] flex-1 items-center justify-center overflow-hidden bg-black sm:min-h-[320px] xl:min-h-0">
+            <div className="relative aspect-video w-full max-w-full overflow-hidden bg-black xl:h-full xl:max-h-full">
               {scene ? (
                 <div className={`absolute inset-0 origin-center ${shouldRenderPreviewAtFullScale ? "scale-100" : "scale-[0.94]"}`}>
                   {isTransitioning && transitionScene ? (
@@ -465,8 +465,8 @@ export function StudioPreview({
             </div>
           </div>
 
-          <div className="mt-2 flex shrink-0 items-center gap-3">
-            <button type="button" onClick={onTogglePlayback} disabled={!hasScene} className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50">
+          <div className="mt-2 flex shrink-0 items-center gap-2 px-2 pb-2 sm:gap-3 sm:px-0 sm:pb-0">
+            <button type="button" onClick={onTogglePlayback} disabled={!hasScene} className="rounded-full border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50 sm:px-4">
               {isPlaying ? "Pause" : "Play"}
             </button>
             <div className="flex-1">
@@ -474,7 +474,7 @@ export function StudioPreview({
                 <div className="h-full rounded-full bg-sky-400 transition-all" style={{ width: `${totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0}%` }} />
               </div>
             </div>
-            <div className="text-sm text-slate-300">
+            <div className="shrink-0 text-xs text-slate-300 sm:text-sm">
               {currentTime.toFixed(1)} / {totalDuration.toFixed(1)}s
             </div>
           </div>
