@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, type ChangeEvent, type DragEvent, type ReactNode } from "react";
+import { memo, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
@@ -250,6 +250,9 @@ export const SceneInspector = memo(function SceneInspector({
     "rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-slate-200 transition hover:bg-white/[0.1]";
   const panelClassName = "mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70";
   const labelClassName = "mb-2 block text-sm text-slate-400";
+  const [websiteCaptureUrl, setWebsiteCaptureUrl] = useState("");
+  const [websiteCaptureError, setWebsiteCaptureError] = useState("");
+  const [isCapturingWebsite, setIsCapturingWebsite] = useState(false);
 
   if (!scene) {
     return (
@@ -349,6 +352,40 @@ export const SceneInspector = memo(function SceneInspector({
       onImageUploadEnd();
     }
     event.target.value = "";
+  };
+
+  const handleWebsiteScreenshotCapture = async () => {
+    const trimmedUrl = websiteCaptureUrl.trim();
+    if (!trimmedUrl) {
+      setWebsiteCaptureError("Add a website URL first.");
+      return;
+    }
+
+    setIsCapturingWebsite(true);
+    setWebsiteCaptureError("");
+    onImageUploadStart("Capturing website screenshot...");
+
+    try {
+      const response = await fetch("/api/website-screenshot", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ url: trimmedUrl }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { screenshotImageUrl?: string; error?: string };
+
+      if (!response.ok || !payload.screenshotImageUrl) {
+        throw new Error(payload.error || "Could not capture website screenshot.");
+      }
+
+      onUpdate(scene.id, { websiteImageUrl: payload.screenshotImageUrl });
+    } catch (error) {
+      setWebsiteCaptureError(error instanceof Error ? error.message : "Could not capture website screenshot.");
+    } finally {
+      setIsCapturingWebsite(false);
+      onImageUploadEnd();
+    }
   };
 
   const allowedRandomPresets = isPremium ? presetOptions : freeStylePresets;
@@ -734,17 +771,45 @@ export const SceneInspector = memo(function SceneInspector({
 
         {scene.type === "website-scroll" || scene.type === "website-scroll-overlay" || scene.type === "website-scroll-front" ? (
           <InspectorSection title="Website screenshot" description="Upload your own site screenshot. A tall image works best for visible scrolling.">
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
-                Upload screenshot
-                <input type="file" accept="image/*" onChange={handleWebsiteImageChange} className="sr-only" />
-              </label>
-              {websiteImageUrl ? (
+            <div className="mt-4 grid gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className={`inline-flex cursor-pointer items-center justify-center font-medium ${ghostButtonClassName}`}>
+                  Upload from PC
+                  <input type="file" accept="image/*" onChange={handleWebsiteImageChange} className="sr-only" />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleWebsiteScreenshotCapture}
+                  disabled={isCapturingWebsite}
+                  className={`${ghostButtonClassName} font-medium disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {isCapturingWebsite ? "Capturing..." : "Capture website URL"}
+                </button>
+              </div>
+              <input
+                value={websiteCaptureUrl}
+                onChange={(event) => {
+                  setWebsiteCaptureUrl(event.target.value);
+                  if (websiteCaptureError) setWebsiteCaptureError("");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleWebsiteScreenshotCapture();
+                  }
+                }}
+                placeholder="https://example.com"
+                className={fieldClassName}
+              />
+              {websiteCaptureError ? <p className="text-sm text-rose-300">{websiteCaptureError}</p> : null}
+            </div>
+            {websiteImageUrl ? (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={() => onUpdate(scene.id, { websiteImageUrl: "" })} className={ghostButtonClassName}>
                   Remove image
                 </button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             <div className={panelClassName}>
               {websiteImageUrl ? (
                 <img src={websiteImageUrl} alt="Website screenshot" className="max-h-56 w-full object-cover object-top" />

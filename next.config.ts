@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
       "./node_modules/@remotion/compositor-linux-x64-gnu/**/*",
       "./node_modules/@remotion/compositor-linux-x64-musl/**/*",
     ],
+    "/api/website-screenshot": [
+      "./node_modules/@remotion/renderer/**/*",
+      "./node_modules/@sparticuz/chromium/**/*",
+      "./node_modules/remotion/**/*",
+    ],
   },
   outputFileTracingExcludes: {
     "/*": [
