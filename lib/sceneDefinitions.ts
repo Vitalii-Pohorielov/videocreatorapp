@@ -79,7 +79,6 @@ export type SceneType =
   | "center-text"
   | "website-url"
   | "website-scroll"
-  | "website-scroll-overlay"
   | "website-scroll-front"
   | "quote"
   | "cta"
@@ -617,27 +616,6 @@ export const sceneDefinitions: SceneDefinition[] = [
       logoImageUrl: "",
       authorImageUrl: "",
       mediaPosition: "right",
-    }),
-  },
-  {
-    type: "website-scroll-overlay",
-    label: "Website Scroll Overlay",
-    catalogDescription: "Darkened website scroll in the background with oversized side copy in front.",
-    createTemplate: () => ({
-      type: "website-scroll-overlay",
-      durationSeconds: 4,
-      transition: getDefaultTransition(13, "website-scroll-overlay"),
-      eyebrow: "Website",
-      title: "A moving product story",
-      subtitle: "Let the site scroll in the background",
-      description: "While the key message stays large and readable in front.",
-      bullets: [],
-      bulletEmojis: [],
-      bulletImageUrls: [],
-      websiteImageUrl: "",
-      logoImageUrl: "",
-      authorImageUrl: "",
-      mediaPosition: "left",
     }),
   },
   {

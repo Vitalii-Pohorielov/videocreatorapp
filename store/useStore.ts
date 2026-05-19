@@ -148,6 +148,15 @@ function normalizeLoadedScene(scene: Scene, index = 0): Scene {
     } as Scene;
   }
 
+  if ((scene as unknown as { type?: string }).type === "website-scroll-overlay") {
+    return {
+      ...scene,
+      transition: normalizedTransition,
+      type: "website-scroll-front",
+      name: scene.name.replace(/website scroll overlay/i, "Website Scroll Front"),
+    } as Scene;
+  }
+
   if ((scene as unknown as { type?: string }).type !== "metrics") return { ...scene, transition: normalizedTransition };
 
   return {

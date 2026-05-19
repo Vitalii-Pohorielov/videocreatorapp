@@ -152,7 +152,6 @@ type SupportedGeneratedSceneType =
   | "center-text"
   | "website-url"
   | "website-scroll"
-  | "website-scroll-overlay"
   | "website-scroll-front"
   | "quote"
   | "cta"
@@ -177,7 +176,6 @@ const supportedGeneratedSceneTypes: SupportedGeneratedSceneType[] = [
   "center-text",
   "website-url",
   "website-scroll",
-  "website-scroll-overlay",
   "website-scroll-front",
   "quote",
   "cta",
@@ -197,7 +195,6 @@ const sceneDisplayNames: Record<SupportedGeneratedSceneType, string> = {
   "center-text": "Message",
   "website-url": "URL",
   "website-scroll": "Website",
-  "website-scroll-overlay": "Website",
   "website-scroll-front": "Website",
   quote: "Quote",
   cta: "CTA",
@@ -1640,7 +1637,6 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
         break;
       case "product-showcase":
       case "website-scroll":
-      case "website-scroll-overlay":
       case "website-scroll-front":
         scenes.push(
           withDuration(

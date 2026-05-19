@@ -23,7 +23,7 @@ export function PromoSceneTypeModal({ isOpen, onClose, onSelect }: PromoSceneTyp
 
   const definitionMap = new Map(
     sceneDefinitions
-      .filter((definition) => !["announcement-hero", "split-slogan", "brand-reveal-alt", "brand-reveal-circle", "code-review", "pricing-peek", "website-scroll-overlay", "website-scroll-front", "cta-panel"].includes(definition.type))
+      .filter((definition) => !["announcement-hero", "split-slogan", "brand-reveal-alt", "brand-reveal-circle", "code-review", "pricing-peek", "website-scroll-front", "cta-panel"].includes(definition.type))
       .map((definition) => [definition.type, definition] as const),
   );
 
