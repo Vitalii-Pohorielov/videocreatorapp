@@ -919,6 +919,84 @@ function QuoteAuthorPhoto({
   );
 }
 
+function WebsiteScreenshotPreviewControls({
+  compact,
+  inputValue,
+  error,
+  status,
+  isCapturing,
+  onInputChange,
+  onCapture,
+  onPickImage,
+}: {
+  compact: boolean;
+  inputValue: string;
+  error: string;
+  status: string;
+  isCapturing: boolean;
+  onInputChange: (value: string) => void;
+  onCapture: () => void;
+  onPickImage?: () => void;
+}) {
+  const stopPreviewEvent = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  return (
+    <div
+      className={`relative z-30 rounded-[20px] border border-white/15 bg-black/55 text-white shadow-[0_16px_40px_rgba(0,0,0,0.28)] backdrop-blur-md ${compact ? "p-2" : "p-3"}`}
+      onClick={stopPreviewEvent}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <div className={`grid gap-2 ${compact ? "" : "sm:grid-cols-[1fr_auto_auto]"}`}>
+        <input
+          value={inputValue}
+          onChange={(event) => onInputChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              stopPreviewEvent(event);
+              onCapture();
+            }
+          }}
+          placeholder="https://example.com"
+          className={`min-w-0 rounded-[14px] border border-white/15 bg-white/10 px-3 text-white outline-none placeholder:text-white/42 focus:border-sky-300 ${compact ? "h-8 text-[11px]" : "h-10 text-sm"}`}
+        />
+        <button
+          type="button"
+          onPointerDown={(event) => {
+            stopPreviewEvent(event);
+            onCapture();
+          }}
+          onClick={stopPreviewEvent}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              stopPreviewEvent(event);
+              onCapture();
+            }
+          }}
+          disabled={isCapturing}
+          className={`rounded-[14px] border border-sky-300/35 bg-sky-400/18 font-medium text-sky-50 transition hover:bg-sky-400/26 active:scale-[0.98] active:bg-sky-400/34 disabled:cursor-not-allowed disabled:opacity-55 ${compact ? "h-8 px-3 text-[11px]" : "h-10 px-4 text-sm"}`}
+        >
+          {isCapturing ? "Capturing..." : "Capture screenshot"}
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            stopPreviewEvent(event);
+            onPickImage?.();
+          }}
+          className={`rounded-[14px] border border-white/15 bg-white/10 font-medium text-white transition hover:bg-white/16 ${compact ? "h-8 px-3 text-[11px]" : "h-10 px-4 text-sm"}`}
+        >
+          Upload
+        </button>
+      </div>
+      {error ? <p className={`mt-2 text-rose-200 ${compact ? "text-[10px]" : "text-xs"}`}>{error}</p> : null}
+      {!error && status ? <p className={`mt-2 text-sky-100/80 ${compact ? "text-[10px]" : "text-xs"}`}>{status}</p> : null}
+    </div>
+  );
+}
+
 function WebsiteScrollFrame({
   scene,
   cardClassName,
@@ -927,6 +1005,12 @@ function WebsiteScrollFrame({
   progress,
   editable,
   onPickImage,
+  captureUrl,
+  captureError,
+  captureStatus,
+  isCapturing,
+  onCaptureUrlChange,
+  onCaptureWebsite,
   onChangeMediaPosition,
   lightweightPreview = false,
   textColor,
@@ -939,6 +1023,12 @@ function WebsiteScrollFrame({
   progress: number;
   editable?: boolean;
   onPickImage?: () => void;
+  captureUrl: string;
+  captureError: string;
+  captureStatus: string;
+  isCapturing: boolean;
+  onCaptureUrlChange: (value: string) => void;
+  onCaptureWebsite: () => void;
   onChangeMediaPosition?: (value: "left" | "right") => void;
   lightweightPreview?: boolean;
   textColor: string;
@@ -959,9 +1049,21 @@ function WebsiteScrollFrame({
     transformOrigin: "center center",
     transformStyle: "preserve-3d",
   };
+  const controls = editable ? (
+    <WebsiteScreenshotPreviewControls
+      compact={compact}
+      inputValue={captureUrl}
+      error={captureError}
+      status={captureStatus}
+      isCapturing={isCapturing}
+      onInputChange={onCaptureUrlChange}
+      onCapture={onCaptureWebsite}
+      onPickImage={onPickImage}
+    />
+  ) : null;
 
   return (
-    <div className="flex w-full justify-center" style={{ perspective: tilted ? (compact ? "1200px" : "1800px") : undefined }}>
+    <div className="relative flex w-full justify-center" style={{ perspective: tilted ? (compact ? "1200px" : "1800px") : undefined }}>
       <div className={`w-full rounded-[28px] border p-5 ${cardClassName}`} style={frameStyle}>
         <div className="mb-3 flex gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-white/60" />
@@ -969,10 +1071,8 @@ function WebsiteScrollFrame({
           <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
         </div>
         <div className="group relative">
-          <button
-            type="button"
-            onClick={editable ? onPickImage : undefined}
-            className={`relative block w-full overflow-hidden rounded-[22px] border text-left ${editable ? "cursor-pointer transition hover:scale-[1.01]" : "cursor-default"}`}
+          <div
+            className={`relative block w-full overflow-hidden rounded-[22px] border text-left ${editable && websiteImageUrl ? "transition hover:scale-[1.01]" : ""}`}
             style={{
               height: viewportHeight,
               borderColor: `color-mix(in srgb, ${textColor} 18%, transparent)`,
@@ -981,20 +1081,29 @@ function WebsiteScrollFrame({
             }}
           >
             {websiteImageUrl ? (
-              <img
-                src={websiteImageUrl}
-                alt="Website screenshot"
-                className="absolute left-0 top-0 block w-full select-none"
-                draggable={false}
-                decoding="async"
-                loading="eager"
-                style={{
-                  transform: `translate3d(0, -${scrollOffset}, 0)`,
-                  transition: lightweightPreview ? "none" : "transform 80ms linear",
-                  willChange: lightweightPreview ? "auto" : "transform",
-                  backfaceVisibility: "hidden",
-                }}
-              />
+              <>
+                <button type="button" onClick={editable ? onPickImage : undefined} className="absolute inset-0 block h-full w-full appearance-none overflow-hidden border-0 bg-transparent p-0 text-left" style={{ cursor: editable ? "pointer" : "default" }}>
+                  <img
+                    src={websiteImageUrl}
+                    alt="Website screenshot"
+                    className="absolute left-0 top-0 block w-full select-none"
+                    draggable={false}
+                    decoding="async"
+                    loading="eager"
+                    style={{
+                      transform: `translate3d(0, -${scrollOffset}, 0)`,
+                      transition: lightweightPreview ? "none" : "transform 80ms linear",
+                      willChange: lightweightPreview ? "auto" : "transform",
+                      backfaceVisibility: "hidden",
+                    }}
+                  />
+                </button>
+                {editable && !tilted ? (
+                  <div className={`absolute inset-x-3 ${compact ? "bottom-3" : "bottom-4"}`}>
+                    {controls}
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="p-5">
                 <div className="space-y-3">
@@ -1010,14 +1119,15 @@ function WebsiteScrollFrame({
                       backgroundColor: `color-mix(in srgb, ${textColor} 6%, transparent)`,
                     }}
                   >
-                    {editable ? "Click to upload a tall website screenshot" : "Upload a tall website screenshot"}
+                    {editable ? "Add a website screenshot" : "Upload a tall website screenshot"}
                   </div>
+                  {editable && !tilted ? controls : null}
                 </div>
               </div>
             )}
             {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-black/25 to-transparent" /> : null}
             {!lightweightPreview ? <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" /> : null}
-          </button>
+          </div>
           {editable && tilted && onChangeMediaPosition ? (
             <>
               <button
@@ -1054,6 +1164,7 @@ function WebsiteScrollFrame({
           ) : null}
         </div>
       </div>
+      {editable && tilted ? <div className={`absolute inset-x-6 z-40 ${compact ? "bottom-6" : "bottom-8"}`}>{controls}</div> : null}
     </div>
   );
 }
@@ -1419,6 +1530,17 @@ export function SceneStage({
 }: SceneStageProps) {
   const [isCodeEditorOpen, setIsCodeEditorOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState(scene.code ?? scene.description);
+  const [websiteCaptureUrl, setWebsiteCaptureUrl] = useState("");
+  const [websiteCaptureError, setWebsiteCaptureError] = useState("");
+  const [websiteCaptureStatus, setWebsiteCaptureStatus] = useState("");
+  const [isCapturingWebsite, setIsCapturingWebsite] = useState(false);
+
+  useEffect(() => {
+    setWebsiteCaptureUrl("");
+    setWebsiteCaptureError("");
+    setWebsiteCaptureStatus("");
+    setIsCapturingWebsite(false);
+  }, [scene.id]);
   const lightweightPreview = performanceMode === "light";
   const exportRender = performanceMode === "export";
   const optimizedLightRender = lightweightPreview && !editable;
@@ -1702,6 +1824,46 @@ export function SceneStage({
     if (typeof value === "string") bulletImageUrls[index] = value;
     else bulletImageUrls[index] = value ? await fileToStoredUrl(value, uploadResolution, uploadProfile) : "";
     onSceneChange?.({ bulletImageUrls });
+  };
+  const handleWebsiteCaptureUrlChange = (value: string) => {
+    setWebsiteCaptureUrl(value);
+    if (websiteCaptureError) setWebsiteCaptureError("");
+    if (websiteCaptureStatus) setWebsiteCaptureStatus("");
+  };
+  const handleWebsiteScreenshotCapture = async () => {
+    const trimmedUrl = websiteCaptureUrl.trim();
+    if (!trimmedUrl) {
+      setWebsiteCaptureError("Add a website URL first.");
+      setWebsiteCaptureStatus("");
+      return;
+    }
+
+    setIsCapturingWebsite(true);
+    setWebsiteCaptureError("");
+    setWebsiteCaptureStatus("Capturing website screenshot...");
+
+    try {
+      const response = await fetch("/api/website-screenshot", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ url: trimmedUrl }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { screenshotImageUrl?: string; error?: string };
+
+      if (!response.ok || !payload.screenshotImageUrl) {
+        throw new Error(payload.error || "Could not capture website screenshot.");
+      }
+
+      onSceneChange?.({ websiteImageUrl: payload.screenshotImageUrl });
+      setWebsiteCaptureStatus("Screenshot applied.");
+    } catch (error) {
+      setWebsiteCaptureError(error instanceof Error ? error.message : "Could not capture website screenshot.");
+      setWebsiteCaptureStatus("");
+    } finally {
+      setIsCapturingWebsite(false);
+    }
   };
 
   return (
@@ -2902,6 +3064,12 @@ export function SceneStage({
               progress={progress}
               editable={editable}
               onPickImage={onRequestHighlightUpload}
+              captureUrl={websiteCaptureUrl}
+              captureError={websiteCaptureError}
+              captureStatus={websiteCaptureStatus}
+              isCapturing={isCapturingWebsite}
+              onCaptureUrlChange={handleWebsiteCaptureUrlChange}
+              onCaptureWebsite={handleWebsiteScreenshotCapture}
               onChangeMediaPosition={(value) => onSceneChange?.({ mediaPosition: value })}
               lightweightPreview={lightweightPreview}
               textColor={textColor}
@@ -2939,17 +3107,18 @@ export function SceneStage({
             ) : null}
             {editable ? (
               <div className={`absolute inset-y-0 z-20 flex items-center ${textOnLeft ? "right-0 justify-end" : "left-0 justify-start"} ${compact ? "px-4" : "px-8"}`}>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onRequestHighlightUpload?.();
-                  }}
-                  className="rounded-[24px] border border-dashed border-white/20 bg-black/35 px-6 py-5 text-sm text-white/78 backdrop-blur-sm transition hover:bg-black/45"
-                >
-                  {scene.websiteImageUrl ? "Replace website screenshot" : "Upload website screenshot"}
-                </button>
+                <div className={compact ? "w-[260px]" : "w-[520px]"}>
+                  <WebsiteScreenshotPreviewControls
+                    compact={compact}
+                    inputValue={websiteCaptureUrl}
+                    error={websiteCaptureError}
+                    status={websiteCaptureStatus}
+                    isCapturing={isCapturingWebsite}
+                    onInputChange={handleWebsiteCaptureUrlChange}
+                    onCapture={handleWebsiteScreenshotCapture}
+                    onPickImage={onRequestHighlightUpload}
+                  />
+                </div>
               </div>
             ) : null}
             <div className={`relative z-10 flex h-full w-full ${textOnLeft ? "justify-start" : "justify-end"}`}>
@@ -3120,6 +3289,12 @@ export function SceneStage({
               progress={progress}
               editable={editable}
               onPickImage={onRequestHighlightUpload}
+              captureUrl={websiteCaptureUrl}
+              captureError={websiteCaptureError}
+              captureStatus={websiteCaptureStatus}
+              isCapturing={isCapturingWebsite}
+              onCaptureUrlChange={handleWebsiteCaptureUrlChange}
+              onCaptureWebsite={handleWebsiteScreenshotCapture}
               lightweightPreview={lightweightPreview}
               textColor={textColor}
               tilted={false}
