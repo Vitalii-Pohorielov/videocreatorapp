@@ -306,7 +306,7 @@ export function ProjectsWorkspace() {
         onClose={() => setIsVideoWorkspaceModalOpen(false)}
         onSelect={(workspace) => {
           setIsVideoWorkspaceModalOpen(false);
-          router.push(`/editor?videoType=${workspace}`);
+          router.push(workspace === "express-render" ? "/express-video-generation" : `/editor?videoType=${workspace}`);
         }}
       />
     </main>

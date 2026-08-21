@@ -849,7 +849,7 @@ export function EditorWorkspace({
         onClose={() => setIsVideoWorkspaceModalOpen(false)}
         onSelect={(workspace) => {
           setIsVideoWorkspaceModalOpen(false);
-          router.replace(`${workspaceBasePath}?videoType=${workspace}` as Route);
+          router.replace((workspace === "express-render" ? "/express-video-generation" : `${workspaceBasePath}?videoType=${workspace}`) as Route);
         }}
       />
       {isGenerateConfirmOpen ? (

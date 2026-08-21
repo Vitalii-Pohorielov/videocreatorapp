@@ -3,7 +3,7 @@
 type VideoWorkspaceModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (workspace: "promo" | "announcement") => void;
+  onSelect: (workspace: "promo" | "express-render") => void;
 };
 
 const workspaceCards = [
@@ -15,10 +15,10 @@ const workspaceCards = [
     accentClassName: "hover:border-sky-400/35 hover:bg-sky-400/[0.08]",
   },
   {
-    id: "announcement" as const,
-    eyebrow: "Announcement editor",
-    title: "Announcement video",
-    description: "Create announcement videos with project logos, slogan scenes, and the existing announcement flow.",
+    id: "express-render" as const,
+    eyebrow: "Batch renderer",
+    title: "Express render",
+    description: "Analyze up to 10 links and render videos in one express batch.",
     accentClassName: "hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.08]",
   },
 ];
@@ -33,7 +33,7 @@ export function VideoWorkspaceModal({ isOpen, onClose, onSelect }: VideoWorkspac
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">New video</p>
             <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Choose your video workspace</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-300">Choose promo or announcement. The editing flows stay separate.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-300">Choose promo or express render. The editing flows stay separate.</p>
           </div>
           <button
             type="button"
