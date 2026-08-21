@@ -138,21 +138,21 @@ export function LandingScreen() {
   return (
     <main ref={mainRef} className="h-[calc(100vh-72px)] overflow-y-auto scroll-smooth px-6 text-slate-100 sm:px-8 lg:px-12">
       <section ref={heroRef} className="snap-start">
-        <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col items-center justify-center py-12 text-center">
+        <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col items-center justify-center py-6 text-center">
           <div className="max-w-4xl">
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">PROMO VIDEO BUILDER</p>
-            <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl xl:text-7xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">PROMO VIDEO BUILDER</p>
+            <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl xl:text-6xl">
               Instant Promo Videos for{" "}
               <span className="inline-flex min-w-[7.6em] items-baseline justify-center text-center text-sky-300 sm:min-w-[7.2em]">
                 <span>{typedAudienceWord || "\u00a0"}</span>
                 <span className="ml-1 inline-block h-[0.78em] w-[0.08em] animate-[typewriterCaret_900ms_steps(1)_infinite] bg-sky-300 align-[-0.04em]" aria-hidden="true" />
               </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-7 text-slate-300 sm:text-xl">
               Stop losing visitors to wall-of-text pages. Generate polished product videos directly from your URL or build scene-by-scene with total control.
             </p>
 
-            <div className="mt-10 flex flex-wrap justify-center gap-3">
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href="/editor?chooseVideoType=1"
                 className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
@@ -167,10 +167,10 @@ export function LandingScreen() {
               </a>
             </div>
 
-            <div className="mt-14 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-left">
+            <div className="mt-9 rounded-[24px] border border-white/10 bg-white/[0.03] p-5 text-left">
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">How It Works</p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl">From Link or Scratch to Final Export</h2>
-              <div className="mt-6 space-y-4">
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white sm:text-[1.65rem]">From Link or Scratch to Final Export</h2>
+              <div className="mt-5 space-y-3">
                 {steps.map((step, index) => (
                   <div key={step.label} className="flex items-center gap-4">
                     <span className="w-8 shrink-0 text-sm font-semibold text-sky-300">{String(index + 1).padStart(2, "0")}</span>
@@ -185,7 +185,7 @@ export function LandingScreen() {
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col items-center gap-2 text-sm text-slate-500">
+            <div className="mt-5 flex flex-col items-center gap-1 text-sm text-slate-500">
               <span>Scroll to see real examples</span>
               <span className="animate-bounce text-xl leading-none text-sky-300">↓</span>
             </div>
