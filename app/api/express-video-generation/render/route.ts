@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { BatchRequestError, parseExpressBatchUrls, renderExpressVideoBatch } from "@/lib/expressVideoBatch";
+import { BatchRequestError, parseExpressBatchUrls, parseExpressPreparedProjects, renderExpressVideoBatch } from "@/lib/expressVideoBatch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,8 +8,9 @@ export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
-    const urls = parseExpressBatchUrls((await request.json()) as { urls?: unknown });
-    const archive = await renderExpressVideoBatch(urls);
+    const body = (await request.json()) as { urls?: unknown; projects?: unknown };
+    const batchItems = Array.isArray(body.projects) ? parseExpressPreparedProjects(body) : parseExpressBatchUrls(body);
+    const archive = await renderExpressVideoBatch(batchItems);
 
     return new NextResponse(archive, {
       status: 200,

@@ -52,7 +52,7 @@ export function ExpressVideoGenerationWorkspace() {
   const [urlInput, setUrlInput] = useState("");
   const [status, setStatus] = useState<BatchStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("Waiting for URLs");
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [downloadHref, setDownloadHref] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState("express-video-generation.zip");
   const [progress, setProgress] = useState<BatchProgress>({
     phase: "idle",
@@ -65,7 +65,6 @@ export function ExpressVideoGenerationWorkspace() {
   });
   const [projectDrafts, setProjectDrafts] = useState<Record<string, ProjectDraft>>({});
   const [uploadingLogoUrl, setUploadingLogoUrl] = useState<string | null>(null);
-  const pollTimerRef = useRef<number | null>(null);
   const activeScrapesRef = useRef<Set<string>>(new Set());
 
   const urls = useMemo(() => parseUrlLines(urlInput), [urlInput]);
@@ -87,7 +86,10 @@ export function ExpressVideoGenerationWorkspace() {
     readyProjects.length === urls.length;
 
   const resetDownload = () => {
-    setJobId(null);
+    setDownloadHref((currentHref) => {
+      if (currentHref) URL.revokeObjectURL(currentHref);
+      return null;
+    });
     setDownloadFileName("express-video-generation.zip");
   };
 
@@ -261,16 +263,16 @@ export function ExpressVideoGenerationWorkspace() {
     try {
       resetDownload();
       updateFromProgress({
-        phase: "queued",
+        phase: "rendering",
         current: 0,
         total: urls.length,
         completed: 0,
         currentUrl: null,
         currentFileName: null,
-        message: `Queued ${urls.length} URL${urls.length === 1 ? "" : "s"}.`,
+        message: `Rendering ${urls.length} prepared project${urls.length === 1 ? "" : "s"}. Keep this tab open.`,
       });
 
-      const response = await fetch("/api/express-video-generation/jobs", {
+      const response = await fetch("/api/express-video-generation/render", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ projects: readyProjects }),
@@ -295,19 +297,19 @@ export function ExpressVideoGenerationWorkspace() {
         throw new Error(message);
       }
 
-      const payload = (await response.json()) as {
-        jobId?: string;
-        status?: BatchStatus;
-        progress?: BatchProgress;
-        error?: string;
-      };
-
-      if (!payload.jobId || !payload.progress) {
-        throw new Error(payload.error || "Could not start the video batch.");
-      }
-
-      setJobId(payload.jobId);
-      updateFromProgress(payload.progress);
+      const archiveBlob = await response.blob();
+      const archiveUrl = URL.createObjectURL(archiveBlob);
+      setDownloadHref(archiveUrl);
+      setDownloadFileName("express-video-generation.zip");
+      updateFromProgress({
+        phase: "done",
+        current: urls.length,
+        total: urls.length,
+        completed: urls.length,
+        currentUrl: null,
+        currentFileName: "express-video-generation.zip",
+        message: `Done ${urls.length}/${urls.length}. ZIP is ready.`,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not generate the video batch.";
       setStatus("error");
@@ -356,72 +358,18 @@ export function ExpressVideoGenerationWorkspace() {
   }, [urls, projectDrafts]);
 
   useEffect(() => {
-    if (!jobId || !isRunning) return undefined;
-
-    let isCancelled = false;
-
-    async function pollStatus() {
-      try {
-        const response = await fetch(`/api/express-video-generation/jobs/${jobId}`, {
-          cache: "no-store",
-        });
-        const payload = (await response.json()) as {
-          status?: BatchStatus;
-          progress?: BatchProgress;
-          error?: string;
-          isDownloadReady?: boolean;
-        };
-
-        if (isCancelled) return;
-
-        if (!response.ok || !payload.progress) {
-          throw new Error(payload.error || "Could not read batch status.");
-        }
-
-        updateFromProgress(payload.progress);
-
-        if (payload.status === "done" || payload.isDownloadReady) {
-          setStatus("done");
-          setDownloadFileName("express-video-generation.zip");
-          return;
-        }
-
-        if (payload.status === "error") {
-          setStatus("error");
-          setStatusMessage(payload.error || payload.progress.message);
-          return;
-        }
-
-        pollTimerRef.current = window.setTimeout(pollStatus, 2000);
-      } catch (error) {
-        if (isCancelled) return;
-        const message = error instanceof Error ? error.message : "Could not read batch status.";
-        setStatus("error");
-        setStatusMessage(message);
-        setProgress((currentProgress) => ({
-          ...currentProgress,
-          phase: "error",
-          message,
-        }));
-      }
-    }
-
-    pollTimerRef.current = window.setTimeout(pollStatus, 1200);
-
     return () => {
-      isCancelled = true;
-      if (pollTimerRef.current) {
-        window.clearTimeout(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
+      setDownloadHref((currentHref) => {
+        if (currentHref) URL.revokeObjectURL(currentHref);
+        return null;
+      });
     };
-  }, [isRunning, jobId]);
+  }, []);
 
   const progressUnits = progress.total > 0 ? progress.total * 2 + 1 : 1;
   const completedUnits = progress.completed * 2 + (status === "scraping" ? 0.5 : status === "rendering" ? 1 : status === "zipping" || status === "done" ? 1 : 0);
   const progressPercent = status === "done" ? 100 : Math.max(0, Math.min(98, Math.round((completedUnits / progressUnits) * 100)));
   const progressWidth = `${progressPercent}%`;
-  const downloadHref = jobId ? `/api/express-video-generation/jobs/${jobId}/download` : null;
   const completedUrlCount = status === "done" ? urls.length : Math.min(progress.completed, urls.length);
   const phaseLabel =
     status === "scraping"
