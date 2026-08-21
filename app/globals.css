@@ -192,3 +192,14 @@ input[type="search"]::-webkit-search-decoration {
     color: #38bdf8;
   }
 }
+
+@keyframes typewriterCaret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}

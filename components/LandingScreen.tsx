@@ -4,11 +4,26 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 const steps = [
-  "Sign in with Google to open your private workspace.",
-  "Open the editor and start a new project.",
-  "Paste a website URL or build scenes manually.",
-  "Edit text, visuals, timing, and layout scene by scene.",
-  "Save the draft and export the final clip as MP4.",
+  {
+    label: "Log In",
+    text: "Access your workspace in one click.",
+  },
+  {
+    label: "Input",
+    text: "Paste a product URL or start clean.",
+  },
+  {
+    label: "Generate",
+    text: "Smart engine pre-fills scenes from your page.",
+  },
+  {
+    label: "Edit",
+    text: "Fine-tune text, timing, and visuals with full control.",
+  },
+  {
+    label: "Export",
+    text: "Render crisp MP4 clips ready for campaign.",
+  },
 ];
 
 const demoVideos = [
@@ -30,8 +45,13 @@ const demoVideos = [
   },
 ];
 
+const audienceWords = ["SaaS", "Marketers", "Founders", "Product Teams"];
+
 export function LandingScreen() {
   const [activeDemoIndex, setActiveDemoIndex] = useState(0);
+  const [activeAudienceIndex, setActiveAudienceIndex] = useState(0);
+  const [typedAudienceWord, setTypedAudienceWord] = useState("");
+  const [isDeletingAudienceWord, setIsDeletingAudienceWord] = useState(false);
   const activeDemo = demoVideos[activeDemoIndex] ?? demoVideos[0];
   const mainRef = useRef<HTMLElement | null>(null);
   const heroRef = useRef<HTMLElement | null>(null);
@@ -39,6 +59,32 @@ export function LandingScreen() {
   const ctaRef = useRef<HTMLElement | null>(null);
   const activeScreenRef = useRef(0);
   const isAnimatingRef = useRef(false);
+
+  useEffect(() => {
+    const word = audienceWords[activeAudienceIndex] ?? "";
+    let timeoutId: number;
+
+    if (!isDeletingAudienceWord && typedAudienceWord.length < word.length) {
+      timeoutId = window.setTimeout(() => {
+        setTypedAudienceWord(word.slice(0, typedAudienceWord.length + 1));
+      }, 85);
+    } else if (!isDeletingAudienceWord) {
+      timeoutId = window.setTimeout(() => {
+        setIsDeletingAudienceWord(true);
+      }, 1200);
+    } else if (typedAudienceWord.length > 0) {
+      timeoutId = window.setTimeout(() => {
+        setTypedAudienceWord(word.slice(0, typedAudienceWord.length - 1));
+      }, 45);
+    } else {
+      timeoutId = window.setTimeout(() => {
+        setIsDeletingAudienceWord(false);
+        setActiveAudienceIndex((currentIndex) => (currentIndex + 1) % audienceWords.length);
+      }, 180);
+    }
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeAudienceIndex, isDeletingAudienceWord, typedAudienceWord]);
 
   useEffect(() => {
     const container = mainRef.current;
@@ -94,11 +140,16 @@ export function LandingScreen() {
       <section ref={heroRef} className="snap-start">
         <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col items-center justify-center py-12 text-center">
           <div className="max-w-4xl">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">PROMO VIDEO BUILDER</p>
             <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl xl:text-7xl">
-              Video creation. <span className="animate-[heroAccent_6s_linear_infinite]">Zero AI</span>
+              Instant Promo Videos for{" "}
+              <span className="inline-flex min-w-[7.6em] items-baseline justify-center text-center text-sky-300 sm:min-w-[7.2em]">
+                <span>{typedAudienceWord || "\u00a0"}</span>
+                <span className="ml-1 inline-block h-[0.78em] w-[0.08em] animate-[typewriterCaret_900ms_steps(1)_infinite] bg-sky-300 align-[-0.04em]" aria-hidden="true" />
+              </span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              A new way to build promo videos - faster than editing, more predictable than AI.
+              Stop losing visitors to wall-of-text pages. Generate polished product videos directly from your URL or build scene-by-scene with total control.
             </p>
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
@@ -112,17 +163,23 @@ export function LandingScreen() {
                 href="#real-examples"
                 className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.06]"
               >
-                Watch Example
+                Watch Examples ↓
               </a>
             </div>
 
             <div className="mt-14 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-left">
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">How It Works</p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl">From Link or Scratch to Final Export</h2>
               <div className="mt-6 space-y-4">
                 {steps.map((step, index) => (
-                  <div key={step} className="flex items-start gap-4">
+                  <div key={step.label} className="flex items-center gap-4">
                     <span className="w-8 shrink-0 text-sm font-semibold text-sky-300">{String(index + 1).padStart(2, "0")}</span>
-                    <p className="text-base leading-7 text-slate-300">{step}</p>
+                    <p className="text-base leading-6 text-slate-300">
+                      <span className="font-semibold text-white">{step.label}</span>
+                      <span className="text-slate-500"> (</span>
+                      <span className="text-slate-400/80">{step.text}</span>
+                      <span className="text-slate-500">)</span>
+                    </p>
                   </div>
                 ))}
               </div>
@@ -141,9 +198,9 @@ export function LandingScreen() {
           <div className="flex flex-col items-start justify-between gap-3 text-left sm:flex-row sm:items-end">
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Real examples</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl">Customer videos in action.</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl">Product Promo Videos in Action</h2>
             </div>
-            <p className="max-w-xl text-sm leading-6 text-slate-400">Built with the editor. Used to grow real products.</p>
+            <p className="max-w-xl text-sm leading-6 text-slate-400">Built with ClipLab. Designed to showcase SaaS, apps, and marketing pages.</p>
           </div>
 
           <div className="mt-6">
@@ -212,24 +269,18 @@ export function LandingScreen() {
             <div className="w-full rounded-[32px] border border-white/10 bg-white/[0.03] px-6 py-10 sm:px-10 sm:py-12">
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Get started</p>
               <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
-                Video creation. <span className="animate-[heroAccent_6s_linear_infinite]">Zero AI</span>
+                Ready to turn your product into a promo video?
               </h3>
               <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
-                A new way to build promo videos - faster than editing, more predictable than AI.
+                Paste your link or jump straight into the editor.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Link
                   href="/editor?chooseVideoType=1"
                   className="rounded-full bg-sky-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
                 >
-                  Build Your First Video
+                  Create Your Promo Video Now
                 </Link>
-                <a
-                  href="#real-examples"
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.06]"
-                >
-                  Watch Example
-                </a>
               </div>
             </div>
           </div>
