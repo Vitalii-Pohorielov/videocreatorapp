@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { VideoWorkspaceModal } from "@/components/VideoWorkspaceModal";
 import { deleteBannerProject, deleteBannerProjects, deleteProject, deleteProjects, listBannerProjects, listProjects } from "@/lib/projectPersistence";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useAuthSession } from "@/lib/useAuthSession";
 import { usePremiumStatus } from "@/lib/usePremiumStatus";
 
@@ -43,12 +42,6 @@ export function ProjectsWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isVideoWorkspaceModalOpen, setIsVideoWorkspaceModalOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  };
 
   useEffect(() => {
     let isActive = true;
@@ -134,44 +127,49 @@ export function ProjectsWorkspace() {
   return (
     <main className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.16),transparent_32%),linear-gradient(180deg,#060b16_0%,#0b1220_44%,#0f172a_100%)] px-4 py-6 text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <section className="rounded-[32px] border border-white/10 bg-slate-950/70 px-6 py-8 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
+        <section className="rounded-[32px] border border-white/10 bg-slate-950/70 px-6 py-6 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-[400px]">
               <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Workspace</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-white">Your projects, all in one place.</h1>
-              <p className="mt-3 text-base leading-7 text-slate-300">
+              <h1 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-white">Your projects, all in one place.</h1>
+              <p className="mt-2 text-base leading-7 text-slate-300">
                 Switch between video and banner drafts, save each separately, and jump back in without losing your flow.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {user?.email ? (
-                <span className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
-                  {user.email}
-                </span>
-              ) : null}
               <button
                 type="button"
                 onClick={() => setIsVideoWorkspaceModalOpen(true)}
                 disabled={isPremiumLoading}
-                className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-2xl border border-sky-300/30 bg-sky-300/10 px-5 py-3 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/15 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPremiumLoading ? "Checking access..." : "New video"}
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/banner")}
-                className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/15"
+                className="rounded-2xl border border-sky-300/30 bg-sky-300/10 px-5 py-3 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/15"
               >
                 New banner
               </button>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.08]"
-              >
-                Sign out
-              </button>
+              {isPremium ? (
+                <Link
+                  href="/express-video-generation"
+                  className="rounded-2xl border border-sky-300/30 bg-sky-300/10 px-5 py-3 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/15"
+                >
+                  Express render
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Premium only"
+                >
+                  Express render
+                </button>
+              )}
             </div>
           </div>
         </section>
