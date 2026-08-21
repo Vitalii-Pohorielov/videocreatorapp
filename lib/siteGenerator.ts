@@ -25,7 +25,7 @@ type ScrapedSiteData = {
   socialLinks: string[];
 };
 
-type GeneratedProjectPayload = {
+export type GeneratedProjectPayload = {
   projectName: string;
   sceneTrack: SceneTrack;
   exportSettings: ExportSettings;
