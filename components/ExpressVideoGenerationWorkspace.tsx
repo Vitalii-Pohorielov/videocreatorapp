@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fileToStoredUrl } from "@/lib/imageUpload";
-import type { ExportSettings, SceneTrack } from "@/lib/sceneDefinitions";
+import type { ExportSettings, Scene, SceneTrack } from "@/lib/sceneDefinitions";
 
 type BatchStatus = "idle" | "queued" | "scraping" | "rendering" | "zipping" | "done" | "error";
 type ProjectStatus = "queued" | "scraping" | "ready" | "error";
@@ -32,6 +32,191 @@ type ProjectDraft = {
   error: string | null;
   project: PreparedProject | null;
 };
+
+type ZipEntry = {
+  name: string;
+  data: Uint8Array;
+};
+
+const crcTable = new Uint32Array(256);
+for (let index = 0; index < 256; index += 1) {
+  let value = index;
+  for (let bit = 0; bit < 8; bit += 1) {
+    value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+  }
+  crcTable[index] = value >>> 0;
+}
+
+function getCrc32(data: Uint8Array) {
+  let crc = 0xffffffff;
+
+  for (const byte of data) {
+    crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function getDosDateTime(date = new Date()) {
+  const year = Math.max(1980, date.getFullYear());
+  const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+  const dosDate = ((year - 1980) << 9) | (date.getMonth() + 1) << 5 | date.getDate();
+
+  return { dosDate, dosTime };
+}
+
+function writeUInt16LE(buffer: Uint8Array, offset: number, value: number) {
+  new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).setUint16(offset, value, true);
+}
+
+function writeUInt32LE(buffer: Uint8Array, offset: number, value: number) {
+  new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).setUint32(offset, value, true);
+}
+
+function concatUint8Arrays(parts: Uint8Array[]) {
+  const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+  const combined = new Uint8Array(totalLength);
+  let offset = 0;
+
+  for (const part of parts) {
+    combined.set(part, offset);
+    offset += part.length;
+  }
+
+  return combined;
+}
+
+function createZipBlob(entries: ZipEntry[]) {
+  const encoder = new TextEncoder();
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  const { dosDate, dosTime } = getDosDateTime();
+  let offset = 0;
+
+  for (const entry of entries) {
+    const nameBuffer = encoder.encode(entry.name);
+    const crc32 = getCrc32(entry.data);
+
+    const localHeader = new Uint8Array(30);
+    writeUInt32LE(localHeader, 0, 0x04034b50);
+    writeUInt16LE(localHeader, 4, 20);
+    writeUInt16LE(localHeader, 6, 0x0800);
+    writeUInt16LE(localHeader, 8, 0);
+    writeUInt16LE(localHeader, 10, dosTime);
+    writeUInt16LE(localHeader, 12, dosDate);
+    writeUInt32LE(localHeader, 14, crc32);
+    writeUInt32LE(localHeader, 18, entry.data.length);
+    writeUInt32LE(localHeader, 22, entry.data.length);
+    writeUInt16LE(localHeader, 26, nameBuffer.length);
+    writeUInt16LE(localHeader, 28, 0);
+    localParts.push(localHeader, nameBuffer, entry.data);
+
+    const centralHeader = new Uint8Array(46);
+    writeUInt32LE(centralHeader, 0, 0x02014b50);
+    writeUInt16LE(centralHeader, 4, 20);
+    writeUInt16LE(centralHeader, 6, 20);
+    writeUInt16LE(centralHeader, 8, 0x0800);
+    writeUInt16LE(centralHeader, 10, 0);
+    writeUInt16LE(centralHeader, 12, dosTime);
+    writeUInt16LE(centralHeader, 14, dosDate);
+    writeUInt32LE(centralHeader, 16, crc32);
+    writeUInt32LE(centralHeader, 20, entry.data.length);
+    writeUInt32LE(centralHeader, 24, entry.data.length);
+    writeUInt16LE(centralHeader, 28, nameBuffer.length);
+    writeUInt16LE(centralHeader, 30, 0);
+    writeUInt16LE(centralHeader, 32, 0);
+    writeUInt16LE(centralHeader, 34, 0);
+    writeUInt16LE(centralHeader, 36, 0);
+    writeUInt32LE(centralHeader, 38, 0);
+    writeUInt32LE(centralHeader, 42, offset);
+    centralParts.push(centralHeader, nameBuffer);
+
+    offset += localHeader.length + nameBuffer.length + entry.data.length;
+  }
+
+  const centralDirectory = concatUint8Arrays(centralParts);
+  const endRecord = new Uint8Array(22);
+  writeUInt32LE(endRecord, 0, 0x06054b50);
+  writeUInt16LE(endRecord, 4, 0);
+  writeUInt16LE(endRecord, 6, 0);
+  writeUInt16LE(endRecord, 8, entries.length);
+  writeUInt16LE(endRecord, 10, entries.length);
+  writeUInt32LE(endRecord, 12, centralDirectory.length);
+  writeUInt32LE(endRecord, 16, offset);
+  writeUInt16LE(endRecord, 20, 0);
+
+  return new Blob([concatUint8Arrays([...localParts, centralDirectory, endRecord])], { type: "application/zip" });
+}
+
+function toSafeVideoFileName(projectName?: string) {
+  const baseName = (projectName ?? "")
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\.+$/g, "")
+    .trim();
+
+  return `${baseName || "video-project"}.mp4`;
+}
+
+function getUniqueFileName(fileName: string, usedNames: Set<string>) {
+  const extensionIndex = fileName.lastIndexOf(".");
+  const name = extensionIndex > 0 ? fileName.slice(0, extensionIndex) : fileName;
+  const extension = extensionIndex > 0 ? fileName.slice(extensionIndex) : "";
+  let candidate = fileName;
+  let index = 2;
+
+  while (usedNames.has(candidate.toLowerCase())) {
+    candidate = `${name}-${index}${extension}`;
+    index += 1;
+  }
+
+  usedNames.add(candidate.toLowerCase());
+  return candidate;
+}
+
+function applyPreparedProjectEdits(project: PreparedProject) {
+  const projectName = project.projectName.trim() || "Video project";
+  const logoImageUrl = project.logoImageUrl.trim();
+
+  return {
+    projectName,
+    exportSettings: project.exportSettings,
+    scenes: project.sceneTrack.scenes.map((scene): Scene => {
+      if (scene.type === "brand-reveal" || scene.type === "brand-reveal-alt" || scene.type === "brand-reveal-circle") {
+        return {
+          ...scene,
+          title: projectName,
+          logoImageUrl,
+        };
+      }
+
+      return scene.logoImageUrl
+        ? {
+            ...scene,
+            logoImageUrl,
+          }
+        : scene;
+    }),
+  };
+}
+
+async function readRenderError(response: Response) {
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      const payload = (await response.json()) as { error?: string };
+      if (payload.error) return payload.error;
+    }
+
+    const text = (await response.text()).trim();
+    if (text) return text;
+  } catch {
+    // Keep the generic message below.
+  }
+
+  return "Could not generate the video batch.";
+}
 
 function parseUrlLines(value: string) {
   const seen = new Set<string>();
@@ -262,42 +447,59 @@ export function ExpressVideoGenerationWorkspace() {
 
     try {
       resetDownload();
-      updateFromProgress({
-        phase: "rendering",
-        current: 0,
-        total: urls.length,
-        completed: 0,
-        currentUrl: null,
-        currentFileName: null,
-        message: `Rendering ${urls.length} prepared project${urls.length === 1 ? "" : "s"}. Keep this tab open.`,
-      });
+      const files: ZipEntry[] = [];
+      const usedNames = new Set<string>();
 
-      const response = await fetch("/api/express-video-generation/render", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ projects: readyProjects }),
-      });
+      for (const [index, project] of readyProjects.entries()) {
+        const current = index + 1;
+        const renderPayload = applyPreparedProjectEdits(project);
+        const fileName = getUniqueFileName(`${String(current).padStart(2, "0")}-${toSafeVideoFileName(renderPayload.projectName)}`, usedNames);
 
-      if (!response.ok) {
-        let message = "Could not generate the video batch.";
+        updateFromProgress({
+          phase: "rendering",
+          current,
+          total: urls.length,
+          completed: files.length,
+          currentUrl: project.sourceUrl,
+          currentFileName: fileName,
+          message: `Rendering ${current}/${urls.length}: ${fileName}. Keep this tab open.`,
+        });
 
-        try {
-          const contentType = response.headers.get("content-type") ?? "";
-          if (contentType.includes("application/json")) {
-            const payload = (await response.json()) as { error?: string };
-            if (payload.error) message = payload.error;
-          } else {
-            const text = (await response.text()).trim();
-            if (text) message = text;
-          }
-        } catch {
-          // Keep the generic message.
+        const response = await fetch("/api/mobile-video/render", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(renderPayload),
+        });
+
+        if (!response.ok) {
+          throw new Error(await readRenderError(response));
         }
 
-        throw new Error(message);
+        const videoBuffer = await response.arrayBuffer();
+        files.push({ name: fileName, data: new Uint8Array(videoBuffer) });
+
+        updateFromProgress({
+          phase: "rendering",
+          current,
+          total: urls.length,
+          completed: files.length,
+          currentUrl: project.sourceUrl,
+          currentFileName: fileName,
+          message: `Done ${files.length}/${urls.length}: ${fileName}`,
+        });
       }
 
-      const archiveBlob = await response.blob();
+      updateFromProgress({
+        phase: "zipping",
+        current: urls.length,
+        total: urls.length,
+        completed: files.length,
+        currentUrl: null,
+        currentFileName: "express-video-generation.zip",
+        message: `Preparing ZIP archive with ${files.length} video${files.length === 1 ? "" : "s"}.`,
+      });
+
+      const archiveBlob = createZipBlob(files);
       const archiveUrl = URL.createObjectURL(archiveBlob);
       setDownloadHref(archiveUrl);
       setDownloadFileName("express-video-generation.zip");
@@ -466,7 +668,7 @@ export function ExpressVideoGenerationWorkspace() {
                           }`}
                           aria-label={statusLabel}
                         >
-                          {isCompleted || draft?.status === "ready" ? "✓" : index + 1}
+                          {isCompleted || draft?.status === "ready" ? "\u2713" : index + 1}
                         </span>
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-slate-950/80 text-sm font-semibold text-slate-300">
                           {project?.logoImageUrl ? (
