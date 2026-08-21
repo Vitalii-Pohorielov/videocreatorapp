@@ -60,6 +60,16 @@ const templatePresets = [
 export type ExportResolution = "480p" | "540p" | "720p";
 export type ExportProfile = "draft" | "standard" | "high";
 export type VideoType = "promo" | "announcement";
+export type VideoFontChoice =
+  | "jakarta"
+  | "inter"
+  | "space"
+  | "syne"
+  | "montserrat"
+  | "oswald"
+  | "bebas"
+  | "playfair"
+  | "merriweather";
 
 export type SceneType =
   | "announcement-hero"
@@ -90,6 +100,7 @@ export type ExportSettings = {
   backgroundColor: string;
   textColor: string;
   accentColor: string;
+  fontChoice: VideoFontChoice;
   preset: TemplatePreset;
   resolution: ExportResolution;
   profile: ExportProfile;
@@ -214,6 +225,35 @@ export const exportProfileLabels: Record<ExportProfile, string> = {
   standard: "Standard",
   high: "High",
 };
+
+export const videoFontLabels: Record<VideoFontChoice, string> = {
+  jakarta: "Plus Jakarta",
+  inter: "Inter",
+  space: "Space Grotesk",
+  syne: "Syne",
+  montserrat: "Montserrat",
+  oswald: "Oswald",
+  bebas: "Bebas Neue",
+  playfair: "Playfair",
+  merriweather: "Merriweather",
+};
+
+export const videoFontFamilyMap: Record<VideoFontChoice, string> = {
+  jakarta: 'var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui, sans-serif',
+  inter: 'var(--font-inter), Inter, system-ui, sans-serif',
+  space: 'var(--font-space-grotesk), "Space Grotesk", system-ui, sans-serif',
+  syne: 'var(--font-syne), Syne, system-ui, sans-serif',
+  montserrat: 'var(--font-montserrat), Montserrat, system-ui, sans-serif',
+  oswald: 'var(--font-oswald), Oswald, "Arial Narrow", sans-serif',
+  bebas: 'var(--font-bebas-neue), "Bebas Neue", Impact, sans-serif',
+  playfair: 'var(--font-playfair-display), "Playfair Display", Georgia, serif',
+  merriweather: 'var(--font-merriweather), Merriweather, Georgia, serif',
+};
+
+export function normalizeVideoFontChoice(value: string | undefined | null): VideoFontChoice {
+  if (value && value in videoFontLabels) return value as VideoFontChoice;
+  return "jakarta";
+}
 
 export const exportResolutionDimensions: Record<ExportResolution, { width: number; height: number }> = {
   "480p": { width: 854, height: 480 },

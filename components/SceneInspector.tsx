@@ -6,7 +6,7 @@ import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import { isAnnouncementScene } from "@/lib/sceneTransitions";
 import { usePremiumStatus } from "@/lib/usePremiumStatus";
-import { freeStylePresets, presetLabels, sceneTypeLabels, type ExportSettings, type Scene, type TemplatePreset } from "@/store/useStore";
+import { freeStylePresets, presetLabels, sceneTypeLabels, videoFontLabels, type ExportSettings, type Scene, type TemplatePreset, type VideoFontChoice } from "@/store/useStore";
 
 const presetOptions: TemplatePreset[] = [
   "black",
@@ -506,7 +506,7 @@ export const SceneInspector = memo(function SceneInspector({
         ) : null}
 
         {!isAnnouncementWorkspace ? (
-          <InspectorSection title="Colors" description="Edit colors separately without shifting the style grid.">
+          <InspectorSection title="Brand Kit" description="Set brand colors and typography for the whole video.">
             <div className="space-y-3">
               <ColorPopoverRow
                 label="Background"
@@ -523,6 +523,27 @@ export const SceneInspector = memo(function SceneInspector({
                 value={settings.textColor}
                 onChange={(value) => onUpdateSettings({ textColor: normalizeColorInput(value) })}
               />
+              <label className="flex items-center justify-between gap-3 rounded-2xl bg-slate-900/30 px-3 py-2.5">
+                <span className="min-w-0 text-sm text-slate-300">Font</span>
+                <span className="relative block w-40 shrink-0">
+                  <select
+                    value={settings.fontChoice}
+                    onChange={(event) => onUpdateSettings({ fontChoice: event.target.value as VideoFontChoice })}
+                    className="h-9 w-full appearance-none rounded-2xl border border-white/10 bg-slate-950/80 py-0 pl-3 pr-9 text-sm font-medium text-white outline-none transition hover:border-sky-300/45 hover:bg-slate-950 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+                  >
+                    {Object.entries(videoFontLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 6.5 8 10l4-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </span>
+              </label>
             </div>
           </InspectorSection>
         ) : null}

@@ -14,6 +14,7 @@ const defaultPayload: MobileVideoRenderPayload = {
     backgroundColor: "#ffffff",
     textColor: "#111111",
     accentColor: "#4b5563",
+    fontChoice: "jakarta",
     preset: "white",
     resolution: "720p",
     profile: "standard",

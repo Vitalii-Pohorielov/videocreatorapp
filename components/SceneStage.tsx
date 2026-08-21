@@ -7,13 +7,14 @@ import { CodePreviewCard } from "@/components/CodePreviewCard";
 import { AnimatedIconPlayer } from "@/components/AnimatedIconPlayer";
 import { EmojiAssetPicker } from "@/components/EmojiAssetPicker";
 import { fileToStoredUrl } from "@/lib/imageUpload";
-import type { ExportProfile, ExportResolution, Scene, TemplatePreset } from "@/store/useStore";
+import { videoFontFamilyMap, type ExportProfile, type ExportResolution, type Scene, type TemplatePreset, type VideoFontChoice } from "@/store/useStore";
 
 type SceneStageProps = {
   scene: Scene;
   backgroundColor: string;
   accentColor: string;
   textColor: string;
+  fontChoice?: VideoFontChoice;
   preset: TemplatePreset;
   performanceMode?: "full" | "light" | "export";
   renderLayer?: "full" | "background" | "content";
@@ -1415,9 +1416,11 @@ function StageShell({
   compact,
   renderLayer,
   lightweightPreview = false,
+  fontFamily,
 }: {
   backgroundColor: string;
   textColor: string;
+  fontFamily: string;
   children: ReactNode;
   progress: number;
   compact: boolean;
@@ -1426,7 +1429,7 @@ function StageShell({
 }) {
   const showBackground = renderLayer !== "content";
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor }}>
+    <div className="relative h-full w-full overflow-hidden" style={{ backgroundColor: showBackground ? backgroundColor : "transparent", color: textColor, fontFamily }}>
       {showBackground ? <div className="absolute inset-0" style={{ background: lightweightPreview ? "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 52%)" : "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 28%, rgba(255,255,255,0) 65%), radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 26%)", transform: "scale(1)" }} /> : null}
       {showBackground && !lightweightPreview ? <div className={`absolute left-[8%] top-[12%] rounded-full blur-3xl ${compact ? "h-20 w-20" : "h-36 w-36"}`} style={{ background: `${textColor}18`, transform: "translate3d(0, 0, 0)", opacity: 0.44 }} /> : null}
       {showBackground && !lightweightPreview ? <div className={`absolute right-[10%] top-[20%] rounded-full blur-3xl ${compact ? "h-24 w-24" : "h-48 w-48"}`} style={{ background: `${textColor}12`, transform: "translate3d(0, 0, 0)", opacity: 0.34 }} /> : null}
@@ -1441,6 +1444,7 @@ export function SceneStage({
   backgroundColor,
   accentColor,
   textColor,
+  fontChoice = "jakarta",
   preset,
   performanceMode = "full",
   renderLayer = "full",
@@ -1490,6 +1494,7 @@ export function SceneStage({
   const sceneOutroFade = isAnnouncementScene ? 1 : 1;
   const promoLayerOpacity = renderLayer === "background" ? 1 : 1 - promoOutroProgress;
   const s = presetStyles(preset, lightweightPreview);
+  const fontFamily = videoFontFamilyMap[fontChoice] ?? videoFontFamilyMap.jakarta;
   const resolvedAccentColor = accentColor || presetAccentColor(preset);
   const elevatedAccentColor = mixHexColors(resolvedAccentColor, "#000000", preset === "black" ? 0.08 : 0.16);
   const accentGlow = hexToRgba(resolvedAccentColor, optimizedLightRender ? 0.16 : 0.28);
@@ -1795,7 +1800,7 @@ export function SceneStage({
   };
 
   return (
-    <StageShell backgroundColor={backgroundColor} textColor={textColor} progress={progress} compact={compact} renderLayer={renderLayer} lightweightPreview={lightweightPreview}>
+    <StageShell backgroundColor={backgroundColor} textColor={textColor} fontFamily={fontFamily} progress={progress} compact={compact} renderLayer={renderLayer} lightweightPreview={lightweightPreview}>
       {showSceneBackground && shellOverlay ? <div className="pointer-events-none absolute inset-0" style={shellOverlay} /> : null}
       {showSceneBackground ? (
         <StylePresetDecorations

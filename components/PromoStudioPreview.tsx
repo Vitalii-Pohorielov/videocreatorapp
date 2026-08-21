@@ -52,6 +52,24 @@ type PromoStudioPreviewProps = {
   onImageUploadEnd: () => void;
 };
 
+function formatPlaybackTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const secondsText = seconds.toFixed(1).padStart(hours > 0 || minutes > 0 ? 4 : 0, "0");
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${secondsText}`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}:${secondsText}`;
+  }
+
+  return `${seconds.toFixed(1)}s`;
+}
+
 export function PromoStudioPreview({
   projectId,
   projectName,
@@ -359,6 +377,7 @@ export function PromoStudioPreview({
                     backgroundColor={backgroundColor}
                     accentColor={settings.accentColor}
                     textColor={textColor}
+                    fontChoice={settings.fontChoice}
                     preset={preset}
                     performanceMode="light"
                     renderLayer="background"
@@ -373,6 +392,7 @@ export function PromoStudioPreview({
                     backgroundColor={backgroundColor}
                     accentColor={settings.accentColor}
                     textColor={textColor}
+                    fontChoice={settings.fontChoice}
                     preset={preset}
                     performanceMode="light"
                     renderLayer="content"
@@ -405,7 +425,7 @@ export function PromoStudioPreview({
               </div>
             </div>
             <div className="text-sm text-slate-300">
-              {currentTime.toFixed(1)} / {totalDuration.toFixed(1)}s
+              {formatPlaybackTime(currentTime)} / {formatPlaybackTime(totalDuration)}
             </div>
           </div>
         </div>

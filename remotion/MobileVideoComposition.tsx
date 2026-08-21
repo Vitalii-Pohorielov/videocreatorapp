@@ -39,6 +39,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 backgroundColor={exportSettings.backgroundColor}
                 accentColor={exportSettings.accentColor}
                 textColor={exportSettings.textColor}
+                fontChoice={exportSettings.fontChoice}
                 preset={exportSettings.preset}
                 performanceMode="export"
                 renderLayer="background"
@@ -55,6 +56,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 backgroundColor={exportSettings.backgroundColor}
                 accentColor={exportSettings.accentColor}
                 textColor={exportSettings.textColor}
+                fontChoice={exportSettings.fontChoice}
                 preset={exportSettings.preset}
                 performanceMode="export"
                 renderLayer="content"
@@ -74,6 +76,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 backgroundColor={exportSettings.backgroundColor}
                 accentColor={exportSettings.accentColor}
                 textColor={exportSettings.textColor}
+                fontChoice={exportSettings.fontChoice}
                 preset={exportSettings.preset}
                 performanceMode="export"
                 renderLayer="background"
@@ -90,6 +93,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
                 backgroundColor={exportSettings.backgroundColor}
                 accentColor={exportSettings.accentColor}
                 textColor={exportSettings.textColor}
+                fontChoice={exportSettings.fontChoice}
                 preset={exportSettings.preset}
                 performanceMode="export"
                 renderLayer="content"
@@ -110,6 +114,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
               backgroundColor={exportSettings.backgroundColor}
               accentColor={exportSettings.accentColor}
               textColor={exportSettings.textColor}
+              fontChoice={exportSettings.fontChoice}
               preset={exportSettings.preset}
               performanceMode="export"
               renderLayer="background"
@@ -126,6 +131,7 @@ export function MobileVideoComposition({ payload }: MobileVideoCompositionProps)
               backgroundColor={exportSettings.backgroundColor}
               accentColor={exportSettings.accentColor}
               textColor={exportSettings.textColor}
+              fontChoice={exportSettings.fontChoice}
               preset={exportSettings.preset}
               performanceMode="export"
               renderLayer="content"

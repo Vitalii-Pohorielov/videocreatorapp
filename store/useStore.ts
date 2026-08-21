@@ -9,6 +9,7 @@ import {
   exportResolutionLabels,
   getDefaultProjectName,
   normalizeTemplatePreset,
+  normalizeVideoFontChoice,
   presetDefaults,
   type ExportSettings,
   type Scene,
@@ -19,8 +20,8 @@ import {
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { getDefaultTransition, isAnnouncementSceneType, normalizeAnnouncementTransition } from "@/lib/sceneTransitions";
 
-export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType, VideoType } from "@/lib/sceneDefinitions";
-export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, freePromoSceneTypes, freeStylePresets, presetLabels, sceneDefinitions, sceneTypeLabels, videoTypeLabels } from "@/lib/sceneDefinitions";
+export type { ExportProfile, ExportResolution, ExportSettings, Scene, SceneTrack, SceneType, TemplatePreset, TransitionType, VideoFontChoice, VideoType } from "@/lib/sceneDefinitions";
+export { exportProfileLabels, exportResolutionDimensions, exportResolutionLabels, freePromoSceneTypes, freeStylePresets, presetLabels, sceneDefinitions, sceneTypeLabels, videoFontFamilyMap, videoFontLabels, videoTypeLabels } from "@/lib/sceneDefinitions";
 
 type SceneUpdates = Partial<Omit<Scene, "id" | "type">>;
 
@@ -217,13 +218,18 @@ const clampDuration = (value: number) => Math.min(8, Math.max(1.5, value));
 const DEFAULT_FPS = 30;
 const DEFAULT_TRANSITION_SECONDS = 0.8;
 const MAX_BULLETS = 6;
-const MAX_SCENES = 15;
+const MAX_PROMO_SCENES = 15;
+const MAX_ANNOUNCEMENT_SCENES = 30;
 const sanitizeImageUrl = (value: string | undefined) => {
   const trimmed = value?.trim() ?? "";
   if (!trimmed || trimmed === "." || trimmed === "/") return "";
   if (/^https?:\/\/[^/]+\/\.?$/.test(trimmed)) return "";
   return trimmed;
 };
+
+function getMaxSceneCount(scenes: Scene[]) {
+  return scenes.some((scene) => scene.type === "announcement-hero" || scene.type === "split-slogan") ? MAX_ANNOUNCEMENT_SCENES : MAX_PROMO_SCENES;
+}
 
 function normalizeSceneArrays(scene: Scene, updates: SceneUpdates) {
   const sourceBullets = updates.bullets === undefined ? scene.bullets : updates.bullets;
@@ -264,6 +270,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     backgroundColor: presetDefaults.white.backgroundColor,
     textColor: presetDefaults.white.textColor,
     accentColor: presetDefaults.white.accentColor,
+    fontChoice: "jakarta",
     preset: "white",
     resolution: "720p",
     profile: "standard",
@@ -281,6 +288,7 @@ export const useStore = create<StudioStore>((set, get) => ({
         backgroundColor: presetDefaults.white.backgroundColor,
         textColor: presetDefaults.white.textColor,
         accentColor: presetDefaults.white.accentColor,
+        fontChoice: "jakarta",
         preset: "white",
         resolution: "720p",
         profile: "standard",
@@ -307,6 +315,7 @@ export const useStore = create<StudioStore>((set, get) => ({
         backgroundColor: project.exportSettings.backgroundColor || normalizedDefaults.backgroundColor,
         textColor: project.exportSettings.textColor || normalizedDefaults.textColor,
         accentColor: project.exportSettings.accentColor || normalizedDefaults.accentColor,
+        fontChoice: normalizeVideoFontChoice(project.exportSettings.fontChoice),
         preset: normalizedPreset,
         resolution: project.exportSettings.resolution,
         profile: project.exportSettings.profile,
@@ -320,7 +329,7 @@ export const useStore = create<StudioStore>((set, get) => ({
     })),
   addScene: (type) => {
     const { sceneTrack } = get();
-    if (sceneTrack.scenes.length >= MAX_SCENES) return;
+    if (sceneTrack.scenes.length >= getMaxSceneCount(sceneTrack.scenes)) return;
     const nextScene = createScene(type, sceneTrack.scenes.length);
     const nextScenes = syncAnnouncementTransitions([...sceneTrack.scenes, nextScene]);
     set({
@@ -330,7 +339,7 @@ export const useStore = create<StudioStore>((set, get) => ({
   },
   duplicateScene: (id) => {
     const { sceneTrack } = get();
-    if (sceneTrack.scenes.length >= MAX_SCENES) return;
+    if (sceneTrack.scenes.length >= getMaxSceneCount(sceneTrack.scenes)) return;
 
     const sceneIndex = sceneTrack.scenes.findIndex((scene) => scene.id === id);
     if (sceneIndex < 0) return;
@@ -449,6 +458,7 @@ export const useStore = create<StudioStore>((set, get) => ({
                 ? presetColors.accentColor
                 : state.exportSettings.accentColor
               : updates.accentColor,
+          fontChoice: normalizeVideoFontChoice(updates.fontChoice ?? state.exportSettings.fontChoice),
           preset: nextPreset,
           resolution: updates.resolution ?? state.exportSettings.resolution,
           profile: updates.profile ?? state.exportSettings.profile,
@@ -465,7 +475,10 @@ export const useStore = create<StudioStore>((set, get) => ({
         scenes: syncAnnouncementTransitions(nextState.sceneTrack.scenes),
       },
       selectedSceneId: nextState.selectedSceneId,
-      exportSettings: nextState.exportSettings,
+      exportSettings: {
+        ...nextState.exportSettings,
+        fontChoice: normalizeVideoFontChoice(nextState.exportSettings.fontChoice),
+      },
     }));
   },
 }));

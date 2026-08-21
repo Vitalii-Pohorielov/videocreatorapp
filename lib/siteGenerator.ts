@@ -2,6 +2,7 @@
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset } from "@/lib/sceneDefinitions";
+import { captureWebsiteScreenshotDataUrl } from "@/lib/websiteScreenshot";
 
 type ScrapedSiteData = {
   sourceUrl: string;
@@ -1122,11 +1123,11 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
       bullets: aiLikeBrief.features,
     },
     {
-      type: "cta-panel",
-      eyebrow: "Call to action",
-      title: aiLikeBrief.cta,
-      subtitle: normalizedDomain,
-      description: "Get started",
+      type: "website-scroll",
+      eyebrow: "Website",
+      title: aiLikeBrief.urlLabel.toLowerCase(),
+      subtitle: "Auto-captured product page",
+      description: "",
       bullets: [],
     },
     {
@@ -1229,7 +1230,7 @@ function buildDeterministicMarketingPackage(
       "Deliver a concise 3-line slogan",
       "Show 3 reasons to choose it",
       ...(semantic.hasProcess ? ["Explain the 3-step usage flow"] : []),
-      "End with a direct CTA",
+      "Show the product page in motion",
       "Close on the clean URL",
     ],
     brief: {
@@ -1306,15 +1307,15 @@ function buildDeterministicVideoScript(marketing: MarketingPackage): VideoScript
       : []),
     {
       scene: hasProcess ? 5 : 4,
-      type: "cta-panel",
-      text: marketing.brief.cta,
-      visual: "call-to-action panel",
-      voiceover: marketing.brief.cta,
-      duration: 2.4,
-      eyebrow: "Call to action",
-      title: marketing.brief.cta,
-      subtitle: marketing.brief.urlLabel,
-      description: "Get started",
+      type: "website-scroll",
+      text: marketing.brief.urlLabel,
+      visual: "captured product page scroll",
+      voiceover: "See the product page in motion.",
+      duration: 2.8,
+      eyebrow: "Website",
+      title: marketing.brief.urlLabel.toLowerCase(),
+      subtitle: "Auto-captured product page",
+      description: "",
       bullets: [],
     },
     {
@@ -1517,11 +1518,11 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
         bullets: cleanBrief.features,
       },
       {
-        type: "cta-panel",
-        eyebrow: "Call to action",
-        title: cleanBrief.cta,
-        subtitle: cleanBrief.urlLabel,
-        description: "Get started",
+        type: "website-scroll",
+        eyebrow: "Website",
+        title: cleanBrief.urlLabel.toLowerCase(),
+        subtitle: "Auto-captured product page",
+        description: "",
         bullets: [],
       },
       {
@@ -1726,6 +1727,7 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
       backgroundColor: presetColors.backgroundColor,
       textColor: presetColors.textColor,
       accentColor: presetColors.accentColor,
+      fontChoice: "jakarta",
       preset,
       resolution: "720p",
       profile: "standard",
@@ -2000,7 +2002,7 @@ async function requestOpenAiVideoScript(
       },
       null,
       2,
-    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nMarketing package:\n${JSON.stringify(marketing, null, 2)}\n\nRequirements:\n- Return exactly 5 scenes when marketing.brief.stepsToUse is empty\n- Return exactly 6 scenes when marketing.brief.stepsToUse has 3 items\n- Scene order must be: intro, description, feature-grid, optional process, cta-panel, website-url\n- Scene 1 type must be one of: ${introSceneTypes.join(", ")}\n- Only use these types: brand-reveal, brand-reveal-alt, brand-reveal-circle, description, feature-grid, process, cta-panel, website-url\n- Every scene needs: scene, type, text, visual, voiceover, duration, eyebrow, title, subtitle, description, bullets\n- intro scene title must be the exact product name from marketing.brief.name, not a marketing hook\n- description scene must use the 3 slogan lines from the brief across title, subtitle, description\n- each description line should stay very short, ideally under 24 characters\n- feature-grid must use exactly 3 bullets from brief.features\n- process scene must include exactly 3 bullets and 3 processStepDescriptions, only if the brief has process steps\n- URL scene title must contain only the clean url label without protocol`,
+    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nMarketing package:\n${JSON.stringify(marketing, null, 2)}\n\nRequirements:\n- Return exactly 5 scenes when marketing.brief.stepsToUse is empty\n- Return exactly 6 scenes when marketing.brief.stepsToUse has 3 items\n- Scene order must be: intro, description, feature-grid, optional process, website-scroll, website-url\n- Scene 1 type must be one of: ${introSceneTypes.join(", ")}\n- Only use these types: brand-reveal, brand-reveal-alt, brand-reveal-circle, description, feature-grid, process, website-scroll, website-url\n- Every scene needs: scene, type, text, visual, voiceover, duration, eyebrow, title, subtitle, description, bullets\n- intro scene title must be the exact product name from marketing.brief.name, not a marketing hook\n- description scene must use the 3 slogan lines from the brief across title, subtitle, description\n- each description line should stay very short, ideally under 24 characters\n- feature-grid must use exactly 3 bullets from brief.features\n- process scene must include exactly 3 bullets and 3 processStepDescriptions, only if the brief has process steps\n- website-scroll scene must show the captured product page before the URL scene\n- URL scene title must contain only the clean url label without protocol`,
     schema: {
       type: "object",
       properties: {
@@ -2014,7 +2016,7 @@ async function requestOpenAiVideoScript(
             type: "object",
             properties: {
               scene: { type: "integer" },
-              type: { type: "string", enum: ["brand-reveal", "brand-reveal-alt", "brand-reveal-circle", "description", "feature-grid", "process", "cta-panel", "website-url"] },
+              type: { type: "string", enum: ["brand-reveal", "brand-reveal-alt", "brand-reveal-circle", "description", "feature-grid", "process", "website-scroll", "website-url"] },
               text: { type: "string" },
               visual: { type: "string" },
               voiceover: { type: "string" },
@@ -2040,8 +2042,8 @@ async function requestOpenAiVideoScript(
   const sceneTypes = script.scenes?.map((scene) => scene?.type) ?? [];
   const hasProcess = marketing.brief.stepsToUse.length === 3;
   const expectedTypes = hasProcess
-    ? [sceneTypes[0], "description", "feature-grid", "process", "cta-panel", "website-url"]
-    : [sceneTypes[0], "description", "feature-grid", "cta-panel", "website-url"];
+    ? [sceneTypes[0], "description", "feature-grid", "process", "website-scroll", "website-url"]
+    : [sceneTypes[0], "description", "feature-grid", "website-scroll", "website-url"];
 
   if (
     !script.projectName ||
@@ -2143,7 +2145,23 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
     throw new Error("Enter a valid website URL.");
   }
 
-  const scraped = await scrapeSite(normalizedUrl);
+  const [scrapedResult, screenshotResult] = await Promise.allSettled([
+    scrapeSite(normalizedUrl),
+    captureWebsiteScreenshotDataUrl(normalizedUrl),
+  ]);
+
+  if (scrapedResult.status === "rejected") {
+    throw scrapedResult.reason;
+  }
+
+  const scraped = scrapedResult.value;
+  if (screenshotResult.status === "fulfilled" && screenshotResult.value) {
+    scraped.screenshotImageUrls = uniqueNonEmpty([screenshotResult.value, ...scraped.screenshotImageUrls], 5);
+    scraped.ogImageUrl = scraped.ogImageUrl || screenshotResult.value;
+  } else if (screenshotResult.status === "rejected") {
+    console.warn("[generate-from-url] Website screenshot capture failed, using scraped imagery.", screenshotResult.reason);
+  }
+
   const fallbackBrief = buildDeterministicSiteBrief(scraped, normalizedUrl);
   const fallbackPlan = buildDeterministicProjectPlanFromBrief(fallbackBrief, scraped, normalizedUrl);
 
