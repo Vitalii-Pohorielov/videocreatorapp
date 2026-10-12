@@ -947,6 +947,38 @@ function toDescriptionSceneLine(value: string, fallback: string) {
   return compactMarketingLine(value || fallback, 24);
 }
 
+// Splits a single logical slogan into exactly three balanced lines at word
+// boundaries, preserving the original word order. Example:
+//   "Atlarix is where your development team works."
+//   -> ["Atlarix is", "where your", "development team works"]
+function splitSloganIntoThreeLines(value: string): [string, string, string] {
+  const cleaned = value
+    .replace(/\s+/g, " ")
+    .replace(/^["'“”«»\s]+|["'“”«»\s]+$/g, "")
+    .replace(/[.,;:]+$/g, "")
+    .trim();
+  const words = cleaned.split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) return ["", "", ""];
+  if (words.length === 1) return [words[0], "", ""];
+  if (words.length === 2) return [words[0], words[1], ""];
+
+  // Distribute words across three lines as evenly as possible while keeping
+  // the reading order intact. The trailing line absorbs the remainder so the
+  // sentence reads naturally, e.g. "Atlarix is where your development team
+  // works" -> ["Atlarix is", "where your", "development team works"].
+  const base = Math.floor(words.length / 3);
+  const remainder = words.length % 3;
+  const firstCount = base;
+  const secondCount = base + (remainder > 1 ? 1 : 0);
+
+  const first = words.slice(0, firstCount).join(" ");
+  const second = words.slice(firstCount, firstCount + secondCount).join(" ");
+  const third = words.slice(firstCount + secondCount).join(" ");
+
+  return [first, second, third];
+}
+
 function dedupeTextOptions(values: string[], maxLength: number) {
   return uniqueNonEmpty(
     values
@@ -1164,7 +1196,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
       bullets: [],
     },
     {
-      type: "center-text",
+      type: "description",
       eyebrow: "Message",
       title: aiLikeBrief.slogan[0] || aiLikeBrief.name,
       subtitle: aiLikeBrief.slogan[1] || aiLikeBrief.description,
@@ -1493,16 +1525,18 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
   const projectName = normalizePlanValue(brief.name, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
   // The AI-generated slogan is used verbatim (only whitespace/quotes cleaned).
-  // It is reused in the center-text scene and in the project payload.
+  // It is split into three logical lines that fill the description scene and
+  // is also reused in the project payload.
   const projectSlogan =
     cleanSlogan(brief.slogan[0] || "") ||
     cleanSlogan(brief.slogan[1] || "") ||
     cleanSlogan(brief.slogan[2] || "") ||
     cleanSlogan(brief.description || "") ||
     projectName;
+  const [sloganLine1, sloganLine2, sloganLine3] = splitSloganIntoThreeLines(projectSlogan);
   const cleanBrief: GeneratedBrandBrief = {
     name: projectName,
-    slogan: [projectSlogan, projectSlogan, projectSlogan],
+    slogan: [sloganLine1 || projectSlogan, sloganLine2 || projectSlogan, sloganLine3 || projectSlogan],
     description: toShortLine(brief.description || scraped.description || `Explore ${projectName}.`, `Explore ${projectName}.`, 180),
     features: takeBullets(brief.features, 3),
     stepsToUse: [],
@@ -1524,11 +1558,11 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
         bullets: [],
       },
       {
-        type: "center-text",
+        type: "description",
         eyebrow: "Message",
-        title: projectSlogan,
-        subtitle: "",
-        description: "",
+        title: sloganLine1 || projectSlogan,
+        subtitle: sloganLine2,
+        description: sloganLine3,
         bullets: [],
       },
       {
@@ -1638,28 +1672,29 @@ function buildProjectPayloadFromPlan(
             applyScene(scene, {
               ...baseUpdates,
               title:
-                scenePlan.type === "center-text"
-                  ? cleanSlogan(brief?.slogan?.[0] || "") || baseUpdates.title || projectName
-                  : scenePlan.type === "description"
-                    ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
+                scenePlan.type === "description"
+                  ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
+                  : scenePlan.type === "center-text"
+                    ? cleanSlogan(brief?.slogan?.[0] || "") || baseUpdates.title || projectName
                     : scenePlan.type === "website-url"
                       ? urlLabel
                       : scenePlan.type === "cta-panel"
                         ? normalizePlanValue(scenePlan.title, brief?.cta || `Visit ${projectName}`, 90)
                         : baseUpdates.title,
-              // The center-text scene shows only the single project slogan, so we
-              // keep the supporting lines empty instead of repeating the slogan.
+              // The description scene renders the logical slogan across three
+              // oversized lines (title / subtitle / description). The center-text
+              // scene keeps only the first slogan line.
               subtitle:
-                scenePlan.type === "center-text"
-                  ? ""
-                  : scenePlan.type === "description"
-                    ? normalizePlanValue(brief?.slogan?.[1], baseUpdates.subtitle || scraped.description || "", 120)
+                scenePlan.type === "description"
+                  ? normalizePlanValue(brief?.slogan?.[1], baseUpdates.subtitle || scraped.description || "", 120)
+                  : scenePlan.type === "center-text"
+                    ? ""
                     : baseUpdates.subtitle,
               description:
-                scenePlan.type === "center-text"
-                  ? ""
-                  : scenePlan.type === "description"
-                    ? normalizePlanValue(brief?.slogan?.[2], baseUpdates.description || "", 120)
+                scenePlan.type === "description"
+                  ? normalizePlanValue(brief?.slogan?.[2], baseUpdates.description || "", 120)
+                  : scenePlan.type === "center-text"
+                    ? ""
                     : baseUpdates.description,
             }),
             scene.durationSeconds,
@@ -2127,7 +2162,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       },
       null,
       2,
-    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, natural marketing slogan (about 4 to 9 words) that captures what this product does and why it matters. Write it as a real headline, not a label or a fragment.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nSlogan guidance:\n- write a full, self-contained phrase that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- examples of good slogans: "Ship your product faster", "Design that converts", "Automate your entire workflow", "The fastest way to launch your startup"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an`,
+    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, logical marketing slogan written as a full, natural sentence (about 6 to 12 words) that captures what this product does and why it matters. It will be split across three lines in the video, so it must read as one coherent sentence.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nSlogan guidance:\n- write a full, self-contained sentence that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- the sentence must flow logically from start to finish so it can be broken into three lines\n- example: for a product named Atlarix, a good slogan is "Atlarix is where your development team works."\n- more examples of good slogans: "Ship your product faster with one clear workflow", "Design that converts visitors into loyal customers", "Automate your entire workflow in minutes"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an`,
     schema: {
       type: "object",
       properties: {
