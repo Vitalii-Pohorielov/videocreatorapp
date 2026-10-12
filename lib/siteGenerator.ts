@@ -1016,44 +1016,79 @@ function extractBenefitStatements(values: string[], maxItems = 6) {
   ).slice(0, maxItems);
 }
 
-// Builds a single project slogan made of 5 to 8 words. It prefers the first
-// meaningful phrase from the provided candidates (AI-generated or scraped) and
-// pads/trims it to land inside the 5-8 word range.
+// Builds a single short project slogan. It prefers a complete, self-contained
+// phrase (AI-generated or scraped) and never cuts a sentence mid-way or pads it
+// with filler words. Only the first candidate is treated as the primary slogan
+// so the AI-provided slogan is preserved verbatim when it is already clean.
 function buildProjectSlogan(values: string[], fallbackName: string) {
-  const candidates = uniqueNonEmpty(
-    values
-      .flatMap((value) => splitIntoPhrases(value))
-      .map((value) => value.replace(/\s+/g, " ").replace(/[,:;()]+/g, "").trim())
-      .filter((value) => value.length >= 4 && !isWeakMarketingCopy(value)),
-    12,
-  );
+  const clean = (value: string) =>
+    value
+      .replace(/\s+/g, " ")
+      .replace(/[,:;()]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
   const pickWords = (value: string) => value.split(/\s+/).filter(Boolean);
 
-  const withinRange = candidates.find((value) => {
-    const words = pickWords(value);
-    return words.length >= 5 && words.length <= 8;
-  });
-  if (withinRange) return normalizeReadableCopy(withinRange, 90);
+  // Generic section labels and UI headings that are not real slogans.
+  const isGenericSectionLabel = (value: string) => {
+    const normalized = value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+    const genericNouns =
+      "features?|benefits?|services?|solutions?|products?|platform|tools?|apps?|software|systems?|company|team|story|mission|vision|values?|approach|process|clients?|customers?|projects?|portfolio|blog|pricing|plans?|resources?|support|contact|newsletter|code|work|difference|advantage|expertise|experience|technology|stack|partners|community|promise|goals?";
+    // "Key features", "Our solutions", "The platform", "All features", etc.
+    if (new RegExp(`^(key|our|the|all|main|core|top|new)\\s+(${genericNouns})$`).test(normalized)) {
+      return true;
+    }
+    // Bare single-word section labels.
+    if (new RegExp(`^(${genericNouns})$`).test(normalized)) {
+      return true;
+    }
+    return false;
+  };
 
+  const isCompletePhrase = (value: string) => {
+    const words = pickWords(value);
+    if (words.length < 2 || words.length > 10) return false;
+    if (value.length < 6 || value.length > 90) return false;
+    if (isWeakMarketingCopy(value)) return false;
+    if (isLowValueSiteText(value)) return false;
+    if (isGenericSectionLabel(value)) return false;
+    // Reject fragments that end with a dangling connector or an opening bracket.
+    if (/\b(and|or|but|with|for|to|of|in|on|at|by|from|than|that|which|who|whose|the|a|an)$/i.test(value)) return false;
+    if (/[([{]$/.test(value)) return false;
+    return true;
+  };
+
+  // 1. Prefer the primary candidate (usually the AI slogan) when it is already a
+  //    complete phrase, so we keep the model's wording instead of mangling it.
+  const primary = clean(values[0] || "");
+  if (primary && isCompletePhrase(primary)) {
+    return normalizeReadableCopy(primary, 90);
+  }
+
+  // 2. Otherwise scan all candidates for the first complete phrase.
+  const candidates = uniqueNonEmpty(
+    values
+      .flatMap((value) => splitIntoPhrases(value))
+      .map((value) => clean(value))
+      .filter(Boolean),
+    16,
+  );
+
+  const complete = candidates.find((value) => isCompletePhrase(value));
+  if (complete) return normalizeReadableCopy(complete, 90);
+
+  // 3. Fall back to the longest complete-ish phrase without cutting mid-sentence.
   const longest = candidates
     .map((value) => ({ value, words: pickWords(value) }))
+    .filter((item) => item.words.length >= 2)
     .sort((a, b) => b.words.length - a.words.length)[0];
-
-  if (longest && longest.words.length > 8) {
-    return normalizeReadableCopy(longest.words.slice(0, 8).join(" "), 90);
+  if (longest) {
+    return normalizeReadableCopy(longest.value, 90);
   }
 
-  const baseWords = longest ? longest.words : pickWords(fallbackName);
-  const padded = [...baseWords];
-  const filler = ["for", "modern", "teams", "and", "creators", "everywhere"];
-  let fillerIndex = 0;
-  while (padded.length < 5 && fillerIndex < filler.length) {
-    padded.push(filler[fillerIndex]);
-    fillerIndex += 1;
-  }
-
-  return normalizeReadableCopy(padded.slice(0, 8).join(" "), 90) || normalizeReadableCopy(fallbackName, 90);
+  // 4. Last resort: the project name.
+  return normalizeReadableCopy(fallbackName, 90);
 }
 
 function buildMeaningfulSloganLines(values: string[], fallbackName: string) {
@@ -1521,7 +1556,9 @@ function buildProjectPlanFromVideoScript(marketing: MarketingPackage, script: Vi
 function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
   const projectName = normalizePlanValue(brief.name, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  // One project slogan of 5-8 words, reused in the center-text scene and payload.
+  // One short project slogan, reused in the center-text scene and payload.
+  // The AI-provided slogan is the primary candidate and is kept verbatim when it
+  // is already a complete phrase; otherwise we fall back to scraped content.
   const projectSlogan = buildProjectSlogan(
     [brief.slogan[0] || "", brief.slogan[1] || "", brief.slogan[2] || "", brief.description || "", ...brief.features],
     projectName,
@@ -1664,21 +1701,29 @@ function buildProjectPayloadFromPlan(
             applyScene(scene, {
               ...baseUpdates,
               title:
-                scenePlan.type === "description" || scenePlan.type === "center-text"
+                scenePlan.type === "center-text"
                   ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
-                  : scenePlan.type === "website-url"
-                  ? urlLabel
-                  : scenePlan.type === "cta-panel"
-                    ? normalizePlanValue(scenePlan.title, brief?.cta || `Visit ${projectName}`, 90)
-                    : baseUpdates.title,
+                  : scenePlan.type === "description"
+                    ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
+                    : scenePlan.type === "website-url"
+                      ? urlLabel
+                      : scenePlan.type === "cta-panel"
+                        ? normalizePlanValue(scenePlan.title, brief?.cta || `Visit ${projectName}`, 90)
+                        : baseUpdates.title,
+              // The center-text scene shows only the single project slogan, so we
+              // keep the supporting lines empty instead of repeating the slogan.
               subtitle:
-                scenePlan.type === "description" || scenePlan.type === "center-text"
-                  ? normalizePlanValue(brief?.slogan?.[1], baseUpdates.subtitle || scraped.description || "", 120)
-                  : baseUpdates.subtitle,
+                scenePlan.type === "center-text"
+                  ? ""
+                  : scenePlan.type === "description"
+                    ? normalizePlanValue(brief?.slogan?.[1], baseUpdates.subtitle || scraped.description || "", 120)
+                    : baseUpdates.subtitle,
               description:
-                scenePlan.type === "description" || scenePlan.type === "center-text"
-                  ? normalizePlanValue(brief?.slogan?.[2], baseUpdates.description || "", 120)
-                  : baseUpdates.description,
+                scenePlan.type === "center-text"
+                  ? ""
+                  : scenePlan.type === "description"
+                    ? normalizePlanValue(brief?.slogan?.[2], baseUpdates.description || "", 120)
+                    : baseUpdates.description,
             }),
             scene.durationSeconds,
           ),
@@ -2129,7 +2174,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     model,
     schemaName: "website_simple_brand_brief",
     systemPrompt:
-      "You create a minimal website brand brief for short promo videos. Return valid JSON only. Keep every field concise, complete, and grounded in the analyzed website. Do not invent facts. Do not return unfinished fragments. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy.",
+      "You create a minimal website brand brief for short promo videos. Return valid JSON only. Keep every field concise, complete, and grounded in the analyzed website. Do not invent facts. Do not return unfinished fragments. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy. The slogan must be a short, punchy, complete marketing phrase that could stand alone on a video title card.",
     userPrompt: `Analyze this website snapshot and return only the core video inputs.\n\nInput:\n${JSON.stringify(
       {
         productName: snapshot.productName,
@@ -2145,7 +2190,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       },
       null,
       2,
-    )}\n\nReturn fields:\n- name\n- slogan: ONE short marketing slogan of 5 to 8 words, grounded in the site metadata and content\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nRules:\n- all text must be complete and self-contained\n- the slogan must be a single sentence of 5 to 8 words, not a list\n- do not return labels like "Why choose", "How it works", "Pricing", "Blog"\n- do not end lines with dangling words like and, with, for, to`,
+    )}\n\nReturn fields:\n- name\n- slogan: ONE short, punchy, complete marketing slogan of 3 to 8 words, grounded in the site metadata and content\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nRules:\n- all text must be complete and self-contained\n- the slogan must be a single short phrase of 3 to 8 words that reads naturally on its own, not a list and not a sentence fragment\n- good slogan examples: "Ship your product faster", "Design that converts", "Automate your entire workflow", "The fastest way to launch"\n- bad slogan examples: "Our code ships", "Key features", "Automatos is an open", "Why choose us"\n- do not return generic section labels like "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- do not start the slogan with "Our", "The", "All" followed by a generic noun\n- do not end lines with dangling words like and, with, for, to, of, the, a, an`,
     schema: {
       type: "object",
       properties: {
