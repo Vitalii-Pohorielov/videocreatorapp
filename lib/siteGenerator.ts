@@ -654,6 +654,30 @@ function absolutizeUrl(value: string, sourceUrl: string) {
   }
 }
 
+function getHostname(value: string) {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+// When the input URL is a listing/directory page (e.g. https://devhunt.org/tool/difsh),
+// the "Visit website" button points to the real product site on a different host.
+// In that case we capture the product site for the scroll scene; otherwise we keep
+// the original input URL.
+function resolveScreenshotTargetUrl(inputUrl: string, productUrl: string) {
+  const candidate = productUrl?.trim();
+  if (!candidate) return inputUrl;
+
+  const inputHost = getHostname(inputUrl);
+  const candidateHost = getHostname(candidate);
+  if (!candidateHost) return inputUrl;
+  if (candidateHost === inputHost) return inputUrl;
+
+  return candidate;
+}
+
 function getDomainLabel(sourceUrl: string) {
   try {
     const hostname = new URL(sourceUrl).hostname.replace(/^www\./, "");
@@ -818,7 +842,11 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
   const screenshotImageUrls = findScreenshotImageUrls(cleanedHtml, url, pageName, siteName);
   const ogImageUrl = screenshotImageUrls[0] || allOgImages[0] || "";
   const logoImageUrl = findLogoImageUrl(cleanedHtml, url);
-  const productUrl = absolutizeUrl(findAnchorHrefByText(cleanedHtml, /live preview|visit|open app|get started|launch/i), url) || url;
+  const productUrl =
+    absolutizeUrl(
+      findAnchorHrefByText(cleanedHtml, /visit website|visit site|live preview|open app|get started|launch|visit/i),
+      url,
+    ) || url;
   const hrefs = extractAnchorHrefs(cleanedHtml);
   const priceLines = extractPriceLines([...bullets, ...paragraphs, ...headings]);
   const contactDetails = extractContactDetails([...paragraphs, ...bullets, ...cta, cleanedHtml]);
@@ -1099,7 +1127,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
 
   const scenes: GeneratedScenePlan[] = [
     {
-      type: "brand-reveal",
+      type: "brand-reveal-alt",
       eyebrow: getDomainLabel(normalizedUrl),
       title: aiLikeBrief.name,
       subtitle: aiLikeBrief.description.slice(0, 110),
@@ -1107,20 +1135,12 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
       bullets: [],
     },
     {
-      type: "description",
-      eyebrow: "Slogan",
+      type: "center-text",
+      eyebrow: "Message",
       title: aiLikeBrief.slogan[0] || aiLikeBrief.name,
       subtitle: aiLikeBrief.slogan[1] || aiLikeBrief.description,
       description: aiLikeBrief.slogan[2] || aiLikeBrief.description,
       bullets: [],
-    },
-    {
-      type: "feature-grid",
-      eyebrow: "Why choose it",
-      title: `Why ${projectName} stands out`,
-      subtitle: aiLikeBrief.description.slice(0, 120),
-      description: "",
-      bullets: aiLikeBrief.features,
     },
     {
       type: "website-scroll",
@@ -1246,11 +1266,10 @@ function buildDeterministicMarketingPackage(
 }
 
 function buildDeterministicVideoScript(marketing: MarketingPackage): VideoScript {
-  const hasProcess = marketing.brief.stepsToUse.length === 3;
   const scenes: VideoScriptScene[] = [
     {
       scene: 1,
-      type: "brand-reveal",
+      type: "brand-reveal-alt",
       text: marketing.brief.name,
       visual: "logo reveal with clean brand entrance",
       voiceover: marketing.hooks[0] || marketing.brief.name,
@@ -1263,12 +1282,12 @@ function buildDeterministicVideoScript(marketing: MarketingPackage): VideoScript
     },
     {
       scene: 2,
-      type: "description",
+      type: "center-text",
       text: marketing.brief.slogan.join(" | "),
-      visual: "kinetic text with three short lines",
+      visual: "centered message with animated atmospheric background",
       voiceover: marketing.primaryNarrative,
       duration: 2.7,
-      eyebrow: "Slogan",
+      eyebrow: "Message",
       title: marketing.brief.slogan[0],
       subtitle: marketing.brief.slogan[1],
       description: marketing.brief.slogan[2],
@@ -1276,37 +1295,6 @@ function buildDeterministicVideoScript(marketing: MarketingPackage): VideoScript
     },
     {
       scene: 3,
-      type: "feature-grid",
-      text: marketing.brief.features.join(" | "),
-      visual: "feature grid with product proof points",
-      voiceover: marketing.coreAngle,
-      duration: 3,
-      eyebrow: "Why choose it",
-      title: `Why ${marketing.brief.name} stands out`,
-      subtitle: marketing.brief.description.slice(0, 120),
-      description: "",
-      bullets: marketing.brief.features,
-    },
-    ...(hasProcess
-      ? [
-          {
-            scene: 4,
-            type: "process" as const,
-            text: marketing.brief.stepsToUse.join(" | "),
-            visual: "step-by-step workflow sequence",
-            voiceover: "See how the workflow comes together in three simple steps.",
-            duration: 3,
-            eyebrow: "How it works",
-            title: `Use ${marketing.brief.name} in 3 steps`,
-            subtitle: marketing.brief.description.slice(0, 72),
-            description: "",
-            bullets: marketing.brief.stepsToUse,
-            processStepDescriptions: marketing.brief.stepsToUse.map((step) => toShortLine(step, step, 48)),
-          },
-        ]
-      : []),
-    {
-      scene: hasProcess ? 5 : 4,
       type: "website-scroll",
       text: marketing.brief.urlLabel,
       visual: "captured product page scroll",
@@ -1319,7 +1307,7 @@ function buildDeterministicVideoScript(marketing: MarketingPackage): VideoScript
       bullets: [],
     },
     {
-      scene: hasProcess ? 6 : 5,
+      scene: 4,
       type: "website-url",
       text: marketing.brief.urlLabel,
       visual: "clean domain lockup",
@@ -1494,7 +1482,7 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
     brief: cleanBrief,
     scenes: [
       {
-        type: "brand-reveal",
+        type: "brand-reveal-alt",
         eyebrow: getDomainLabel(normalizedUrl),
         title: cleanBrief.name,
         subtitle: cleanBrief.description.slice(0, 110),
@@ -1502,20 +1490,12 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
         bullets: [],
       },
       {
-        type: "description",
-        eyebrow: "Slogan",
+        type: "center-text",
+        eyebrow: "Message",
         title: cleanBrief.slogan[0] || cleanBrief.name,
         subtitle: cleanBrief.slogan[1] || cleanBrief.description,
         description: cleanBrief.slogan[2] || cleanBrief.description,
         bullets: [],
-      },
-      {
-        type: "feature-grid",
-        eyebrow: "Features",
-        title: `Why ${cleanBrief.name} stands out`,
-        subtitle: cleanBrief.description.slice(0, 120),
-        description: "",
-        bullets: cleanBrief.features,
       },
       {
         type: "website-scroll",
@@ -1616,7 +1596,7 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
             applyScene(scene, {
               ...baseUpdates,
               title:
-                scenePlan.type === "description"
+                scenePlan.type === "description" || scenePlan.type === "center-text"
                   ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
                   : scenePlan.type === "website-url"
                   ? normalizePlanValue(scenePlan.title, brief?.urlLabel || normalizedDomain, 90)
@@ -1624,11 +1604,11 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
                     ? normalizePlanValue(scenePlan.title, brief?.cta || `Visit ${projectName}`, 90)
                     : baseUpdates.title,
               subtitle:
-                scenePlan.type === "description"
+                scenePlan.type === "description" || scenePlan.type === "center-text"
                   ? normalizePlanValue(brief?.slogan?.[1], baseUpdates.subtitle || scraped.description || "", 120)
                   : baseUpdates.subtitle,
               description:
-                scenePlan.type === "description"
+                scenePlan.type === "description" || scenePlan.type === "center-text"
                   ? normalizePlanValue(brief?.slogan?.[2], baseUpdates.description || "", 120)
                   : baseUpdates.description,
             }),
@@ -2002,7 +1982,7 @@ async function requestOpenAiVideoScript(
       },
       null,
       2,
-    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nMarketing package:\n${JSON.stringify(marketing, null, 2)}\n\nRequirements:\n- Return exactly 5 scenes when marketing.brief.stepsToUse is empty\n- Return exactly 6 scenes when marketing.brief.stepsToUse has 3 items\n- Scene order must be: intro, description, feature-grid, optional process, website-scroll, website-url\n- Scene 1 type must be one of: ${introSceneTypes.join(", ")}\n- Only use these types: brand-reveal, brand-reveal-alt, brand-reveal-circle, description, feature-grid, process, website-scroll, website-url\n- Every scene needs: scene, type, text, visual, voiceover, duration, eyebrow, title, subtitle, description, bullets\n- intro scene title must be the exact product name from marketing.brief.name, not a marketing hook\n- description scene must use the 3 slogan lines from the brief across title, subtitle, description\n- each description line should stay very short, ideally under 24 characters\n- feature-grid must use exactly 3 bullets from brief.features\n- process scene must include exactly 3 bullets and 3 processStepDescriptions, only if the brief has process steps\n- website-scroll scene must show the captured product page before the URL scene\n- URL scene title must contain only the clean url label without protocol`,
+    )}\n\nSemantic analysis:\n${JSON.stringify(semantic, null, 2)}\n\nMarketing package:\n${JSON.stringify(marketing, null, 2)}\n\nRequirements:\n- Return exactly 4 scenes\n- Scene order must be: intro, center-text, website-scroll, website-url\n- Scene 1 type must be "brand-reveal-alt"\n- Only use these types: brand-reveal-alt, center-text, website-scroll, website-url\n- Every scene needs: scene, type, text, visual, voiceover, duration, eyebrow, title, subtitle, description, bullets\n- intro scene title must be the exact product name from marketing.brief.name, not a marketing hook\n- center-text scene must use the 3 slogan lines from the brief across title, subtitle, description\n- each center-text line should stay very short, ideally under 24 characters\n- website-scroll scene must show the captured product page before the URL scene\n- URL scene title must contain only the clean url label without protocol`,
     schema: {
       type: "object",
       properties: {
@@ -2010,13 +1990,13 @@ async function requestOpenAiVideoScript(
         preset: { type: "string", enum: generatedPresets },
         scenes: {
           type: "array",
-          minItems: 5,
-          maxItems: 6,
+          minItems: 4,
+          maxItems: 4,
           items: {
             type: "object",
             properties: {
               scene: { type: "integer" },
-              type: { type: "string", enum: ["brand-reveal", "brand-reveal-alt", "brand-reveal-circle", "description", "feature-grid", "process", "website-scroll", "website-url"] },
+              type: { type: "string", enum: ["brand-reveal-alt", "center-text", "website-scroll", "website-url"] },
               text: { type: "string" },
               visual: { type: "string" },
               voiceover: { type: "string" },
@@ -2040,25 +2020,18 @@ async function requestOpenAiVideoScript(
   });
 
   const sceneTypes = script.scenes?.map((scene) => scene?.type) ?? [];
-  const hasProcess = marketing.brief.stepsToUse.length === 3;
-  const expectedTypes = hasProcess
-    ? [sceneTypes[0], "description", "feature-grid", "process", "website-scroll", "website-url"]
-    : [sceneTypes[0], "description", "feature-grid", "website-scroll", "website-url"];
+  const expectedTypes = ["brand-reveal-alt", "center-text", "website-scroll", "website-url"];
 
   if (
     !script.projectName ||
     !script.preset ||
     !Array.isArray(script.scenes) ||
     script.scenes.length !== expectedTypes.length ||
-    !introSceneTypes.includes(script.scenes[0]?.type as IntroSceneType) ||
     sceneTypes.some((type, index) => type !== expectedTypes[index]) ||
     script.scenes.some((scene) => !scene || !scene.text || !scene.visual || !scene.voiceover || typeof scene.duration !== "number") ||
     script.scenes[1]?.title !== marketing.brief.slogan[0] ||
     script.scenes[1]?.subtitle !== marketing.brief.slogan[1] ||
-    script.scenes[1]?.description !== marketing.brief.slogan[2] ||
-    (script.scenes[2]?.bullets?.length ?? 0) !== 3 ||
-    (hasProcess && (script.scenes[3]?.bullets?.length ?? 0) !== 3) ||
-    (hasProcess && (script.scenes[3]?.processStepDescriptions?.length ?? 0) !== 3)
+    script.scenes[1]?.description !== marketing.brief.slogan[2]
   ) {
     throw new Error("OpenAI returned an incomplete video script.");
   }
@@ -2145,16 +2118,25 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
     throw new Error("Enter a valid website URL.");
   }
 
-  const [scrapedResult, screenshotResult] = await Promise.allSettled([
-    scrapeSite(normalizedUrl),
-    captureWebsiteScreenshotDataUrl(normalizedUrl),
-  ]);
+  const scrapedResult = await scrapeSite(normalizedUrl).then(
+    (value) => ({ status: "fulfilled" as const, value }),
+    (reason) => ({ status: "rejected" as const, reason }),
+  );
 
   if (scrapedResult.status === "rejected") {
     throw scrapedResult.reason;
   }
 
   const scraped = scrapedResult.value;
+  // Prefer the "Visit website" / product target when the input page is a listing
+  // or directory page (e.g. https://devhunt.org/tool/difsh) so the scroll scene
+  // shows the real product site instead of the directory page.
+  const screenshotTargetUrl = resolveScreenshotTargetUrl(normalizedUrl, scraped.productUrl);
+  const screenshotResult = await captureWebsiteScreenshotDataUrl(screenshotTargetUrl).then(
+    (value) => ({ status: "fulfilled" as const, value }),
+    (reason) => ({ status: "rejected" as const, reason }),
+  );
+
   if (screenshotResult.status === "fulfilled" && screenshotResult.value) {
     scraped.screenshotImageUrls = uniqueNonEmpty([screenshotResult.value, ...scraped.screenshotImageUrls], 5);
     scraped.ogImageUrl = scraped.ogImageUrl || screenshotResult.value;
