@@ -59,7 +59,7 @@ const playfairDisplay = Playfair_Display({
 
 const merriweather = Merriweather({
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
+  weight: "400",
   variable: "--font-merriweather",
 });
 
