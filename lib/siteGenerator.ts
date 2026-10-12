@@ -1016,79 +1016,15 @@ function extractBenefitStatements(values: string[], maxItems = 6) {
   ).slice(0, maxItems);
 }
 
-// Builds a single short project slogan. It prefers a complete, self-contained
-// phrase (AI-generated or scraped) and never cuts a sentence mid-way or pads it
-// with filler words. Only the first candidate is treated as the primary slogan
-// so the AI-provided slogan is preserved verbatim when it is already clean.
-function buildProjectSlogan(values: string[], fallbackName: string) {
-  const clean = (value: string) =>
-    value
-      .replace(/\s+/g, " ")
-      .replace(/[,:;()]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-  const pickWords = (value: string) => value.split(/\s+/).filter(Boolean);
-
-  // Generic section labels and UI headings that are not real slogans.
-  const isGenericSectionLabel = (value: string) => {
-    const normalized = value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
-    const genericNouns =
-      "features?|benefits?|services?|solutions?|products?|platform|tools?|apps?|software|systems?|company|team|story|mission|vision|values?|approach|process|clients?|customers?|projects?|portfolio|blog|pricing|plans?|resources?|support|contact|newsletter|code|work|difference|advantage|expertise|experience|technology|stack|partners|community|promise|goals?";
-    // "Key features", "Our solutions", "The platform", "All features", etc.
-    if (new RegExp(`^(key|our|the|all|main|core|top|new)\\s+(${genericNouns})$`).test(normalized)) {
-      return true;
-    }
-    // Bare single-word section labels.
-    if (new RegExp(`^(${genericNouns})$`).test(normalized)) {
-      return true;
-    }
-    return false;
-  };
-
-  const isCompletePhrase = (value: string) => {
-    const words = pickWords(value);
-    if (words.length < 2 || words.length > 10) return false;
-    if (value.length < 6 || value.length > 90) return false;
-    if (isWeakMarketingCopy(value)) return false;
-    if (isLowValueSiteText(value)) return false;
-    if (isGenericSectionLabel(value)) return false;
-    // Reject fragments that end with a dangling connector or an opening bracket.
-    if (/\b(and|or|but|with|for|to|of|in|on|at|by|from|than|that|which|who|whose|the|a|an)$/i.test(value)) return false;
-    if (/[([{]$/.test(value)) return false;
-    return true;
-  };
-
-  // 1. Prefer the primary candidate (usually the AI slogan) when it is already a
-  //    complete phrase, so we keep the model's wording instead of mangling it.
-  const primary = clean(values[0] || "");
-  if (primary && isCompletePhrase(primary)) {
-    return normalizeReadableCopy(primary, 90);
-  }
-
-  // 2. Otherwise scan all candidates for the first complete phrase.
-  const candidates = uniqueNonEmpty(
-    values
-      .flatMap((value) => splitIntoPhrases(value))
-      .map((value) => clean(value))
-      .filter(Boolean),
-    16,
-  );
-
-  const complete = candidates.find((value) => isCompletePhrase(value));
-  if (complete) return normalizeReadableCopy(complete, 90);
-
-  // 3. Fall back to the longest complete-ish phrase without cutting mid-sentence.
-  const longest = candidates
-    .map((value) => ({ value, words: pickWords(value) }))
-    .filter((item) => item.words.length >= 2)
-    .sort((a, b) => b.words.length - a.words.length)[0];
-  if (longest) {
-    return normalizeReadableCopy(longest.value, 90);
-  }
-
-  // 4. Last resort: the project name.
-  return normalizeReadableCopy(fallbackName, 90);
+// Cleans a slogan for display: collapses whitespace and strips wrapping quotes
+// and trailing punctuation. It never truncates or rewrites the text, so the
+// AI-generated slogan is preserved exactly as written.
+function cleanSlogan(value: string) {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/^["'“”«»\s]+|["'“”«»\s]+$/g, "")
+    .replace(/[.,;:]+$/g, "")
+    .trim();
 }
 
 function buildMeaningfulSloganLines(values: string[], fallbackName: string) {
@@ -1556,13 +1492,14 @@ function buildProjectPlanFromVideoScript(marketing: MarketingPackage, script: Vi
 function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
   const projectName = normalizePlanValue(brief.name, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  // One short project slogan, reused in the center-text scene and payload.
-  // The AI-provided slogan is the primary candidate and is kept verbatim when it
-  // is already a complete phrase; otherwise we fall back to scraped content.
-  const projectSlogan = buildProjectSlogan(
-    [brief.slogan[0] || "", brief.slogan[1] || "", brief.slogan[2] || "", brief.description || "", ...brief.features],
-    projectName,
-  );
+  // The AI-generated slogan is used verbatim (only whitespace/quotes cleaned).
+  // It is reused in the center-text scene and in the project payload.
+  const projectSlogan =
+    cleanSlogan(brief.slogan[0] || "") ||
+    cleanSlogan(brief.slogan[1] || "") ||
+    cleanSlogan(brief.slogan[2] || "") ||
+    cleanSlogan(brief.description || "") ||
+    projectName;
   const cleanBrief: GeneratedBrandBrief = {
     name: projectName,
     slogan: [projectSlogan, projectSlogan, projectSlogan],
@@ -1702,7 +1639,7 @@ function buildProjectPayloadFromPlan(
               ...baseUpdates,
               title:
                 scenePlan.type === "center-text"
-                  ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
+                  ? cleanSlogan(brief?.slogan?.[0] || "") || baseUpdates.title || projectName
                   : scenePlan.type === "description"
                     ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
                     : scenePlan.type === "website-url"
@@ -1809,9 +1746,9 @@ function buildProjectPayloadFromPlan(
   });
 
   const slogan =
-    normalizeReadableCopy(brief?.slogan?.[0] || "", 90) ||
-    normalizeReadableCopy(scenes.find((scene) => scene.type === "center-text" || scene.type === "slogan")?.title || "", 90) ||
-    normalizeReadableCopy(projectName, 90);
+    cleanSlogan(brief?.slogan?.[0] || "") ||
+    cleanSlogan(scenes.find((scene) => scene.type === "center-text" || scene.type === "slogan")?.title || "") ||
+    cleanSlogan(projectName);
 
   return {
     projectName,
@@ -2174,7 +2111,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     model,
     schemaName: "website_simple_brand_brief",
     systemPrompt:
-      "You create a minimal website brand brief for short promo videos. Return valid JSON only. Keep every field concise, complete, and grounded in the analyzed website. Do not invent facts. Do not return unfinished fragments. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy. The slogan must be a short, punchy, complete marketing phrase that could stand alone on a video title card.",
+      "You are a senior copywriter creating a minimal website brand brief for short promo videos. Return valid JSON only. Ground every field in the analyzed website. Do not invent facts. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy. Write the slogan as a real, complete marketing slogan that could headline a product video.",
     userPrompt: `Analyze this website snapshot and return only the core video inputs.\n\nInput:\n${JSON.stringify(
       {
         productName: snapshot.productName,
@@ -2190,7 +2127,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       },
       null,
       2,
-    )}\n\nReturn fields:\n- name\n- slogan: ONE short, punchy, complete marketing slogan of 3 to 8 words, grounded in the site metadata and content\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nRules:\n- all text must be complete and self-contained\n- the slogan must be a single short phrase of 3 to 8 words that reads naturally on its own, not a list and not a sentence fragment\n- good slogan examples: "Ship your product faster", "Design that converts", "Automate your entire workflow", "The fastest way to launch"\n- bad slogan examples: "Our code ships", "Key features", "Automatos is an open", "Why choose us"\n- do not return generic section labels like "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- do not start the slogan with "Our", "The", "All" followed by a generic noun\n- do not end lines with dangling words like and, with, for, to, of, the, a, an`,
+    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, natural marketing slogan (about 4 to 9 words) that captures what this product does and why it matters. Write it as a real headline, not a label or a fragment.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nSlogan guidance:\n- write a full, self-contained phrase that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- examples of good slogans: "Ship your product faster", "Design that converts", "Automate your entire workflow", "The fastest way to launch your startup"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an`,
     schema: {
       type: "object",
       properties: {
