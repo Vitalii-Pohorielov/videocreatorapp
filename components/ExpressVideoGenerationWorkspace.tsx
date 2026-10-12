@@ -2,9 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { MAX_EXPRESS_BATCH_URLS } from "@/lib/expressVideoBatch";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import type { ExportSettings, Scene, SceneTrack } from "@/lib/sceneDefinitions";
+
+// Keep in sync with MAX_EXPRESS_BATCH_URLS in lib/expressVideoBatch.ts.
+// Defined locally because that module imports server-only dependencies
+// (fs, @remotion/renderer) that cannot be bundled into a client component.
+const MAX_EXPRESS_BATCH_URLS = 15;
 
 type BatchStatus = "idle" | "queued" | "scraping" | "rendering" | "zipping" | "done" | "error";
 type ProjectStatus = "queued" | "scraping" | "ready" | "error";
