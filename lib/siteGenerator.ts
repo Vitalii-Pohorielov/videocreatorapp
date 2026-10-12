@@ -1016,6 +1016,46 @@ function extractBenefitStatements(values: string[], maxItems = 6) {
   ).slice(0, maxItems);
 }
 
+// Builds a single project slogan made of 5 to 8 words. It prefers the first
+// meaningful phrase from the provided candidates (AI-generated or scraped) and
+// pads/trims it to land inside the 5-8 word range.
+function buildProjectSlogan(values: string[], fallbackName: string) {
+  const candidates = uniqueNonEmpty(
+    values
+      .flatMap((value) => splitIntoPhrases(value))
+      .map((value) => value.replace(/\s+/g, " ").replace(/[,:;()]+/g, "").trim())
+      .filter((value) => value.length >= 4 && !isWeakMarketingCopy(value)),
+    12,
+  );
+
+  const pickWords = (value: string) => value.split(/\s+/).filter(Boolean);
+
+  const withinRange = candidates.find((value) => {
+    const words = pickWords(value);
+    return words.length >= 5 && words.length <= 8;
+  });
+  if (withinRange) return normalizeReadableCopy(withinRange, 90);
+
+  const longest = candidates
+    .map((value) => ({ value, words: pickWords(value) }))
+    .sort((a, b) => b.words.length - a.words.length)[0];
+
+  if (longest && longest.words.length > 8) {
+    return normalizeReadableCopy(longest.words.slice(0, 8).join(" "), 90);
+  }
+
+  const baseWords = longest ? longest.words : pickWords(fallbackName);
+  const padded = [...baseWords];
+  const filler = ["for", "modern", "teams", "and", "creators", "everywhere"];
+  let fillerIndex = 0;
+  while (padded.length < 5 && fillerIndex < filler.length) {
+    padded.push(filler[fillerIndex]);
+    fillerIndex += 1;
+  }
+
+  return normalizeReadableCopy(padded.slice(0, 8).join(" "), 90) || normalizeReadableCopy(fallbackName, 90);
+}
+
 function buildMeaningfulSloganLines(values: string[], fallbackName: string) {
   const phraseCandidates = uniqueNonEmpty(
     values
@@ -1481,12 +1521,14 @@ function buildProjectPlanFromVideoScript(marketing: MarketingPackage, script: Vi
 function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
   const projectName = normalizePlanValue(brief.name, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  // One project slogan of 5-8 words, reused in the center-text scene and payload.
+  const projectSlogan = buildProjectSlogan(
+    [brief.slogan[0] || "", brief.slogan[1] || "", brief.slogan[2] || "", brief.description || "", ...brief.features],
+    projectName,
+  );
   const cleanBrief: GeneratedBrandBrief = {
     name: projectName,
-    slogan: buildMeaningfulSloganLines(
-      [brief.slogan[0] || "", brief.slogan[1] || "", brief.slogan[2] || "", brief.description || "", ...brief.features],
-      projectName,
-    ),
+    slogan: [projectSlogan, projectSlogan, projectSlogan],
     description: toShortLine(brief.description || scraped.description || `Explore ${projectName}.`, `Explore ${projectName}.`, 180),
     features: takeBullets(brief.features, 3),
     stepsToUse: [],
@@ -1510,9 +1552,9 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
       {
         type: "center-text",
         eyebrow: "Message",
-        title: cleanBrief.slogan[0] || cleanBrief.name,
-        subtitle: cleanBrief.slogan[1] || cleanBrief.description,
-        description: cleanBrief.slogan[2] || cleanBrief.description,
+        title: projectSlogan,
+        subtitle: "",
+        description: "",
         bullets: [],
       },
       {
@@ -2076,7 +2118,14 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
   const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
   const snapshot = buildExtractedSiteSnapshot(scraped, normalizedUrl);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const brief = await requestOpenAiStructuredJson<Partial<GeneratedBrandBrief>>({
+  const brief = await requestOpenAiStructuredJson<{
+    name?: string;
+    slogan?: string;
+    description?: string;
+    features?: string[];
+    cta?: string;
+    urlLabel?: string;
+  }>({
     model,
     schemaName: "website_simple_brand_brief",
     systemPrompt:
@@ -2096,12 +2145,12 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       },
       null,
       2,
-    )}\n\nReturn fields:\n- name\n- slogan: exactly 3 short complete lines, each usually 2 to 3 words\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nRules:\n- all text must be complete and self-contained\n- do not return labels like "Why choose", "How it works", "Pricing", "Blog"\n- do not end lines with dangling words like and, with, for, to`,
+    )}\n\nReturn fields:\n- name\n- slogan: ONE short marketing slogan of 5 to 8 words, grounded in the site metadata and content\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nRules:\n- all text must be complete and self-contained\n- the slogan must be a single sentence of 5 to 8 words, not a list\n- do not return labels like "Why choose", "How it works", "Pricing", "Blog"\n- do not end lines with dangling words like and, with, for, to`,
     schema: {
       type: "object",
       properties: {
         name: { type: "string" },
-        slogan: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
+        slogan: { type: "string" },
         description: { type: "string" },
         features: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
         cta: { type: "string" },
@@ -2112,10 +2161,11 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     },
   });
 
+  const aiSlogan = typeof brief.slogan === "string" ? brief.slogan.trim() : "";
+
   if (
     !brief.name ||
-    !Array.isArray(brief.slogan) ||
-    brief.slogan.length !== 3 ||
+    !aiSlogan ||
     !brief.description ||
     !Array.isArray(brief.features) ||
     brief.features.length !== 3 ||
@@ -2128,7 +2178,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
   return buildFixedProjectPlanFromBrandBrief(
     {
       name: brief.name,
-      slogan: brief.slogan,
+      slogan: [aiSlogan, aiSlogan, aiSlogan],
       description: brief.description,
       features: brief.features,
       stepsToUse: [],
