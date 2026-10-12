@@ -986,6 +986,55 @@ function pickShortSloganLines(values: string[], fallback: string) {
   return chunks.slice(0, 3);
 }
 
+// Builds a single logical slogan sentence from the project name and the best
+// available value proposition, so the fallback path produces a real headline
+// (e.g. "Difsh is where your development team works.") instead of a generic
+// section label like "Key features".
+function isGenericSectionLabel(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim().toLowerCase();
+  if (!normalized) return true;
+  return /^(key\s+)?(features?|benefits?|solutions?|services?|products?|pricing|plans?|about( us)?|our (features|solutions|services|products|story|mission)|how it works|why (us|choose us)|get started|learn more|read more|contact( us)?|blog|news|resources?|testimonials?|reviews?|faq|support|docs?|documentation|overview|introduction|welcome|home|menu|more|details?|description|summary|highlights?|capabilities|use cases?|integrations?|customers?|company|team|careers?|sign in|log ?in|sign ?up|register|subscribe|follow us|share|comments?|upvote)$/i.test(
+    normalized,
+  );
+}
+
+function buildLogicalSlogan(projectName: string, candidates: string[], fallbackValue: string) {
+  const name = projectName.replace(/\s+/g, " ").trim();
+  const cleanedCandidates = uniqueNonEmpty(
+    candidates
+      .flatMap((value) => splitIntoPhrases(value))
+      .map((value) => value.replace(/\s+/g, " ").trim())
+      .filter((value) => value.length >= 8)
+      .filter((value) => !isLowValueSiteText(value))
+      .filter((value) => !isUiOrNavigationNoise(value))
+      .filter((value) => !isWeakMarketingCopy(value))
+      .filter((value) => !isGenericSectionLabel(value)),
+    8,
+  );
+
+  const value = cleanedCandidates[0] || fallbackValue.replace(/\s+/g, " ").trim();
+  const normalizedValue = value.replace(/[.]+$/g, "").trim();
+
+  if (!name) return normalizedValue || "Built to move fast";
+
+  // If the value proposition already starts with the product name, keep it as
+  // a single coherent sentence.
+  if (normalizedValue.toLowerCase().startsWith(name.toLowerCase())) {
+    return `${normalizedValue}.`;
+  }
+
+  // Otherwise stitch the name and the value into one logical sentence.
+  const connector = /^(is|are|was|were|helps|lets|makes|turns|brings|gives|keeps|works|builds|creates|powers|enables)\b/i.test(normalizedValue)
+    ? ""
+    : "is where you ";
+
+  const sentence = connector
+    ? `${name} ${connector}${normalizedValue.charAt(0).toLowerCase()}${normalizedValue.slice(1)}`
+    : `${name} ${normalizedValue}`;
+
+  return `${sentence.replace(/\s+/g, " ").replace(/[.]+$/g, "").trim()}.`;
+}
+
 function shortenFeatureText(value: string) {
   return normalizeReadableCopy(
     value
@@ -1093,9 +1142,10 @@ function buildDeterministicSiteBrief(scraped: ScrapedSiteData, normalizedUrl: st
   const heroTitle = scraped.pageName || scraped.headings[0] || scraped.title || pageSlugLabel || projectName;
   const heroSubtitle = scraped.description || scraped.headings[1] || `Explore ${projectName}.`;
   const supportingParagraph = scraped.longDescription || scraped.paragraphs[0] || scraped.description;
-  const sloganLines = pickShortSloganLines(
-    [scraped.headings[1] || "", scraped.headings[2] || "", scraped.headings[3] || "", scraped.description, supportingParagraph, heroTitle],
+  const logicalSlogan = buildLogicalSlogan(
     projectName,
+    [scraped.description, supportingParagraph, scraped.headings[1] || "", scraped.headings[2] || "", heroTitle],
+    `helps you get more done`,
   );
   const featureBullets = takeBullets(scraped.featureCandidates.length ? scraped.featureCandidates : scraped.bullets.length ? scraped.bullets : scraped.headings.slice(1), 3);
   const ctaLine = scraped.cta[0] || `Visit ${projectName}`;
@@ -1117,12 +1167,14 @@ function buildDeterministicSiteBrief(scraped: ScrapedSiteData, normalizedUrl: st
       ? processCandidates.slice(0, 3)
       : [];
 
+  const [logicalLine1, logicalLine2, logicalLine3] = splitSloganIntoThreeLines(logicalSlogan);
+
   return {
     name: projectName,
     slogan: [
-      toDescriptionSceneLine(sloganLines[0] || scraped.headings[1] || heroTitle, "Built for modern teams"),
-      toDescriptionSceneLine(sloganLines[1] || scraped.headings[2] || scraped.description || heroSubtitle, "Clear product communication"),
-      toDescriptionSceneLine(sloganLines[2] || scraped.headings[3] || supportingParagraph || `Explore ${projectName}`, "Fast demos and exports"),
+      logicalLine1 || logicalSlogan,
+      logicalLine2 || toDescriptionSceneLine(scraped.description || heroSubtitle, "Clear product value"),
+      logicalLine3 || toDescriptionSceneLine(supportingParagraph || `Explore ${projectName}`, "Fast demos and exports"),
     ],
     description: toShortLine(scraped.description || supportingParagraph || heroSubtitle, `Explore ${projectName}.`, 180),
     price:
@@ -1141,12 +1193,14 @@ function buildDeterministicSiteBrief(scraped: ScrapedSiteData, normalizedUrl: st
 function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
   const projectName = brief.name || scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  // brief.slogan already holds the logical slogan split into three lines, so we
+  // keep those lines intact instead of re-truncating them.
   const aiLikeBrief: GeneratedBrandBrief = {
     name: projectName,
     slogan: [
-      toDescriptionSceneLine(brief.slogan[0] || projectName, projectName),
-      toDescriptionSceneLine(brief.slogan[1] || brief.description || "Clear product value", "Clear product value"),
-      toDescriptionSceneLine(brief.slogan[2] || "Built for fast understanding", "Built for fast understanding"),
+      brief.slogan[0] || projectName,
+      brief.slogan[1] || toDescriptionSceneLine(brief.description || "Clear product value", "Clear product value"),
+      brief.slogan[2] || toDescriptionSceneLine("Built for fast understanding", "Built for fast understanding"),
     ],
     description: toShortLine(brief.description || `Explore ${projectName}.`, `Explore ${projectName}.`, 180),
     features: takeBullets(brief.features, 3),
@@ -1749,9 +1803,11 @@ function buildProjectPayloadFromPlan(
     }
   });
 
+  // Rebuild the full logical slogan from the three split lines so the editable
+  // slogan field in the UI shows the complete sentence, not just the first line.
   const slogan =
-    cleanSlogan(brief?.slogan?.[0] || "") ||
-    cleanSlogan(scenes.find((scene) => scene.type === "center-text" || scene.type === "slogan")?.title || "") ||
+    cleanSlogan((brief?.slogan ?? []).filter(Boolean).join(" ")) ||
+    cleanSlogan(scenes.find((scene) => scene.type === "description" || scene.type === "center-text" || scene.type === "slogan")?.title || "") ||
     cleanSlogan(projectName);
 
   return {
@@ -2147,7 +2203,18 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     },
   });
 
-  const aiSlogan = typeof brief.slogan === "string" ? brief.slogan.trim() : "";
+  const rawAiSlogan = typeof brief.slogan === "string" ? brief.slogan.trim() : "";
+  // Guard against the model returning a generic section label (e.g. "Key
+  // features") or a fragment. When that happens we rebuild a real logical
+  // slogan from the scraped content instead of shipping the weak label.
+  const aiSlogan =
+    rawAiSlogan && !isGenericSectionLabel(rawAiSlogan) && !isWeakMarketingCopy(rawAiSlogan)
+      ? rawAiSlogan
+      : buildLogicalSlogan(
+          brief.name || scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl),
+          [scraped.description, scraped.longDescription, scraped.paragraphs[0] || "", scraped.headings[1] || "", scraped.headings[2] || ""],
+          "helps you get more done",
+        );
 
   if (
     !brief.name ||
