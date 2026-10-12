@@ -905,6 +905,26 @@ function randomChoice<T>(values: T[]) {
   return values[Math.floor(Math.random() * values.length)] as T;
 }
 
+// Randomly picks one of the two intro scenes: "Intro Fade" (brand-reveal) or
+// "Intro Click" (brand-reveal-alt).
+function randomIntroSceneType(): IntroSceneType {
+  return randomChoice<IntroSceneType>(["brand-reveal", "brand-reveal-alt"]);
+}
+
+// Shuffles the middle scenes of a plan while keeping the first (intro) and the
+// last (closing URL) scenes in place.
+function shuffleMiddleScenes<T>(scenes: T[]): T[] {
+  if (scenes.length <= 3) return scenes;
+  const first = scenes[0];
+  const last = scenes[scenes.length - 1];
+  const middle = scenes.slice(1, -1);
+  for (let i = middle.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [middle[i], middle[j]] = [middle[j], middle[i]];
+  }
+  return [first, ...middle, last];
+}
+
 const generatedPresets = Object.keys(presetDefaults) as TemplatePreset[];
 const templatePresetEnum = generatedPresets.map((preset) => `"${preset}"`).join(" | ");
 
@@ -1207,7 +1227,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
 
   const scenes: GeneratedScenePlan[] = [
     {
-      type: "brand-reveal-alt",
+      type: randomIntroSceneType(),
       eyebrow: getDomainLabel(normalizedUrl),
       title: aiLikeBrief.name,
       subtitle: aiLikeBrief.description.slice(0, 110),
@@ -1229,6 +1249,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
       subtitle: "Auto-captured product page",
       description: "",
       bullets: [],
+      mediaPosition: randomChoice<"left" | "right">(["left", "right"]),
     },
     {
       type: "website-url",
@@ -1244,7 +1265,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
     projectName,
     preset: randomChoice(generatedPresets),
     brief: aiLikeBrief,
-    scenes: scenes.slice(0, MAX_GENERATED_SCENES),
+    scenes: shuffleMiddleScenes(scenes).slice(0, MAX_GENERATED_SCENES),
   };
 }
 
@@ -1567,9 +1588,9 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
     projectName,
     preset: randomChoice(generatedPresets),
     brief: cleanBrief,
-    scenes: [
+    scenes: shuffleMiddleScenes([
       {
-        type: "brand-reveal-alt",
+        type: randomIntroSceneType(),
         eyebrow: getDomainLabel(normalizedUrl),
         title: cleanBrief.name,
         subtitle: cleanBrief.description.slice(0, 110),
@@ -1591,6 +1612,7 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
         subtitle: "Auto-captured product page",
         description: "",
         bullets: [],
+        mediaPosition: randomChoice<"left" | "right">(["left", "right"]),
       },
       {
         type: "website-url",
@@ -1600,7 +1622,7 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
         description: "",
         bullets: [],
       },
-    ],
+    ]),
   };
 }
 
