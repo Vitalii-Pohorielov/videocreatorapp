@@ -10,6 +10,7 @@ import { SceneTimeline } from "@/components/SceneTimeline";
 import { EditorWorkspace } from "@/components/EditorWorkspace";
 import { createMobileVideoRenderPayload, exportMobileVideo } from "@/lib/mobileVideoExport";
 import { loadProject, saveProject } from "@/lib/projectPersistence";
+import { usePremiumStatus } from "@/lib/usePremiumStatus";
 import { useStore, type ExportSettings, type Scene, type SceneTrack, type SceneType, type VideoType } from "@/store/useStore";
 
 type PromoEditorWorkspaceProps = {
@@ -29,6 +30,7 @@ const PREVIEW_FPS = 24;
 const PREVIEW_FRAME_SECONDS = 1 / PREVIEW_FPS;
 
 function OldPromoWorkspace({ initialProjectId = null }: { initialProjectId?: string | null }) {
+  const { isPremium } = usePremiumStatus();
   const projectId = useStore((state) => state.projectId);
   const projectName = useStore((state) => state.projectName);
   const sceneTrack = useStore((state) => state.sceneTrack);
@@ -556,6 +558,7 @@ function OldPromoWorkspace({ initialProjectId = null }: { initialProjectId?: str
             <PromoStudioPreview
               projectId={projectId}
               projectName={projectName}
+              isPremium={isPremium}
               settings={exportSettings}
               scene={playbackState.scene}
               backgroundColor={exportSettings.backgroundColor}

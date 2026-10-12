@@ -16,6 +16,7 @@ import {
 type PromoStudioPreviewProps = {
   projectId: string | null;
   projectName: string;
+  isPremium: boolean;
   settings: ExportSettings;
   scene: Scene;
   backgroundColor: string;
@@ -73,6 +74,7 @@ function formatPlaybackTime(totalSeconds: number) {
 export function PromoStudioPreview({
   projectId,
   projectName,
+  isPremium,
   settings,
   scene,
   backgroundColor,
@@ -219,9 +221,10 @@ export function PromoStudioPreview({
             <button
               type="button"
               onClick={onGenerateFromUrl}
-              disabled={isGeneratingFromUrl}
+              disabled={isGeneratingFromUrl || !isPremium}
+              title={!isPremium ? "Premium only" : undefined}
               aria-label={isGeneratingFromUrl ? "Generating" : "Generate from URL"}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:opacity-60"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-400/12 text-sky-200 transition hover:bg-sky-400/18 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isGeneratingFromUrl ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-200/30 border-t-sky-200" aria-hidden="true" />

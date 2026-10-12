@@ -773,6 +773,7 @@ export function EditorWorkspace({
               projectName={projectName}
               isAnnouncementWorkspace={isAnnouncementWorkspace}
               settings={exportSettings}
+              isPremium={isPremium}
               scene={playbackState.scene ?? null}
               backgroundColor={exportSettings.backgroundColor}
               accentColor={exportSettings.accentColor}
