@@ -229,10 +229,15 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
     exportSettings: project.exportSettings,
     sceneTrack: {
       ...project.sceneTrack,
-      scenes: project.sceneTrack.scenes.map((scene) => {
+      scenes: project.sceneTrack.scenes.map((scene, index) => {
+        // Make the very first scene 1.5s longer so the intro has more room to
+        // breathe in the express render.
+        const durationSeconds = index === 0 ? scene.durationSeconds + 1.5 : scene.durationSeconds;
+
         if (scene.type === "brand-reveal" || scene.type === "brand-reveal-alt" || scene.type === "brand-reveal-circle") {
           return {
             ...scene,
+            durationSeconds,
             title: projectName,
             logoImageUrl,
           };
@@ -243,6 +248,7 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
         if (slogan && scene.type === "description") {
           return {
             ...scene,
+            durationSeconds,
             title: sloganLine1 || slogan,
             subtitle: sloganLine2,
             description: sloganLine3,
@@ -254,6 +260,7 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
         if (slogan && (scene.type === "center-text" || scene.type === "slogan")) {
           return {
             ...scene,
+            durationSeconds,
             title: slogan,
           };
         }
@@ -261,9 +268,13 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
         return scene.logoImageUrl
           ? {
               ...scene,
+              durationSeconds,
               logoImageUrl,
             }
-          : scene;
+          : {
+              ...scene,
+              durationSeconds,
+            };
       }),
     },
   };
