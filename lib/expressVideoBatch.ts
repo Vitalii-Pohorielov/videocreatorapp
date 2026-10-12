@@ -30,7 +30,7 @@ type ZipFile = {
   data: Buffer;
 };
 
-export const MAX_EXPRESS_BATCH_URLS = 10;
+export const MAX_EXPRESS_BATCH_URLS = 15;
 
 export class BatchRequestError extends Error {}
 

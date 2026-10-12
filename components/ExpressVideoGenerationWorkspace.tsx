@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { MAX_EXPRESS_BATCH_URLS } from "@/lib/expressVideoBatch";
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import type { ExportSettings, Scene, SceneTrack } from "@/lib/sceneDefinitions";
 
@@ -267,7 +268,7 @@ export function ExpressVideoGenerationWorkspace() {
     !hasPendingPreparation &&
     !hasPreparationError &&
     urls.length >= 1 &&
-    urls.length <= 10 &&
+    urls.length <= MAX_EXPRESS_BATCH_URLS &&
     readyProjects.length === urls.length;
 
   const resetDownload = () => {
@@ -433,9 +434,9 @@ export function ExpressVideoGenerationWorkspace() {
       return;
     }
 
-    if (urls.length > 10) {
+    if (urls.length > MAX_EXPRESS_BATCH_URLS) {
       setStatus("error");
-      setStatusMessage("Use 10 URLs or fewer per batch.");
+      setStatusMessage(`Use ${MAX_EXPRESS_BATCH_URLS} URLs or fewer per batch.`);
       return;
     }
 
@@ -545,7 +546,7 @@ export function ExpressVideoGenerationWorkspace() {
       return nextDrafts;
     });
 
-    if (urls.length === 0 || urls.length > 10) return undefined;
+    if (urls.length === 0 || urls.length > MAX_EXPRESS_BATCH_URLS) return undefined;
 
     const timer = window.setTimeout(() => {
       for (const url of urls) {
@@ -595,7 +596,7 @@ export function ExpressVideoGenerationWorkspace() {
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300">Batch workspace</p>
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Express Video Generation</h1>
           <p className="max-w-2xl text-sm leading-6 text-slate-400">
-            Paste 5-10 website URLs, generate videos, and download the finished MP4 files as one ZIP archive.
+            Paste 5-{MAX_EXPRESS_BATCH_URLS} website URLs, generate videos, and download the finished MP4 files as one ZIP archive.
           </p>
         </div>
 
@@ -607,7 +608,7 @@ export function ExpressVideoGenerationWorkspace() {
                 <p className="mt-1 text-sm text-slate-400">Add one URL per line. Videos are rendered sequentially.</p>
               </div>
               <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
-                {urls.length}/10 URLs
+                {urls.length}/{MAX_EXPRESS_BATCH_URLS} URLs
               </span>
             </div>
 
@@ -743,8 +744,10 @@ export function ExpressVideoGenerationWorkspace() {
             ) : null}
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className={urls.length > 10 ? "text-xs text-rose-300" : "text-xs text-slate-500"}>
-                {urls.length > 10 ? "Too many URLs. Keep the batch to 10 or fewer." : "Limit: 10 URLs per batch."}
+              <p className={urls.length > MAX_EXPRESS_BATCH_URLS ? "text-xs text-rose-300" : "text-xs text-slate-500"}>
+                {urls.length > MAX_EXPRESS_BATCH_URLS
+                  ? `Too many URLs. Keep the batch to ${MAX_EXPRESS_BATCH_URLS} or fewer.`
+                  : `Limit: ${MAX_EXPRESS_BATCH_URLS} URLs per batch.`}
               </p>
               <div className="flex gap-2">
                 <button
