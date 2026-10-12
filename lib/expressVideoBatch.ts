@@ -333,7 +333,7 @@ export async function renderExpressVideoBatch(
       const { project: generatedProject } = await buildProjectFromBatchItem(item);
       const outputPath = path.join(batchDirectory, `${current}-${randomUUID()}.mp4`);
       const baseFileName = toSafeMobileVideoFileName(generatedProject.projectName);
-      const fileName = getUniqueFileName(`${String(current).padStart(2, "0")}-${baseFileName}`, usedNames);
+      const fileName = getUniqueFileName(baseFileName, usedNames);
 
       onProgress?.({
         phase: "rendering",

@@ -501,7 +501,7 @@ export function ExpressVideoGenerationWorkspace() {
       for (const [index, project] of readyProjects.entries()) {
         const current = index + 1;
         const renderPayload = applyPreparedProjectEdits(project);
-        const fileName = getUniqueFileName(`${String(current).padStart(2, "0")}-${toSafeVideoFileName(renderPayload.projectName)}`, usedNames);
+        const fileName = getUniqueFileName(toSafeVideoFileName(renderPayload.projectName), usedNames);
 
         updateFromProgress({
           phase: "rendering",
