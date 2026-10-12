@@ -1015,24 +1015,20 @@ function buildLogicalSlogan(projectName: string, candidates: string[], fallbackV
   const value = cleanedCandidates[0] || fallbackValue.replace(/\s+/g, " ").trim();
   const normalizedValue = value.replace(/[.]+$/g, "").trim();
 
-  if (!name) return normalizedValue || "Built to move fast";
+  if (!normalizedValue) return name ? `${name}.` : "Built to move fast";
 
-  // If the value proposition already starts with the product name, keep it as
-  // a single coherent sentence.
-  if (normalizedValue.toLowerCase().startsWith(name.toLowerCase())) {
-    return `${normalizedValue}.`;
+  // Capitalize the first letter so the value reads as a standalone slogan.
+  const sentenceCase = `${normalizedValue.charAt(0).toUpperCase()}${normalizedValue.slice(1)}`;
+
+  // If the value proposition already mentions the product name, keep it as a
+  // single coherent sentence.
+  if (name && normalizedValue.toLowerCase().includes(name.toLowerCase())) {
+    return `${sentenceCase}.`;
   }
 
-  // Otherwise stitch the name and the value into one logical sentence.
-  const connector = /^(is|are|was|were|helps|lets|makes|turns|brings|gives|keeps|works|builds|creates|powers|enables)\b/i.test(normalizedValue)
-    ? ""
-    : "is where you ";
-
-  const sentence = connector
-    ? `${name} ${connector}${normalizedValue.charAt(0).toLowerCase()}${normalizedValue.slice(1)}`
-    : `${name} ${normalizedValue}`;
-
-  return `${sentence.replace(/\s+/g, " ").replace(/[.]+$/g, "").trim()}.`;
+  // Otherwise use the value proposition as a neutral, standalone slogan. We do
+  // not force a "Name is where you ..." template, so the copy stays natural.
+  return `${sentenceCase}.`;
 }
 
 function shortenFeatureText(value: string) {
