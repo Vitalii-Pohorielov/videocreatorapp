@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       sourceUrl,
       projectName: project.projectName,
+      slogan: project.slogan,
       logoImageUrl: getProjectLogo(project),
       sceneTrack: project.sceneTrack,
       exportSettings: project.exportSettings,

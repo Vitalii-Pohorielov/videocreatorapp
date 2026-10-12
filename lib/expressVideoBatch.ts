@@ -181,6 +181,7 @@ export function parseExpressPreparedProjects(body: BatchRenderRequest) {
       ...project,
       sourceUrl: project.sourceUrl.trim(),
       projectName: project.projectName.trim() || "Video project",
+      slogan: typeof project.slogan === "string" ? project.slogan.trim() : "",
       logoImageUrl: project.logoImageUrl.trim(),
     }))
     .filter((project) => {
@@ -218,9 +219,11 @@ function getUniqueFileName(fileName: string, usedNames: Set<string>) {
 function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedProjectPayload {
   const projectName = project.projectName.trim() || "Video project";
   const logoImageUrl = project.logoImageUrl.trim();
+  const slogan = typeof project.slogan === "string" ? project.slogan.trim() : "";
 
   return {
     projectName,
+    slogan,
     exportSettings: project.exportSettings,
     sceneTrack: {
       ...project.sceneTrack,
@@ -230,6 +233,15 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
             ...scene,
             title: projectName,
             logoImageUrl,
+          };
+        }
+
+        // Apply the user-edited slogan to the message scene so the preview
+        // slogan is what actually renders in the video.
+        if (slogan && (scene.type === "center-text" || scene.type === "slogan")) {
+          return {
+            ...scene,
+            title: slogan,
           };
         }
 

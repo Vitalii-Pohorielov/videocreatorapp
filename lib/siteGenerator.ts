@@ -27,6 +27,7 @@ type ScrapedSiteData = {
 
 export type GeneratedProjectPayload = {
   projectName: string;
+  slogan: string;
   sceneTrack: SceneTrack;
   exportSettings: ExportSettings;
 };
@@ -685,6 +686,23 @@ function getDomainLabel(sourceUrl: string) {
     return root ? root.charAt(0).toUpperCase() + root.slice(1) : "Website";
   } catch {
     return "Website";
+  }
+}
+
+// Builds the clean URL label shown in the closing URL scene. It mirrors the
+// exact host used for the website screenshot scroll (keeping "www." and any
+// path) but without the protocol, e.g.:
+//   https://atlarix.dev/  -> atlarix.dev
+//   https://uxkin.com/    -> uxkin.com
+//   https://www.dif.sh/   -> www.dif.sh
+function getUrlLabel(sourceUrl: string) {
+  try {
+    const parsed = new URL(sourceUrl);
+    const host = parsed.hostname;
+    const path = parsed.pathname.replace(/\/+$/, "");
+    return `${host}${path}`.replace(/^\/+/, "");
+  } catch {
+    return sourceUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   }
 }
 
@@ -1517,9 +1535,17 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
   };
 }
 
-function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPayload {
+function buildProjectPayloadFromPlan(
+  plan: GeneratedProjectPlan,
+  scraped: ScrapedSiteData,
+  normalizedUrl: string,
+  urlLabelSource: string = normalizedUrl,
+): GeneratedProjectPayload {
   const projectName = normalizePlanValue(plan.projectName, scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl), 80);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  // The closing URL scene mirrors the exact host used for the website screenshot
+  // scroll (keeping "www." and any path) instead of the scraped source URL.
+  const urlLabel = getUrlLabel(urlLabelSource);
   const preset = generatedPresets.includes(plan.preset) ? plan.preset : "white";
   const presetColors = presetDefaults[preset];
   const brief = plan.brief;
@@ -1599,7 +1625,7 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
                 scenePlan.type === "description" || scenePlan.type === "center-text"
                   ? normalizePlanValue(brief?.slogan?.[0], baseUpdates.title || projectName, 90)
                   : scenePlan.type === "website-url"
-                  ? normalizePlanValue(scenePlan.title, brief?.urlLabel || normalizedDomain, 90)
+                  ? urlLabel
                   : scenePlan.type === "cta-panel"
                     ? normalizePlanValue(scenePlan.title, brief?.cta || `Visit ${projectName}`, 90)
                     : baseUpdates.title,
@@ -1623,6 +1649,7 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
           withDuration(
             applyScene(scene, {
               ...baseUpdates,
+              title: scenePlan.type === "product-showcase" ? baseUpdates.title : urlLabel,
               websiteImageUrl: primaryVisualUrl,
             }),
             scene.durationSeconds,
@@ -1694,8 +1721,14 @@ function buildProjectPayloadFromPlan(plan: GeneratedProjectPlan, scraped: Scrape
     }
   });
 
+  const slogan =
+    normalizeReadableCopy(brief?.slogan?.[0] || "", 90) ||
+    normalizeReadableCopy(scenes.find((scene) => scene.type === "center-text" || scene.type === "slogan")?.title || "", 90) ||
+    normalizeReadableCopy(projectName, 90);
+
   return {
     projectName,
+    slogan,
     sceneTrack: {
       id: "main-track",
       name: "Scene Track",
@@ -2148,14 +2181,14 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   const fallbackPlan = buildDeterministicProjectPlanFromBrief(fallbackBrief, scraped, normalizedUrl);
 
   if (!process.env.OPENAI_API_KEY) {
-    return buildProjectPayloadFromPlan(fallbackPlan, scraped, normalizedUrl);
+    return buildProjectPayloadFromPlan(fallbackPlan, scraped, normalizedUrl, screenshotTargetUrl);
   }
 
   try {
     const aiPlan = await requestOpenAiScenePlan(scraped, normalizedUrl);
-    return buildProjectPayloadFromPlan(aiPlan, scraped, normalizedUrl);
+    return buildProjectPayloadFromPlan(aiPlan, scraped, normalizedUrl, screenshotTargetUrl);
   } catch (error) {
     console.error("[generate-from-url] OpenAI enhancement failed, using deterministic fallback.", error);
-    return buildProjectPayloadFromPlan(fallbackPlan, scraped, normalizedUrl);
+    return buildProjectPayloadFromPlan(fallbackPlan, scraped, normalizedUrl, screenshotTargetUrl);
   }
 }

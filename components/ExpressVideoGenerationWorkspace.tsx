@@ -26,6 +26,7 @@ type BatchProgress = {
 type PreparedProject = {
   sourceUrl: string;
   projectName: string;
+  slogan: string;
   logoImageUrl: string;
   sceneTrack: SceneTrack;
   exportSettings: ExportSettings;
@@ -183,6 +184,7 @@ function getUniqueFileName(fileName: string, usedNames: Set<string>) {
 function applyPreparedProjectEdits(project: PreparedProject) {
   const projectName = project.projectName.trim() || "Video project";
   const logoImageUrl = project.logoImageUrl.trim();
+  const slogan = project.slogan.trim();
 
   return {
     projectName,
@@ -193,6 +195,15 @@ function applyPreparedProjectEdits(project: PreparedProject) {
           ...scene,
           title: projectName,
           logoImageUrl,
+        };
+      }
+
+      // Apply the user-edited slogan to the message scene so the preview
+      // slogan is what actually renders in the video.
+      if (slogan && (scene.type === "center-text" || scene.type === "slogan")) {
+        return {
+          ...scene,
+          title: slogan,
         };
       }
 
@@ -331,6 +342,13 @@ export function ExpressVideoGenerationWorkspace() {
     }));
   };
 
+  const updateProjectSlogan = (url: string, slogan: string) => {
+    updatePreparedProject(url, (project) => ({
+      ...project,
+      slogan,
+    }));
+  };
+
   const updateProjectLogo = (url: string, logoImageUrl: string) => {
     updatePreparedProject(url, (project) => ({
       ...project,
@@ -404,6 +422,7 @@ export function ExpressVideoGenerationWorkspace() {
             project: {
               sourceUrl: payload.sourceUrl || url,
               projectName: payload.projectName,
+              slogan: payload.slogan || "",
               logoImageUrl: payload.logoImageUrl,
               sceneTrack: payload.sceneTrack,
               exportSettings: payload.exportSettings,
@@ -703,7 +722,7 @@ export function ExpressVideoGenerationWorkspace() {
                             </button>
                           </div>
                         ) : project ? (
-                          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+                          <div className="grid gap-3 md:grid-cols-2">
                             <label className="block">
                               <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Project name</span>
                               <input
@@ -711,6 +730,16 @@ export function ExpressVideoGenerationWorkspace() {
                                 onChange={(event) => updateProjectName(url, event.target.value)}
                                 disabled={isRunning}
                                 className="mt-2 w-full rounded-lg border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-400 disabled:cursor-not-allowed disabled:opacity-70"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Slogan</span>
+                              <input
+                                value={project.slogan}
+                                onChange={(event) => updateProjectSlogan(url, event.target.value)}
+                                disabled={isRunning}
+                                placeholder="Short slogan shown in the video"
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-sky-400 disabled:cursor-not-allowed disabled:opacity-70"
                               />
                             </label>
                             <label className="block">
@@ -723,7 +752,7 @@ export function ExpressVideoGenerationWorkspace() {
                                 className="mt-2 w-full rounded-lg border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-sky-400 disabled:cursor-not-allowed disabled:opacity-70"
                               />
                             </label>
-                            <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]">
+                            <label className="inline-flex cursor-pointer items-center justify-center self-end rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]">
                               {uploadingLogoUrl === url ? "Uploading..." : "Upload logo"}
                               <input
                                 type="file"
