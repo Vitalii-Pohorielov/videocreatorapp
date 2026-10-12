@@ -7,6 +7,7 @@ import { renderMobileVideoToFile } from "@/lib/mobileVideoServerRender";
 import { toSafeMobileVideoFileName } from "@/lib/mobileVideoRender";
 import type { ExportSettings, SceneTrack } from "@/lib/sceneDefinitions";
 import { generateProjectFromUrl, type GeneratedProjectPayload } from "@/lib/siteGenerator";
+import { splitSloganIntoThreeLines } from "@/lib/sloganLines";
 
 export type ExpressBatchPhase = "queued" | "scraping" | "rendering" | "zipping" | "done" | "error";
 
@@ -220,6 +221,7 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
   const projectName = project.projectName.trim() || "Video project";
   const logoImageUrl = project.logoImageUrl.trim();
   const slogan = typeof project.slogan === "string" ? project.slogan.trim() : "";
+  const [sloganLine1, sloganLine2, sloganLine3] = splitSloganIntoThreeLines(slogan);
 
   return {
     projectName,
@@ -233,6 +235,17 @@ function applyPreparedProjectEdits(project: ExpressPreparedProject): GeneratedPr
             ...scene,
             title: projectName,
             logoImageUrl,
+          };
+        }
+
+        // Apply the user-edited slogan to the description scene so the rendered
+        // video shows the logical slogan split across three oversized lines.
+        if (slogan && scene.type === "description") {
+          return {
+            ...scene,
+            title: sloganLine1 || slogan,
+            subtitle: sloganLine2,
+            description: sloganLine3,
           };
         }
 

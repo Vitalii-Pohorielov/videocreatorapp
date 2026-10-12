@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fileToStoredUrl } from "@/lib/imageUpload";
 import type { ExportSettings, Scene, SceneTrack } from "@/lib/sceneDefinitions";
+import { splitSloganIntoThreeLines } from "@/lib/sloganLines";
 
 // Keep in sync with MAX_EXPRESS_BATCH_URLS in lib/expressVideoBatch.ts.
 // Defined locally because that module imports server-only dependencies
@@ -185,6 +186,7 @@ function applyPreparedProjectEdits(project: PreparedProject) {
   const projectName = project.projectName.trim() || "Video project";
   const logoImageUrl = project.logoImageUrl.trim();
   const slogan = project.slogan.trim();
+  const [sloganLine1, sloganLine2, sloganLine3] = splitSloganIntoThreeLines(slogan);
 
   return {
     projectName,
@@ -195,6 +197,17 @@ function applyPreparedProjectEdits(project: PreparedProject) {
           ...scene,
           title: projectName,
           logoImageUrl,
+        };
+      }
+
+      // Apply the user-edited slogan to the description scene so the preview
+      // shows the logical slogan split across three oversized lines.
+      if (slogan && scene.type === "description") {
+        return {
+          ...scene,
+          title: sloganLine1 || slogan,
+          subtitle: sloganLine2,
+          description: sloganLine3,
         };
       }
 
