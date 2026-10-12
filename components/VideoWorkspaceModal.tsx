@@ -4,6 +4,7 @@ type VideoWorkspaceModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (workspace: "promo" | "express-render") => void;
+  isPremium?: boolean;
 };
 
 const workspaceCards = [
@@ -23,7 +24,7 @@ const workspaceCards = [
   },
 ];
 
-export function VideoWorkspaceModal({ isOpen, onClose, onSelect }: VideoWorkspaceModalProps) {
+export function VideoWorkspaceModal({ isOpen, onClose, onSelect, isPremium = false }: VideoWorkspaceModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -45,18 +46,34 @@ export function VideoWorkspaceModal({ isOpen, onClose, onSelect }: VideoWorkspac
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {workspaceCards.map((workspace) => (
-            <button
-              key={workspace.id}
-              type="button"
-              onClick={() => onSelect(workspace.id)}
-              className={`rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-left transition ${workspace.accentClassName}`}
-            >
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{workspace.eyebrow}</p>
-              <h3 className="mt-3 text-lg font-semibold text-white">{workspace.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{workspace.description}</p>
-            </button>
-          ))}
+          {workspaceCards.map((workspace) => {
+            const isLocked = workspace.id === "express-render" && !isPremium;
+
+            return (
+              <button
+                key={workspace.id}
+                type="button"
+                onClick={() => {
+                  if (isLocked) return;
+                  onSelect(workspace.id);
+                }}
+                disabled={isLocked}
+                title={isLocked ? "Premium only" : undefined}
+                className={`rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-left transition ${
+                  isLocked
+                    ? "cursor-not-allowed opacity-50"
+                    : workspace.accentClassName
+                }`}
+              >
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{workspace.eyebrow}</p>
+                <h3 className="mt-3 text-lg font-semibold text-white">{workspace.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{workspace.description}</p>
+                {isLocked ? (
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Premium only</p>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
