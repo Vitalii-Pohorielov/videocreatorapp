@@ -1386,20 +1386,47 @@ function matchAudienceCatalogEntry(value: string): string {
   return partial || "";
 }
 
+// Fisher-Yates shuffle that returns a new array, used to vary the audience
+// order so the scene does not always show the same sequence.
+function shuffleArray<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 // Build the final audience list: keep only catalog entries, always include
 // "Developers", and fill up to the requested count with sensible defaults.
+// The order is shuffled so different projects show different sequences.
 function finalizeAudienceWords(values: string[], maxItems = 4): string[] {
   const matched = uniqueNonEmpty(
     values.map((value) => matchAudienceCatalogEntry(value)).filter(Boolean),
     maxItems,
   );
 
-  const withDevelopers = uniqueNonEmpty([ALWAYS_INCLUDED_AUDIENCE, ...matched], maxItems);
-  if (withDevelopers.length >= maxItems) return withDevelopers.slice(0, maxItems);
+  // Always include "Developers", but let it sit anywhere in the list.
+  const withDevelopers = uniqueNonEmpty([...matched, ALWAYS_INCLUDED_AUDIENCE], maxItems);
+  if (withDevelopers.length >= maxItems) return shuffleArray(withDevelopers).slice(0, maxItems);
 
-  // Top up with popular defaults (excluding ones already present).
-  const defaults = ["Founders", "Marketers", "Designers", "Product Managers", "Startups", "Agencies"];
-  return uniqueNonEmpty([...withDevelopers, ...defaults], maxItems).slice(0, maxItems);
+  // Top up with a randomized selection of popular defaults (excluding ones
+  // already present) so the fallback is not always the same four labels.
+  const defaults = shuffleArray([
+    "Founders",
+    "Marketers",
+    "Designers",
+    "Product Managers",
+    "Startups",
+    "Agencies",
+    "Growth Teams",
+    "Ecommerce Brands",
+    "Freelancers",
+    "Content Creators",
+    "Small Businesses",
+    "Enterprises",
+  ]);
+  return shuffleArray(uniqueNonEmpty([...withDevelopers, ...defaults], maxItems)).slice(0, maxItems);
 }
 
 // Tokens that signal a real audience segment (a group of people). A candidate
