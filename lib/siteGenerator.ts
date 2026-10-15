@@ -651,7 +651,58 @@ function extractSocialLinks(hrefs: string[], sourceUrl: string) {
   );
 }
 
-function findLogoImageUrl(html: string, sourceUrl: string) {
+// Hosts that are known listing/directory/aggregator platforms. When the input
+// URL points at one of these, the page usually shows the platform's own logo
+// (header/footer) next to the product logo, so we must not blindly trust an
+// <img> whose attributes merely contain the word "logo".
+const AGGREGATOR_HOST_HINTS = [
+  "devhunt.org",
+  "producthunt.com",
+  "betalist.com",
+  "uneed.best",
+  "microlaunch.net",
+  "peerlist.io",
+  "fazier.com",
+  "toolify.ai",
+  "thereisanaiforthat.com",
+  "futurepedia.io",
+  "alternativeto.net",
+  "g2.com",
+  "capterra.com",
+  "saashub.com",
+  "indiehackers.com",
+  "hackernews",
+  "news.ycombinator.com",
+  "reddit.com",
+  "github.com",
+  "npmjs.com",
+];
+
+function isAggregatorHost(host: string) {
+  if (!host) return false;
+  return AGGREGATOR_HOST_HINTS.some((hint) => host === hint || host.endsWith(`.${hint}`));
+}
+
+// Returns true when the image URL lives on the same registrable-ish host as the
+// page it was scraped from. Used to detect "this logo belongs to the catalog,
+// not to the product".
+function isSameHostAsPage(imageUrl: string, pageUrl: string) {
+  const imageHost = getHostname(imageUrl);
+  const pageHost = getHostname(pageUrl);
+  if (!imageHost || !pageHost) return false;
+  return imageHost === pageHost || imageHost.endsWith(`.${pageHost}`) || pageHost.endsWith(`.${imageHost}`);
+}
+
+function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
+  const pageHost = getHostname(sourceUrl);
+  const productHost = getHostname(productUrl);
+  // When the page is an aggregator listing and the product lives on a different
+  // host, images served from the aggregator host are almost certainly the
+  // platform's own branding, not the product logo.
+  const pageIsAggregator = isAggregatorHost(pageHost);
+  const productOnDifferentHost = Boolean(productHost && productHost !== pageHost);
+  const penalizePageHostImages = pageIsAggregator && productOnDifferentHost;
+
   const imageTagRegex = /<img\b[^>]*>/gi;
   const candidates: Array<{ score: number; src: string }> = [];
   let match: RegExpExecArray | null;
@@ -668,6 +719,9 @@ function findLogoImageUrl(html: string, sourceUrl: string) {
     const ariaLabel = tag.match(/\baria-label=["']([^"']*)["']/i)?.[1] ?? "";
     const joined = [src, alt, className, id, title, ariaLabel].join(" ").toLowerCase();
 
+    const absoluteSrc = absolutizeUrl(decodeHtml(src), sourceUrl);
+    if (!absoluteSrc) continue;
+
     let score = 0;
     if (/logo/.test(joined)) score += 6;
     if (/brand|navbar-brand|site-logo|header-logo/.test(joined)) score += 4;
@@ -676,15 +730,35 @@ function findLogoImageUrl(html: string, sourceUrl: string) {
     if (/icon/.test(joined)) score += 1;
     if (/avatar|author|banner|product|screenshot/.test(joined)) score -= 3;
     if (/\.(svg|png|webp|jpg|jpeg)(\?|$)/i.test(src)) score += 1;
-    if (score > 0) candidates.push({ score, src: absolutizeUrl(decodeHtml(src), sourceUrl) });
+
+    // Domain awareness: on an aggregator listing, an image hosted on the
+    // aggregator's own host is the platform logo, not the product logo.
+    if (penalizePageHostImages && isSameHostAsPage(absoluteSrc, sourceUrl)) {
+      score -= 8;
+    }
+    // Reward images that live on the product's own host.
+    if (productHost && getHostname(absoluteSrc) === productHost) {
+      score += 4;
+    }
+
+    if (score > 0) candidates.push({ score, src: absoluteSrc });
   }
 
   const bestImageCandidate = candidates.sort((a, b) => b.score - a.score)[0]?.src ?? "";
-  const iconCandidate =
-    findLinkHref(html, /(?:^|\s)(?:apple-touch-icon|mask-icon|shortcut icon|icon)(?:\s|$)/i) ||
-    findMetaContent(html, ["og:logo"]);
 
-  return absolutizeUrl(bestImageCandidate || iconCandidate, sourceUrl);
+  // Explicit logo declarations are the most reliable signal, so they take
+  // priority over the heuristic <img> scoring.
+  const explicitLogo =
+    findMetaContent(html, ["og:logo"]) ||
+    findLinkHref(html, /(?:^|\s)apple-touch-icon(?:-precomposed)?(?:\s|$)/i) ||
+    findLinkHref(html, /(?:^|\s)(?:mask-icon|shortcut icon|icon)(?:\s|$)/i);
+  const explicitLogoUrl = absolutizeUrl(explicitLogo, sourceUrl);
+
+  // og:image is often the product's brand image/icon; use it only as a
+  // fallback when nothing better was found.
+  const ogImageUrl = absolutizeUrl(findMetaContent(html, ["og:image", "twitter:image"]), sourceUrl);
+
+  return explicitLogoUrl || bestImageCandidate || ogImageUrl;
 }
 
 function findScreenshotImageUrls(html: string, sourceUrl: string, pageName: string, siteName: string) {
@@ -936,12 +1010,14 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
   const pageName = tentativePageName;
   const screenshotImageUrls = findScreenshotImageUrls(cleanedHtml, url, pageName, siteName);
   const ogImageUrl = screenshotImageUrls[0] || allOgImages[0] || "";
-  const logoImageUrl = findLogoImageUrl(cleanedHtml, url);
   const productUrl =
     absolutizeUrl(
       findAnchorHrefByText(cleanedHtml, /visit website|visit site|live preview|open app|get started|launch|visit/i),
       url,
     ) || url;
+  // Pass the resolved product URL so the logo picker can tell the product's own
+  // logo apart from the listing platform's logo on aggregator pages.
+  const logoImageUrl = findLogoImageUrl(cleanedHtml, url, productUrl);
   const hrefs = extractAnchorHrefs(cleanedHtml);
   const priceLines = extractPriceLines([...bullets, ...paragraphs, ...headings]);
   const contactDetails = extractContactDetails([...paragraphs, ...bullets, ...cta, cleanedHtml]);
