@@ -1407,6 +1407,177 @@ const AUDIENCE_SEGMENT_TOKENS = [
   "smb",
   "b2b",
   "b2c",
+  "growth",
+  "sales",
+  "support",
+  "product",
+  "engineering",
+  "operations",
+  "finance",
+  "legal",
+  "hr",
+  "recruiting",
+  "procurement",
+  "purchasing",
+  "accounting",
+  "compliance",
+  "audit",
+  "security",
+  "it",
+  "devops",
+  "data",
+  "research",
+  "content",
+  "social",
+  "community",
+  "partner",
+  "partners",
+  "vendor",
+  "vendors",
+  "supplier",
+  "suppliers",
+  "distributor",
+  "distributors",
+  "retailer",
+  "retailers",
+  "wholesaler",
+  "wholesalers",
+  "manufacturer",
+  "manufacturers",
+  "contractor",
+  "contractors",
+  "landlord",
+  "landlords",
+  "tenant",
+  "tenants",
+  "patient",
+  "patients",
+  "doctor",
+  "doctors",
+  "nurse",
+  "nurses",
+  "lawyer",
+  "lawyers",
+  "accountant",
+  "accountants",
+  "architect",
+  "architects",
+  "builder",
+  "builders",
+  "trader",
+  "traders",
+  "banker",
+  "bankers",
+  "agent",
+  "agents",
+  "broker",
+  "brokers",
+  "advisor",
+  "advisors",
+  "coach",
+  "coaches",
+  "trainer",
+  "trainers",
+  "artist",
+  "artists",
+  "musician",
+  "musicians",
+  "gamer",
+  "gamers",
+  "streamer",
+  "streamers",
+  "influencer",
+  "influencers",
+  "blogger",
+  "bloggers",
+  "journalist",
+  "journalists",
+  "editor",
+  "editors",
+  "translator",
+  "translators",
+  "parent",
+  "parents",
+  "family",
+  "families",
+  "homeowner",
+  "homeowners",
+  "driver",
+  "drivers",
+  "traveler",
+  "travelers",
+  "tourist",
+  "tourists",
+  "athlete",
+  "athletes",
+  "volunteer",
+  "volunteers",
+  "member",
+  "members",
+  "subscriber",
+  "subscribers",
+  "follower",
+  "followers",
+  "shopper",
+  "shoppers",
+  "consumer",
+  "consumers",
+  "employer",
+  "employers",
+  "employee",
+  "employees",
+  "candidate",
+  "candidates",
+  "applicant",
+  "applicants",
+  "graduate",
+  "graduates",
+  "beginner",
+  "beginners",
+  "expert",
+  "experts",
+  "nonprofit",
+  "nonprofits",
+  "ngo",
+  "ngos",
+  "government",
+  "municipal",
+  "clinic",
+  "clinics",
+  "hospital",
+  "hospitals",
+  "school",
+  "schools",
+  "university",
+  "universities",
+  "college",
+  "colleges",
+  "restaurant",
+  "restaurants",
+  "hotel",
+  "hotels",
+  "salon",
+  "salons",
+  "gym",
+  "gyms",
+  "shop",
+  "shops",
+  "store",
+  "stores",
+  "firm",
+  "firms",
+  "studio",
+  "studios",
+  "department",
+  "departments",
+  "division",
+  "divisions",
+  "organization",
+  "organizations",
+  "organisation",
+  "organisations",
+  "institution",
+  "institutions",
 ];
 
 // A candidate is a plausible audience label only when it reads like a group of
@@ -1431,8 +1602,21 @@ function isPlausibleAudienceLabel(value: string) {
   // Reject pure pronouns / stop words.
   if (/^(you|your|we|us|our|it|this|that|them|they|i|me|my)$/.test(normalized)) return false;
 
-  // Require at least one token that denotes a real audience segment.
-  return AUDIENCE_SEGMENT_TOKENS.some((token) => normalized.split(/[\s-]+/).includes(token));
+  // Reject labels that look like a technology/feature rather than a group of
+  // people (e.g. "Realtime Sync", "Smart Search", "Cloud Storage").
+  if (/\b(sync|search|storage|editor|engine|builder|generator|tracker|suite|toolkit|widget|module|component|library|framework|runtime|compiler|database|server|dashboard|analytics|automation|integration|integrations|workflow|workflows|template|templates|plugin|plugins|extension|extensions)\b/.test(normalized)) {
+    return false;
+  }
+
+  // Accept when the label contains a known audience segment token.
+  if (AUDIENCE_SEGMENT_TOKENS.some((token) => normalized.split(/[\s-]+/).includes(token))) {
+    return true;
+  }
+
+  // Otherwise accept short, human-sounding labels (1-2 words) that survived all
+  // the noise filters above. This keeps valid segments such as "Growth",
+  // "Enterprise", or "Retail" instead of dropping them to the generic fallback.
+  return words.length <= 2;
 }
 
 // Core audience extraction from a block of raw site copy. We look for explicit
@@ -1468,7 +1652,8 @@ function buildAudienceWordsFromText(values: string[]): string[] {
   const unique = uniqueNonEmpty(found, 6);
   if (unique.length >= 3) return unique.slice(0, 6);
 
-  // 3. Generic fallback so the scene always has content.
+  // 3. Top up with generic labels only when we have too few real ones, so the
+  // scene always has content without always showing the same fixed list.
   const fallback = ["Developers", "Marketers", "Founders", "Designers"];
   return uniqueNonEmpty([...unique, ...fallback], 6).slice(0, 6);
 }
@@ -2600,16 +2785,20 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
   // Prefer the AI-generated audience words, but only keep labels that actually
   // read like a group of people. This drops tool/technology/UI noise such as
   // "VsCode", "GitHub", or "You Approvals" that the model may echo from the
-  // site. If too few valid labels remain, fall back to audience words derived
-  // from the scraped site so the scene is never empty.
+  // site. When the model returns fewer than 4 valid labels we top up with
+  // audience words derived from the scraped site instead of discarding the
+  // good ones, so the scene stays specific and is never empty.
   const aiAudience = uniqueNonEmpty(
     (Array.isArray(brief.audience) ? brief.audience : [])
       .map((word) => toAudienceLabel(String(word || "")))
       .filter((word) => isPlausibleAudienceLabel(word)),
     6,
   );
+  const fallbackAudience = buildAudienceWordsFromBrief(buildDeterministicSiteBrief(scraped, normalizedUrl), scraped);
   const audienceWords =
-    aiAudience.length >= 3 ? aiAudience.slice(0, 6) : buildAudienceWordsFromBrief(buildDeterministicSiteBrief(scraped, normalizedUrl), scraped);
+    aiAudience.length >= 4
+      ? aiAudience.slice(0, 6)
+      : uniqueNonEmpty([...aiAudience, ...fallbackAudience], 6);
 
   return buildFixedProjectPlanFromBrandBrief(
     {
