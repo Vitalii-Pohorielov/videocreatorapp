@@ -693,7 +693,59 @@ function isSameHostAsPage(imageUrl: string, pageUrl: string) {
   return imageHost === pageHost || imageHost.endsWith(`.${pageHost}`) || pageHost.endsWith(`.${imageHost}`);
 }
 
-function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
+// Listing/directory pages (DevHunt, Product Hunt, etc.) render the product logo
+// in a very consistent "hero" block: a fixed-size square <img> (e.g. h-16 w-16
+// rounded-2xl object-cover) whose alt text equals the product name, placed right
+// next to the <h1> product title. This is a far stronger signal than generic
+// attribute scoring, so we look for it explicitly first.
+function findListingHeroLogoUrl(html: string, sourceUrl: string, productName: string) {
+  const normalizedName = productName.replace(/\s+/g, " ").trim().toLowerCase();
+  if (!normalizedName) return "";
+
+  const imageTagRegex = /<img\b[^>]*>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = imageTagRegex.exec(html))) {
+    const tag = match[0] ?? "";
+    const src = tag.match(/\bsrc=["']([^"']+)["']/i)?.[1] ?? "";
+    if (!src) continue;
+
+    const alt = (tag.match(/\balt=["']([^"']*)["']/i)?.[1] ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    const className = (tag.match(/\bclass=["']([^"']*)["']/i)?.[1] ?? "").toLowerCase();
+
+    // Must be a fixed square thumbnail with rounded corners / object-cover.
+    const isSquareThumb =
+      /\b(?:h|w)-(?:12|14|16|20|24)\b/.test(className) &&
+      /rounded-(?:xl|2xl|3xl|lg|full)/.test(className);
+    const looksLikeThumb = isSquareThumb || /object-cover/.test(className);
+    if (!looksLikeThumb) continue;
+
+    // The alt text should match the product name (e.g. alt="xhostd").
+    const altMatchesName =
+      alt === normalizedName ||
+      (alt.length >= 3 && (normalizedName.includes(alt) || alt.includes(normalizedName)));
+    if (!altMatchesName) continue;
+
+    // Confirm the product name appears as an <h1> shortly after this image.
+    const after = html.slice(match.index + tag.length, match.index + tag.length + 600);
+    const headingText = stripTags(after.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ?? "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+    const headingMatchesName =
+      headingText === normalizedName ||
+      (headingText.length >= 3 && (headingText.includes(normalizedName) || normalizedName.includes(headingText)));
+
+    if (headingMatchesName || altMatchesName) {
+      const absoluteSrc = absolutizeUrl(decodeHtml(src), sourceUrl);
+      if (absoluteSrc) return absoluteSrc;
+    }
+  }
+
+  return "";
+}
+
+function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "", productName = "") {
   const pageHost = getHostname(sourceUrl);
   const productHost = getHostname(productUrl);
   // When the page is an aggregator listing and the product lives on a different
@@ -703,6 +755,10 @@ function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
   const pageIsAggregator = isAggregatorHost(pageHost);
   const productOnDifferentHost = Boolean(productHost && productHost !== pageHost);
   const isAggregatorListing = pageIsAggregator && productOnDifferentHost;
+
+  // Strongest signal: the dedicated listing "hero" logo block.
+  const listingHeroLogoUrl = findListingHeroLogoUrl(html, sourceUrl, productName);
+  if (listingHeroLogoUrl) return listingHeroLogoUrl;
 
   const imageTagRegex = /<img\b[^>]*>/gi;
   const candidates: Array<{ score: number; src: string }> = [];
@@ -1035,9 +1091,10 @@ async function scrapeSite(url: string): Promise<ScrapedSiteData> {
       findAnchorHrefByText(cleanedHtml, /visit website|visit site|live preview|open app|get started|launch|visit/i),
       url,
     ) || url;
-  // Pass the resolved product URL so the logo picker can tell the product's own
-  // logo apart from the listing platform's logo on aggregator pages.
-  const logoImageUrl = findLogoImageUrl(cleanedHtml, url, productUrl);
+  // Pass the resolved product URL and product name so the logo picker can tell
+  // the product's own logo apart from the listing platform's logo on aggregator
+  // pages (and match the listing "hero" logo block by name).
+  const logoImageUrl = findLogoImageUrl(cleanedHtml, url, productUrl, pageName);
   const hrefs = extractAnchorHrefs(cleanedHtml);
   const priceLines = extractPriceLines([...bullets, ...paragraphs, ...headings]);
   const contactDetails = extractContactDetails([...paragraphs, ...bullets, ...cta, cleanedHtml]);
