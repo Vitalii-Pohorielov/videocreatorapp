@@ -306,6 +306,78 @@ function isLowValueSiteText(value: string) {
     "trending launches",
     "about this launch",
     "classified in",
+    // Tool / technology / product names that are never an audience.
+    "vscode",
+    "vs code",
+    "visual studio code",
+    "github",
+    "gitlab",
+    "bitbucket",
+    "figma",
+    "notion",
+    "slack",
+    "jira",
+    "docker",
+    "kubernetes",
+    "npm",
+    "node",
+    "nodejs",
+    "react",
+    "nextjs",
+    "next.js",
+    "vue",
+    "angular",
+    "svelte",
+    "python",
+    "javascript",
+    "typescript",
+    "golang",
+    "rust",
+    "java",
+    "php",
+    "ruby",
+    "swift",
+    "kotlin",
+    "sql",
+    "postgres",
+    "postgresql",
+    "mysql",
+    "mongodb",
+    "redis",
+    "aws",
+    "azure",
+    "gcp",
+    "vercel",
+    "netlify",
+    "supabase",
+    "firebase",
+    "stripe",
+    "openai",
+    "chatgpt",
+    "gpt",
+    "llm",
+    "sdk",
+    "cli",
+    "app",
+    "platform",
+    "dashboard",
+    "browser",
+    "extension",
+    "plugin",
+    "integration",
+    "integrations",
+    "approvals",
+    "approval",
+    "you",
+    "your",
+    "we",
+    "us",
+    "our",
+    "it",
+    "this",
+    "that",
+    "them",
+    "they",
   ];
 
   if (blockedPhrases.includes(normalized)) return true;
@@ -1255,6 +1327,114 @@ function toAudienceLabel(value: string) {
     .join(" ");
 }
 
+// Tokens that signal a real audience segment (a group of people). A candidate
+// audience label must contain at least one of these to be accepted, otherwise
+// it is treated as a tool, feature, or UI fragment.
+const AUDIENCE_SEGMENT_TOKENS = [
+  "developer",
+  "designer",
+  "founder",
+  "marketer",
+  "engineer",
+  "manager",
+  "team",
+  "teams",
+  "startup",
+  "startups",
+  "agency",
+  "agencies",
+  "creator",
+  "creators",
+  "student",
+  "students",
+  "researcher",
+  "researchers",
+  "analyst",
+  "analysts",
+  "freelancer",
+  "freelancers",
+  "enterprise",
+  "enterprises",
+  "business",
+  "businesses",
+  "brand",
+  "brands",
+  "company",
+  "companies",
+  "user",
+  "users",
+  "customer",
+  "customers",
+  "client",
+  "clients",
+  "seller",
+  "sellers",
+  "buyer",
+  "buyers",
+  "merchant",
+  "merchants",
+  "educator",
+  "educators",
+  "teacher",
+  "teachers",
+  "recruiter",
+  "recruiters",
+  "photographer",
+  "photographers",
+  "writer",
+  "writers",
+  "consultant",
+  "consultants",
+  "investor",
+  "investors",
+  "scientist",
+  "scientists",
+  "professional",
+  "professionals",
+  "owner",
+  "owners",
+  "operator",
+  "operators",
+  "specialist",
+  "specialists",
+  "expert",
+  "experts",
+  "leader",
+  "leaders",
+  "people",
+  "ecommerce",
+  "saas",
+  "smb",
+  "b2b",
+  "b2c",
+];
+
+// A candidate is a plausible audience label only when it reads like a group of
+// people: it has no internal capitals (which signal product/tool names such as
+// "VsCode" or "GitHub"), is not UI/navigation noise, is not a blocked low-value
+// phrase, and contains a known segment token.
+function isPlausibleAudienceLabel(value: string) {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (!cleaned) return false;
+
+  const words = cleaned.split(" ");
+  if (words.length === 0 || words.length > 3) return false;
+
+  // Reject product/tool names written in camelCase or PascalCase with internal
+  // capitals (e.g. "VsCode", "GitHub", "OpenAI").
+  if (/[a-z][A-Z]/.test(cleaned)) return false;
+
+  const normalized = cleaned.toLowerCase();
+  if (isLowValueSiteText(cleaned)) return false;
+  if (isUiOrNavigationNoise(cleaned)) return false;
+
+  // Reject pure pronouns / stop words.
+  if (/^(you|your|we|us|our|it|this|that|them|they|i|me|my)$/.test(normalized)) return false;
+
+  // Require at least one token that denotes a real audience segment.
+  return AUDIENCE_SEGMENT_TOKENS.some((token) => normalized.split(/[\s-]+/).includes(token));
+}
+
 // Core audience extraction from a block of raw site copy. We look for explicit
 // "for X" / "built for X" phrasing first, then known role words, and finally
 // fall back to a generic set so the scene is never empty.
@@ -1270,7 +1450,7 @@ function buildAudienceWordsFromText(values: string[]): string[] {
   const explicitMatches = haystack.matchAll(/\b(?:for|built for|made for|designed for)\s+([a-z][a-z\s]{2,32}?)(?=[.,;:!?\n]|\s(?:and|who|that|to|so|with|in|on|at)\b|$)/g);
   for (const match of explicitMatches) {
     const candidate = toAudienceLabel(match[1] || "");
-    if (candidate && candidate.split(" ").length <= 3 && !isLowValueSiteText(candidate)) {
+    if (isPlausibleAudienceLabel(candidate)) {
       found.push(candidate);
     }
   }
@@ -1278,7 +1458,10 @@ function buildAudienceWordsFromText(values: string[]): string[] {
   // 2. Known role words present anywhere in the copy.
   for (const role of AUDIENCE_ROLE_WORDS) {
     if (haystack.includes(role)) {
-      found.push(toAudienceLabel(role));
+      const candidate = toAudienceLabel(role);
+      if (isPlausibleAudienceLabel(candidate)) {
+        found.push(candidate);
+      }
     }
   }
 
@@ -2349,12 +2532,13 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     features?: string[];
     cta?: string;
     urlLabel?: string;
+    whatItDoes?: string;
     audience?: string[];
   }>({
     model,
     schemaName: "website_simple_brand_brief",
     systemPrompt:
-      "You are a senior copywriter creating a minimal website brand brief for short promo videos. Return valid JSON only. Ground every field in the analyzed website. Do not invent facts. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy. Write the slogan as a real, complete marketing slogan that could headline a product video.",
+      "You are a senior copywriter creating a minimal website brand brief for short promo videos. Return valid JSON only. Ground every field in the analyzed website. Do not invent facts. Ignore navigation, menu labels, blog links, banner announcements, and generic UI copy. Write the slogan as a real, complete marketing slogan that could headline a product video. Before naming the audience, first reason about WHAT the product actually does, then infer WHO benefits from that specific capability.",
     userPrompt: `Analyze this website snapshot and return only the core video inputs.\n\nInput:\n${JSON.stringify(
       {
         productName: snapshot.productName,
@@ -2370,7 +2554,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       },
       null,
       2,
-    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, logical marketing slogan written as a full, natural sentence (about 6 to 12 words) that captures what this product does and why it matters. It will be split across three lines in the video, so it must read as one coherent sentence.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n- audience: exactly 4 short labels naming WHO this product is for, derived from the analyzed website (for example "Developers", "Marketers", "Founders", "Designers", "Product teams", "Agencies", "Creators"). Base them on the real audience signals in the site content, not on a fixed list. Each label must be 1 to 3 words, title-cased, and must NOT repeat.\n\nSlogan guidance:\n- write a full, self-contained sentence that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- the sentence must flow logically from start to finish so it can be broken into three lines\n- example: for a product named Atlarix, a good slogan is "Atlarix is where your development team works."\n- more examples of good slogans: "Ship your product faster with one clear workflow", "Design that converts visitors into loyal customers", "Automate your entire workflow in minutes"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an\n\nAudience guidance:\n- infer the audience from the site copy, pricing, testimonials, and feature wording\n- prefer concrete roles or segments (e.g. "Developers", "Growth teams", "Ecommerce brands")\n- do not invent audiences that the site does not support`,
+    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, logical marketing slogan written as a full, natural sentence (about 6 to 12 words) that captures what this product does and why it matters. It will be split across three lines in the video, so it must read as one coherent sentence.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n- whatItDoes: ONE short sentence (max 20 words) describing what this product actually does and the core problem it solves, based only on the site content\n- audience: exactly 4 short labels naming WHO this product is for. Derive them from whatItDoes: think about which specific people or teams would benefit from that capability, then name them. Each label must be 1 to 3 words, title-cased, and must NOT repeat.\n\nSlogan guidance:\n- write a full, self-contained sentence that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- the sentence must flow logically from start to finish so it can be broken into three lines\n- example: for a product named Atlarix, a good slogan is "Atlarix is where your development team works."\n- more examples of good slogans: "Ship your product faster with one clear workflow", "Design that converts visitors into loyal customers", "Automate your entire workflow in minutes"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an\n\nAudience guidance:\n- FIRST determine what the product does (whatItDoes), THEN infer who benefits from that exact capability\n- audience labels must name PEOPLE or TEAMS (roles, job titles, or customer segments), never tools, technologies, integrations, or product names\n- good examples: "Developers", "Growth teams", "Ecommerce brands", "Product managers", "Freelance designers", "Sales teams"\n- BAD examples (never output these): "VsCode", "GitHub", "You Approvals", "API", "Dashboard", "Integrations", "You", "We", "Users"\n- never output a tool, framework, platform, or integration name\n- never output pronouns such as "You", "We", "Us", "Your"\n- do not invent audiences that the site does not support`,
     schema: {
       type: "object",
       properties: {
@@ -2380,9 +2564,10 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
         features: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
         cta: { type: "string" },
         urlLabel: { type: "string" },
+        whatItDoes: { type: "string" },
         audience: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
       },
-      required: ["name", "slogan", "description", "features", "cta", "urlLabel", "audience"],
+      required: ["name", "slogan", "description", "features", "cta", "urlLabel", "whatItDoes", "audience"],
       additionalProperties: false,
     },
   });
@@ -2412,11 +2597,15 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     throw new Error("OpenAI returned an incomplete brand brief.");
   }
 
-  // Prefer the AI-generated audience words. If the model omitted or returned
-  // too few, fall back to audience words derived from the scraped site so the
-  // scene is never empty.
+  // Prefer the AI-generated audience words, but only keep labels that actually
+  // read like a group of people. This drops tool/technology/UI noise such as
+  // "VsCode", "GitHub", or "You Approvals" that the model may echo from the
+  // site. If too few valid labels remain, fall back to audience words derived
+  // from the scraped site so the scene is never empty.
   const aiAudience = uniqueNonEmpty(
-    (Array.isArray(brief.audience) ? brief.audience : []).map((word) => toAudienceLabel(String(word || ""))),
+    (Array.isArray(brief.audience) ? brief.audience : [])
+      .map((word) => toAudienceLabel(String(word || "")))
+      .filter((word) => isPlausibleAudienceLabel(word)),
     6,
   );
   const audienceWords =
