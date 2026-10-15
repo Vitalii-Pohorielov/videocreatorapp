@@ -697,11 +697,12 @@ function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
   const pageHost = getHostname(sourceUrl);
   const productHost = getHostname(productUrl);
   // When the page is an aggregator listing and the product lives on a different
-  // host, images served from the aggregator host are almost certainly the
-  // platform's own branding, not the product logo.
+  // host, the page's own branding (og:logo, apple-touch-icon, header <img>) is
+  // the PLATFORM logo, not the product logo. In that case we must ignore the
+  // platform's explicit logo declarations and hunt for the product's own logo.
   const pageIsAggregator = isAggregatorHost(pageHost);
   const productOnDifferentHost = Boolean(productHost && productHost !== pageHost);
-  const penalizePageHostImages = pageIsAggregator && productOnDifferentHost;
+  const isAggregatorListing = pageIsAggregator && productOnDifferentHost;
 
   const imageTagRegex = /<img\b[^>]*>/gi;
   const candidates: Array<{ score: number; src: string }> = [];
@@ -722,6 +723,10 @@ function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
     const absoluteSrc = absolutizeUrl(decodeHtml(src), sourceUrl);
     if (!absoluteSrc) continue;
 
+    const imageHost = getHostname(absoluteSrc);
+    const imageOnProductHost = Boolean(productHost && imageHost === productHost);
+    const imageOnPageHost = isSameHostAsPage(absoluteSrc, sourceUrl);
+
     let score = 0;
     if (/logo/.test(joined)) score += 6;
     if (/brand|navbar-brand|site-logo|header-logo/.test(joined)) score += 4;
@@ -731,14 +736,18 @@ function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
     if (/avatar|author|banner|product|screenshot/.test(joined)) score -= 3;
     if (/\.(svg|png|webp|jpg|jpeg)(\?|$)/i.test(src)) score += 1;
 
-    // Domain awareness: on an aggregator listing, an image hosted on the
-    // aggregator's own host is the platform logo, not the product logo.
-    if (penalizePageHostImages && isSameHostAsPage(absoluteSrc, sourceUrl)) {
-      score -= 8;
-    }
-    // Reward images that live on the product's own host.
-    if (productHost && getHostname(absoluteSrc) === productHost) {
-      score += 4;
+    if (isAggregatorListing) {
+      // On an aggregator listing the product logo is the one served from the
+      // product's own host (or its CDN). Anything on the platform host is the
+      // platform's branding and must be strongly penalized.
+      if (imageOnProductHost) {
+        score += 10;
+      } else if (imageOnPageHost) {
+        score -= 12;
+      }
+    } else {
+      // Regular product site: reward images on the product's own host.
+      if (imageOnProductHost) score += 4;
     }
 
     if (score > 0) candidates.push({ score, src: absoluteSrc });
@@ -746,17 +755,28 @@ function findLogoImageUrl(html: string, sourceUrl: string, productUrl = "") {
 
   const bestImageCandidate = candidates.sort((a, b) => b.score - a.score)[0]?.src ?? "";
 
-  // Explicit logo declarations are the most reliable signal, so they take
-  // priority over the heuristic <img> scoring.
+  // Explicit logo declarations (og:logo, apple-touch-icon, icon) describe the
+  // SITE the page belongs to. On an aggregator listing that site is the
+  // platform, so these tags point at the platform logo and must be ignored.
   const explicitLogo =
     findMetaContent(html, ["og:logo"]) ||
     findLinkHref(html, /(?:^|\s)apple-touch-icon(?:-precomposed)?(?:\s|$)/i) ||
     findLinkHref(html, /(?:^|\s)(?:mask-icon|shortcut icon|icon)(?:\s|$)/i);
   const explicitLogoUrl = absolutizeUrl(explicitLogo, sourceUrl);
+  const explicitLogoIsProductHost = Boolean(productHost && getHostname(explicitLogoUrl) === productHost);
 
-  // og:image is often the product's brand image/icon; use it only as a
-  // fallback when nothing better was found.
+  // og:image is often the product's brand image/icon. On aggregator listings it
+  // is the most reliable product signal available, so it is promoted there.
   const ogImageUrl = absolutizeUrl(findMetaContent(html, ["og:image", "twitter:image"]), sourceUrl);
+
+  if (isAggregatorListing) {
+    // Prefer a product-host <img>, then the product-host explicit logo, then
+    // og:image (which usually depicts the product on listing pages).
+    if (bestImageCandidate) return bestImageCandidate;
+    if (explicitLogoUrl && explicitLogoIsProductHost) return explicitLogoUrl;
+    if (ogImageUrl) return ogImageUrl;
+    return explicitLogoUrl;
+  }
 
   return explicitLogoUrl || bestImageCandidate || ogImageUrl;
 }
