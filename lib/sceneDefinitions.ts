@@ -78,6 +78,7 @@ export type SceneType =
   | "brand-reveal-circle"
   | "product-showcase"
   | "feature-grid"
+  | "audience-reveal"
   | "code-preview"
   | "code-review"
   | "slogan"
@@ -393,6 +394,27 @@ export const sceneDefinitions: SceneDefinition[] = [
       description: "",
       bullets: ["Fast setup", "Clear workflow", "Export in browser"],
       bulletEmojis: ["", "", ""],
+      bulletImageUrls: [],
+      websiteImageUrl: "",
+      logoImageUrl: "",
+      authorImageUrl: "",
+      mediaPosition: "right",
+    }),
+  },
+  {
+    type: "audience-reveal",
+    label: "Audience Reveal",
+    catalogDescription: "Logo and title reveal with rotating audience words.",
+    createTemplate: () => ({
+      type: "audience-reveal",
+      durationSeconds: 4.5,
+      transition: getDefaultTransition(3, "audience-reveal"),
+      eyebrow: "Perfect for",
+      title: "Built for the way you work",
+      subtitle: "",
+      description: "",
+      bullets: ["Developers", "Marketers", "Founders", "Designers"],
+      bulletEmojis: [],
       bulletImageUrls: [],
       websiteImageUrl: "",
       logoImageUrl: "",

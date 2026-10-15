@@ -51,6 +51,7 @@ type GeneratedBrandBrief = {
   stepsToUse: string[];
   cta: string;
   urlLabel: string;
+  audience: string[];
 };
 
 type ExtractedSiteSnapshot = {
@@ -147,6 +148,7 @@ type SupportedGeneratedSceneType =
   | IntroSceneType
   | "product-showcase"
   | "feature-grid"
+  | "audience-reveal"
   | "slogan"
   | "description"
   | "pricing"
@@ -171,6 +173,7 @@ const supportedGeneratedSceneTypes: SupportedGeneratedSceneType[] = [
   "brand-reveal-circle",
   "product-showcase",
   "feature-grid",
+  "audience-reveal",
   "slogan",
   "description",
   "pricing",
@@ -190,6 +193,7 @@ const sceneDisplayNames: Record<SupportedGeneratedSceneType, string> = {
   "brand-reveal-circle": "Intro",
   "product-showcase": "Highlight",
   "feature-grid": "Features",
+  "audience-reveal": "Audience",
   slogan: "Slogan",
   description: "Description",
   pricing: "Pricing",
@@ -1206,11 +1210,123 @@ function buildDeterministicSiteBrief(scraped: ScrapedSiteData, normalizedUrl: st
   };
 }
 
+// Role words that commonly describe who a product is built for. We scan the
+// scraped site copy for these signals so the audience scene reflects the real
+// product instead of a fixed list.
+const AUDIENCE_ROLE_WORDS = [
+  "developers",
+  "designers",
+  "founders",
+  "marketers",
+  "engineers",
+  "product managers",
+  "startups",
+  "agencies",
+  "creators",
+  "teams",
+  "students",
+  "researchers",
+  "analysts",
+  "sales teams",
+  "support teams",
+  "operations teams",
+  "freelancers",
+  "enterprises",
+  "small businesses",
+  "ecommerce brands",
+  "content creators",
+  "educators",
+  "recruiters",
+  "photographers",
+  "writers",
+  "consultants",
+  "investors",
+  "data scientists",
+  "devops teams",
+  "growth teams",
+];
+
+function toAudienceLabel(value: string) {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  return cleaned
+    .split(" ")
+    .map((word) => (word.length <= 3 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+}
+
+// Core audience extraction from a block of raw site copy. We look for explicit
+// "for X" / "built for X" phrasing first, then known role words, and finally
+// fall back to a generic set so the scene is never empty.
+function buildAudienceWordsFromText(values: string[]): string[] {
+  const haystack = values
+    .filter(Boolean)
+    .join(" \n ")
+    .toLowerCase();
+
+  const found: string[] = [];
+
+  // 1. Explicit "for <audience>" phrasing, e.g. "built for developers".
+  const explicitMatches = haystack.matchAll(/\b(?:for|built for|made for|designed for)\s+([a-z][a-z\s]{2,32}?)(?=[.,;:!?\n]|\s(?:and|who|that|to|so|with|in|on|at)\b|$)/g);
+  for (const match of explicitMatches) {
+    const candidate = toAudienceLabel(match[1] || "");
+    if (candidate && candidate.split(" ").length <= 3 && !isLowValueSiteText(candidate)) {
+      found.push(candidate);
+    }
+  }
+
+  // 2. Known role words present anywhere in the copy.
+  for (const role of AUDIENCE_ROLE_WORDS) {
+    if (haystack.includes(role)) {
+      found.push(toAudienceLabel(role));
+    }
+  }
+
+  const unique = uniqueNonEmpty(found, 6);
+  if (unique.length >= 3) return unique.slice(0, 6);
+
+  // 3. Generic fallback so the scene always has content.
+  const fallback = ["Developers", "Marketers", "Founders", "Designers"];
+  return uniqueNonEmpty([...unique, ...fallback], 6).slice(0, 6);
+}
+
+// Derive audience words from an extracted site snapshot (used by the marketing
+// package path). When a semantic analysis is available we also fold in its
+// targetAudience line so explicit "for X" phrasing is captured.
+function buildAudienceWordsFromSnapshot(snapshot: ExtractedSiteSnapshot, semantic: SemanticAnalysis | null): string[] {
+  return buildAudienceWordsFromText([
+    semantic?.targetAudience || "",
+    semantic?.whatItIs || "",
+    snapshot.description,
+    snapshot.longDescription,
+    ...snapshot.headings,
+    ...snapshot.paragraphs,
+    ...snapshot.bullets,
+    ...snapshot.featureCandidates,
+  ]);
+}
+
+// Derive audience words from the extracted brief plus the raw scraped site.
+function buildAudienceWordsFromBrief(brief: ExtractedSiteBrief, scraped: ScrapedSiteData): string[] {
+  return buildAudienceWordsFromText([
+    brief.description,
+    brief.slogan.join(" "),
+    ...brief.features,
+    scraped.description,
+    scraped.longDescription,
+    ...scraped.headings,
+    ...scraped.paragraphs,
+    ...scraped.bullets,
+    ...scraped.featureCandidates,
+  ]);
+}
+
 function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scraped: ScrapedSiteData, normalizedUrl: string): GeneratedProjectPlan {
   const projectName = brief.name || scraped.pageName || scraped.siteName || scraped.title || getDomainLabel(normalizedUrl);
   const normalizedDomain = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
   // brief.slogan already holds the logical slogan split into three lines, so we
   // keep those lines intact instead of re-truncating them.
+  const audienceWords = buildAudienceWordsFromBrief(brief, scraped);
   const aiLikeBrief: GeneratedBrandBrief = {
     name: projectName,
     slogan: [
@@ -1223,6 +1339,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
     stepsToUse: [],
     cta: toShortLine(brief.cta || `Visit ${projectName}`, `Visit ${projectName}`, 90),
     urlLabel: normalizedDomain,
+    audience: audienceWords,
   };
 
   const scenes: GeneratedScenePlan[] = [
@@ -1233,6 +1350,14 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
       subtitle: aiLikeBrief.description.slice(0, 110),
       description: "",
       bullets: [],
+    },
+    {
+      type: "audience-reveal",
+      eyebrow: "Perfect for",
+      title: `Built for the way you work`,
+      subtitle: "",
+      description: "",
+      bullets: audienceWords,
     },
     {
       type: "description",
@@ -1362,6 +1487,7 @@ function buildDeterministicMarketingPackage(
       stepsToUse: semantic.hasProcess ? takeBullets(semantic.processSteps, 3) : [],
       cta: semantic.callToAction,
       urlLabel,
+      audience: buildAudienceWordsFromSnapshot(snapshot, semantic),
     },
   };
 }
@@ -1490,6 +1616,12 @@ function buildSceneTextAlternatives(
         subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.description || ""], 120),
         description: dedupeTextOptions([scenePlan.description], 120),
       };
+    case "audience-reveal":
+      return {
+        title: dedupeTextOptions([scenePlan.title, `Built for the way you work`, `Made for ${projectName} users`], 90),
+        subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.description || ""], 120),
+        description: dedupeTextOptions([scenePlan.description], 120),
+      };
     case "cta":
     case "cta-panel":
       return {
@@ -1574,6 +1706,7 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
     cleanSlogan(brief.description || "") ||
     projectName;
   const [sloganLine1, sloganLine2, sloganLine3] = splitSloganIntoThreeLines(projectSlogan);
+  const audienceWords = uniqueNonEmpty(brief.audience, 6);
   const cleanBrief: GeneratedBrandBrief = {
     name: projectName,
     slogan: [sloganLine1 || projectSlogan, sloganLine2 || projectSlogan, sloganLine3 || projectSlogan],
@@ -1582,6 +1715,7 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
     stepsToUse: [],
     cta: toShortLine(brief.cta || `Visit ${projectName}`, `Visit ${projectName}`, 90),
     urlLabel: normalizeReadableCopy(brief.urlLabel || normalizedDomain, 90) || normalizedDomain,
+    audience: audienceWords.length > 0 ? audienceWords : buildAudienceWordsFromSnapshot(buildExtractedSiteSnapshot(scraped, normalizedUrl), null),
   };
 
   return {
@@ -1596,6 +1730,14 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
         subtitle: cleanBrief.description.slice(0, 110),
         description: "",
         bullets: [],
+      },
+      {
+        type: "audience-reveal",
+        eyebrow: "Perfect for",
+        title: `Built for the way you work`,
+        subtitle: "",
+        description: "",
+        bullets: cleanBrief.audience,
       },
       {
         type: "description",
@@ -1767,6 +1909,28 @@ function buildProjectPayloadFromPlan(
               bullets: nextBullets,
               bulletEmojis: icons.slice(0, nextBullets.length).map((icon) => icon.fallbackEmoji),
               bulletImageUrls: icons.slice(0, nextBullets.length).map((icon) => icon.imageUrl),
+            }),
+            scene.durationSeconds,
+          ),
+        );
+        break;
+      }
+      case "audience-reveal": {
+        const planWords = takeBullets(scenePlan.bullets, 6);
+        const fallbackWords = ["Developers", "Marketers", "Founders", "Designers"];
+        const nextWords = uniqueNonEmpty(planWords.length > 0 ? planWords : fallbackWords, 6);
+        scenes.push(
+          withDuration(
+            applyScene(scene, {
+              ...baseUpdates,
+              // Keep the eyebrow verbatim: normalizePlanValue strips trailing
+              // prepositions (e.g. "for"), which would turn "Perfect for" into "Perfect".
+              eyebrow: scenePlan.eyebrow?.trim() || "Perfect for",
+              title: normalizePlanValue(scenePlan.title, `Built for the way you work`, 90),
+              bullets: nextWords.length > 0 ? nextWords : fallbackWords,
+              bulletEmojis: [],
+              bulletImageUrls: [],
+              logoImageUrl: scraped.logoImageUrl,
             }),
             scene.durationSeconds,
           ),
@@ -2185,6 +2349,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     features?: string[];
     cta?: string;
     urlLabel?: string;
+    audience?: string[];
   }>({
     model,
     schemaName: "website_simple_brand_brief",
@@ -2205,7 +2370,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       },
       null,
       2,
-    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, logical marketing slogan written as a full, natural sentence (about 6 to 12 words) that captures what this product does and why it matters. It will be split across three lines in the video, so it must read as one coherent sentence.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n\nSlogan guidance:\n- write a full, self-contained sentence that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- the sentence must flow logically from start to finish so it can be broken into three lines\n- example: for a product named Atlarix, a good slogan is "Atlarix is where your development team works."\n- more examples of good slogans: "Ship your product faster with one clear workflow", "Design that converts visitors into loyal customers", "Automate your entire workflow in minutes"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an`,
+    )}\n\nReturn fields:\n- name: the product or brand name\n- slogan: ONE complete, logical marketing slogan written as a full, natural sentence (about 6 to 12 words) that captures what this product does and why it matters. It will be split across three lines in the video, so it must read as one coherent sentence.\n- features: exactly 3 short complete feature lines\n- cta: one short CTA line\n- urlLabel: clean url without protocol\n- description: one short supporting sentence\n- audience: exactly 4 short labels naming WHO this product is for, derived from the analyzed website (for example "Developers", "Marketers", "Founders", "Designers", "Product teams", "Agencies", "Creators"). Base them on the real audience signals in the site content, not on a fixed list. Each label must be 1 to 3 words, title-cased, and must NOT repeat.\n\nSlogan guidance:\n- write a full, self-contained sentence that reads naturally on its own\n- base it on the real value, audience, and tone found in the site content\n- the sentence must flow logically from start to finish so it can be broken into three lines\n- example: for a product named Atlarix, a good slogan is "Atlarix is where your development team works."\n- more examples of good slogans: "Ship your product faster with one clear workflow", "Design that converts visitors into loyal customers", "Automate your entire workflow in minutes"\n- never output generic section labels such as "Key features", "Our solutions", "Features", "Pricing", "Blog"\n- never output a fragment that ends with and, with, for, to, of, the, a, an\n\nAudience guidance:\n- infer the audience from the site copy, pricing, testimonials, and feature wording\n- prefer concrete roles or segments (e.g. "Developers", "Growth teams", "Ecommerce brands")\n- do not invent audiences that the site does not support`,
     schema: {
       type: "object",
       properties: {
@@ -2215,8 +2380,9 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
         features: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
         cta: { type: "string" },
         urlLabel: { type: "string" },
+        audience: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
       },
-      required: ["name", "slogan", "description", "features", "cta", "urlLabel"],
+      required: ["name", "slogan", "description", "features", "cta", "urlLabel", "audience"],
       additionalProperties: false,
     },
   });
@@ -2246,6 +2412,16 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
     throw new Error("OpenAI returned an incomplete brand brief.");
   }
 
+  // Prefer the AI-generated audience words. If the model omitted or returned
+  // too few, fall back to audience words derived from the scraped site so the
+  // scene is never empty.
+  const aiAudience = uniqueNonEmpty(
+    (Array.isArray(brief.audience) ? brief.audience : []).map((word) => toAudienceLabel(String(word || ""))),
+    6,
+  );
+  const audienceWords =
+    aiAudience.length >= 3 ? aiAudience.slice(0, 6) : buildAudienceWordsFromBrief(buildDeterministicSiteBrief(scraped, normalizedUrl), scraped);
+
   return buildFixedProjectPlanFromBrandBrief(
     {
       name: brief.name,
@@ -2255,6 +2431,7 @@ async function requestOpenAiScenePlan(scraped: ScrapedSiteData, normalizedUrl: s
       stepsToUse: [],
       cta: brief.cta,
       urlLabel: brief.urlLabel,
+      audience: audienceWords,
     },
     scraped,
     normalizedUrl,

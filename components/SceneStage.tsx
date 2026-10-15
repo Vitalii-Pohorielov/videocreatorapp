@@ -2192,6 +2192,97 @@ export function SceneStage({
         </div>
       )}
 
+      {scene.type === "audience-reveal" && (() => {
+        const audienceWords = scene.bullets.filter((word) => word.trim().length > 0);
+        const words = audienceWords.length > 0 ? audienceWords : ["Developers", "Marketers", "Founders"];
+        const logoIn = editable ? 1 : motion(progress, 0.04, 0.2);
+        const titleReveal = editable ? 1 : motion(progress, 0.14, 0.2);
+        const labelIn = editable ? 1 : motion(progress, 0.26, 0.16);
+        const rotationStart = 0.34;
+        const rotationSpan = 0.56;
+        const rotationProgress = editable ? 0 : Math.min(1, Math.max(0, (progress - rotationStart) / rotationSpan));
+        const activeIndex = editable ? 0 : Math.min(words.length - 1, Math.floor(rotationProgress * words.length));
+        const wordLocalProgress = editable ? 0 : rotationProgress * words.length - activeIndex;
+        const wordIn = editable ? 1 : Math.min(1, wordLocalProgress / 0.35);
+        const wordOut = editable ? 0 : Math.max(0, (wordLocalProgress - 0.75) / 0.25);
+        const wordOpacity = editable ? 1 : wordIn * (1 - wordOut);
+        const wordShift = editable ? 0 : (1 - wordIn) * 26 - wordOut * 26;
+        const wordBlur = editable ? 0 : (1 - wordIn) * 8 + wordOut * 8;
+        return (
+          <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 -z-10 rounded-full"
+              style={{
+                width: compact ? "320px" : "620px",
+                height: compact ? "320px" : "620px",
+                transform: `translate(-50%, -50%) scale(${0.7 + logoIn * 0.3})`,
+                background: `radial-gradient(circle, ${accentGlow} 0%, transparent 68%)`,
+                opacity: 0.9 * logoIn,
+              }}
+            />
+            <div style={{ transform: `translateY(${20 * (1 - logoIn)}px) scale(${0.9 + logoIn * 0.1})`, opacity: logoIn }}>
+              <IntroLogoSlot
+                scene={scene}
+                entryProgress={logoIn}
+                compact={compact}
+                editable={editable}
+                onPickImage={onRequestLogoUpload}
+                lightweightPreview={lightweightPreview}
+                textColor={textColor}
+              />
+            </div>
+            <EditableText
+              as="h2"
+              value={scene.title}
+              editable={editable}
+              onCommit={(value) => onSceneChange?.({ title: value })}
+              className={`mx-auto max-w-4xl leading-[0.95] ${compact ? "text-3xl" : "text-6xl md:text-7xl"} ${s.title}`}
+              style={{ transform: `translateY(${22 * (1 - titleReveal)}px)`, opacity: titleReveal, filter: `blur(${(1 - titleReveal) * 6}px)` }}
+              placeholder="Scene title"
+            />
+            <div className="mt-8 flex flex-col items-center" style={{ opacity: labelIn }}>
+              <span className={`uppercase tracking-[0.32em] ${compact ? "text-[10px]" : "text-sm"} ${s.italic}`} style={{ opacity: 0.7 }}>
+                {scene.eyebrow || "Perfect for"}
+              </span>
+              <div className={`relative mt-3 flex items-center justify-center ${compact ? "h-12" : "h-24"}`} style={{ minWidth: compact ? "220px" : "420px" }}>
+                {editable ? (
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    {words.map((word, index) => (
+                      <input
+                        key={`${scene.id}-audience-${index}`}
+                        value={word}
+                        onChange={(event) => updateBullet(index, event.target.value)}
+                        className={`min-w-0 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center outline-none focus:border-sky-400 ${compact ? "text-lg font-semibold" : "text-3xl font-semibold"}`}
+                        placeholder="Audience"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <span
+                    key={`${scene.id}-audience-active-${activeIndex}`}
+                    className={`block font-semibold leading-none ${compact ? "text-3xl" : "text-6xl md:text-7xl"} ${s.title}`}
+                    style={{ opacity: wordOpacity, transform: `translateY(${wordShift}px)`, filter: `blur(${wordBlur}px)` }}
+                  >
+                    {words[activeIndex]}
+                  </span>
+                )}
+              </div>
+              {!editable ? (
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  {words.map((word, index) => (
+                    <span
+                      key={`${scene.id}-audience-dot-${index}`}
+                      className={`h-1.5 rounded-full transition-all ${index === activeIndex ? "w-6" : "w-1.5"}`}
+                      style={{ backgroundColor: index === activeIndex ? resolvedAccentColor : hexToRgba(textColor, 0.25) }}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        );
+      })()}
+
       {scene.type === "code-preview" && (
           <div className="flex h-full items-center justify-center px-4">
             <CodePreviewCard

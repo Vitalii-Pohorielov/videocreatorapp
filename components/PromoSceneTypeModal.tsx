@@ -11,7 +11,7 @@ type PromoSceneTypeModalProps = {
 
 const promoSceneGroups: Array<{ label: string; types: SceneType[] }> = [
   { label: "Free", types: ["brand-reveal", "product-showcase", "feature-grid"] },
-  { label: "Content", types: ["code-preview", "description", "pricing", "process", "center-text", "website-url", "website-scroll", "quote", "cta"] },
+  { label: "Content", types: ["audience-reveal", "code-preview", "description", "pricing", "process", "center-text", "website-url", "website-scroll", "quote", "cta"] },
 ];
 
 type SceneDefinitionItem = (typeof sceneDefinitions)[number];

@@ -27,7 +27,7 @@ export function SceneTypeModal({ isOpen, isAnnouncementWorkspace, onClose, onSel
   const premiumSceneDefinitions = filteredSceneDefinitions.filter((definition) => !freePromoSceneTypes.includes(definition.type));
   const premiumGroups: Array<{ label: string; types: SceneType[] }> = [
     { label: "Intro", types: ["brand-reveal-alt", "brand-reveal-circle"] },
-    { label: "Text", types: ["description", "center-text", "quote"] },
+    { label: "Text", types: ["audience-reveal", "description", "center-text", "quote"] },
     { label: "Pricing", types: ["pricing", "pricing-peek"] },
     { label: "Code", types: ["code-preview", "code-review"] },
     { label: "Website", types: ["website-url", "website-scroll", "website-scroll-front", "process"] },

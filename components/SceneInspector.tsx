@@ -885,6 +885,58 @@ export const SceneInspector = memo(function SceneInspector({
           </InspectorSection>
         ) : null}
 
+        {scene.type === "audience-reveal" ? (
+          <InspectorSection title="Audience" description="Upload a logo and list the audiences that rotate in the scene." defaultOpen>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className={`inline-flex cursor-pointer font-medium ${ghostButtonClassName}`}>
+                <input type="file" accept="image/*" className="hidden" onChange={handleLogoImageChange} />
+                Upload logo
+              </label>
+              {logoImageUrl ? (
+                <button type="button" onClick={() => onUpdate(scene.id, { logoImageUrl: "" })} className={ghostButtonClassName}>
+                  Remove logo
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-white">Audience words</p>
+                <p className="mt-1 text-sm text-slate-400">These rotate one after another in the scene.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addBulletItem}
+                disabled={scene.bullets.length >= 6}
+                className={`${ghostButtonClassName} disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                Add word
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {scene.bullets.map((bullet, index) => (
+                <div key={`${scene.id}-audience-item-${index}`} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <label className="block">
+                      <span className={labelClassName}>Word</span>
+                      <input
+                        value={bullet}
+                        onChange={(event) => updateBullet(index, event.target.value)}
+                        className={fieldClassName}
+                        placeholder="Audience"
+                      />
+                    </label>
+                    <div className="flex items-end">
+                      <button type="button" onClick={() => removeBulletItem(index)} className={ghostButtonClassName}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </InspectorSection>
+        ) : null}
+
         {scene.type === "feature-grid" ? (
           <InspectorSection title="Items" description="Manage card text and markers for this scene.">
             <div className="flex items-center justify-between gap-3">
