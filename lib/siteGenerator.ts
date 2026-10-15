@@ -1,7 +1,7 @@
 "use server";
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
-import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset } from "@/lib/sceneDefinitions";
+import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset, type VideoFontChoice } from "@/lib/sceneDefinitions";
 import { splitSloganIntoThreeLines } from "@/lib/sloganLines";
 import { captureWebsiteScreenshotDataUrl } from "@/lib/websiteScreenshot";
 
@@ -1156,6 +1156,24 @@ function shuffleMiddleScenes<T>(scenes: T[]): T[] {
 
 const generatedPresets = Object.keys(presetDefaults) as TemplatePreset[];
 const templatePresetEnum = generatedPresets.map((preset) => `"${preset}"`).join(" | ");
+
+// Fonts that can be randomly assigned to AI-generated projects. "syne" is
+// intentionally excluded because it does not render reliably in the video
+// pipeline.
+const generatedFontChoices: VideoFontChoice[] = [
+  "jakarta",
+  "inter",
+  "space",
+  "montserrat",
+  "oswald",
+  "bebas",
+  "playfair",
+  "merriweather",
+];
+
+function randomGeneratedFontChoice(): VideoFontChoice {
+  return randomChoice(generatedFontChoices);
+}
 
 function removeDanglingEnding(value: string) {
   return value
@@ -2625,7 +2643,7 @@ function buildProjectPayloadFromPlan(
       backgroundColor: presetColors.backgroundColor,
       textColor: presetColors.textColor,
       accentColor: presetColors.accentColor,
-      fontChoice: "jakarta",
+      fontChoice: randomGeneratedFontChoice(),
       preset,
       resolution: "720p",
       profile: "standard",
