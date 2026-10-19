@@ -1,7 +1,7 @@
 "use server";
 
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
-import { createScene, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset, type VideoFontChoice } from "@/lib/sceneDefinitions";
+import { createScene, getRandomAudienceTitle, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset, type VideoFontChoice } from "@/lib/sceneDefinitions";
 import { splitSloganIntoThreeLines } from "@/lib/sloganLines";
 import { captureWebsiteScreenshotDataUrl } from "@/lib/websiteScreenshot";
 
@@ -1991,7 +1991,7 @@ function buildDeterministicProjectPlanFromBrief(brief: ExtractedSiteBrief, scrap
     {
       type: "audience-reveal",
       eyebrow: "Perfect for",
-      title: `Built for the way you work`,
+      title: getRandomAudienceTitle(),
       subtitle: "",
       description: "",
       bullets: audienceWords,
@@ -2255,7 +2255,7 @@ function buildSceneTextAlternatives(
       };
     case "audience-reveal":
       return {
-        title: dedupeTextOptions([scenePlan.title, `Built for the way you work`, `Made for ${projectName} users`], 90),
+        title: dedupeTextOptions([scenePlan.title, getRandomAudienceTitle(), `Made for ${projectName} users`], 90),
         subtitle: dedupeTextOptions([scenePlan.subtitle, scraped.description || ""], 120),
         description: dedupeTextOptions([scenePlan.description], 120),
       };
@@ -2371,7 +2371,7 @@ function buildFixedProjectPlanFromBrandBrief(brief: GeneratedBrandBrief, scraped
       {
         type: "audience-reveal",
         eyebrow: "Perfect for",
-        title: `Built for the way you work`,
+        title: getRandomAudienceTitle(),
         subtitle: "",
         description: "",
         bullets: cleanBrief.audience,
@@ -2563,7 +2563,7 @@ function buildProjectPayloadFromPlan(
               // Keep the eyebrow verbatim: normalizePlanValue strips trailing
               // prepositions (e.g. "for"), which would turn "Perfect for" into "Perfect".
               eyebrow: scenePlan.eyebrow?.trim() || "Perfect for",
-              title: normalizePlanValue(scenePlan.title, `Built for the way you work`, 90),
+              title: normalizePlanValue(scenePlan.title, getRandomAudienceTitle(), 90),
               bullets: nextWords.length > 0 ? nextWords : fallbackWords,
               bulletEmojis: [],
               bulletImageUrls: [],

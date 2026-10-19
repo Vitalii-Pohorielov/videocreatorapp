@@ -2,6 +2,22 @@ import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 
 import { getDefaultTransition } from "@/lib/sceneTransitions";
 
+// Title variants for the Audience scene. One is picked at random every time a
+// new Audience scene is created so generated videos do not repeat the same
+// headline.
+export const audienceTitleVariants = [
+  "Designed for your needs",
+  "Built around your needs",
+  "Fits your workflow",
+  "Made to work for you",
+  "Created for your goals",
+  "Built for your success",
+] as const;
+
+export function getRandomAudienceTitle(): string {
+  return audienceTitleVariants[Math.floor(Math.random() * audienceTitleVariants.length)];
+}
+
 export type TransitionType = "fade" | "slide-left" | "slide-right" | "slide-up" | "slide-down" | "zoom-in" | "zoom-out";
 
 export type TemplatePreset =
@@ -410,7 +426,7 @@ export const sceneDefinitions: SceneDefinition[] = [
       durationSeconds: 4.5,
       transition: getDefaultTransition(3, "audience-reveal"),
       eyebrow: "Perfect for",
-      title: "Built for the way you work",
+      title: getRandomAudienceTitle(),
       subtitle: "",
       description: "",
       bullets: ["Developers", "Marketers", "Founders", "Designers"],
