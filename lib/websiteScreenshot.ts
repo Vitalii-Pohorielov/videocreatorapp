@@ -62,7 +62,7 @@ type ChromeDevToolsClient = {
   send: (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 };
 
-export async function captureWebsiteScreenshotDataUrl(inputUrl: string) {
+export async function captureWebsiteScreenshotWithFinalUrl(inputUrl: string) {
   const url = normalizeScreenshotUrl(inputUrl);
   let browser: Awaited<ReturnType<typeof openBrowser>> | null = null;
 
@@ -105,6 +105,7 @@ export async function captureWebsiteScreenshotDataUrl(inputUrl: string) {
       await new Promise((resolve) => setTimeout(resolve, 400));
     });
 
+    const finalUrl = (await page.evaluate(() => window.location.href)) as string;
     const dimensions = await page.evaluate(() => ({
       width: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, window.innerWidth),
       height: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight),
@@ -125,10 +126,18 @@ export async function captureWebsiteScreenshotDataUrl(inputUrl: string) {
     const screenshotData = response.data ?? response.value?.data;
 
     if (!screenshotData) throw new Error("Could not capture website screenshot.");
-    return `data:image/jpeg;base64,${screenshotData}`;
+    return {
+      screenshotDataUrl: `data:image/jpeg;base64,${screenshotData}`,
+      finalUrl,
+    };
   } catch (error) {
     throw new Error(`Could not capture website screenshot: ${toErrorMessage(error)}`);
   } finally {
     await browser?.close({ silent: true }).catch(() => undefined);
   }
+}
+
+export async function captureWebsiteScreenshotDataUrl(inputUrl: string) {
+  const result = await captureWebsiteScreenshotWithFinalUrl(inputUrl);
+  return result.screenshotDataUrl;
 }

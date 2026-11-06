@@ -43,7 +43,7 @@ type ProjectDraft = {
 
 type ZipEntry = {
   name: string;
-  data: Uint8Array;
+  data: ArrayBuffer;
 };
 
 const crcTable = new Uint32Array(256);
@@ -96,14 +96,14 @@ function concatUint8Arrays(parts: Uint8Array[]) {
 
 function createZipBlob(entries: ZipEntry[]) {
   const encoder = new TextEncoder();
-  const localParts: Uint8Array[] = [];
+  const localParts: BlobPart[] = [];
   const centralParts: Uint8Array[] = [];
   const { dosDate, dosTime } = getDosDateTime();
   let offset = 0;
 
   for (const entry of entries) {
     const nameBuffer = encoder.encode(entry.name);
-    const crc32 = getCrc32(entry.data);
+    const crc32 = getCrc32(new Uint8Array(entry.data));
 
     const localHeader = new Uint8Array(30);
     writeUInt32LE(localHeader, 0, 0x04034b50);
@@ -113,8 +113,8 @@ function createZipBlob(entries: ZipEntry[]) {
     writeUInt16LE(localHeader, 10, dosTime);
     writeUInt16LE(localHeader, 12, dosDate);
     writeUInt32LE(localHeader, 14, crc32);
-    writeUInt32LE(localHeader, 18, entry.data.length);
-    writeUInt32LE(localHeader, 22, entry.data.length);
+    writeUInt32LE(localHeader, 18, entry.data.byteLength);
+    writeUInt32LE(localHeader, 22, entry.data.byteLength);
     writeUInt16LE(localHeader, 26, nameBuffer.length);
     writeUInt16LE(localHeader, 28, 0);
     localParts.push(localHeader, nameBuffer, entry.data);
@@ -128,8 +128,8 @@ function createZipBlob(entries: ZipEntry[]) {
     writeUInt16LE(centralHeader, 12, dosTime);
     writeUInt16LE(centralHeader, 14, dosDate);
     writeUInt32LE(centralHeader, 16, crc32);
-    writeUInt32LE(centralHeader, 20, entry.data.length);
-    writeUInt32LE(centralHeader, 24, entry.data.length);
+    writeUInt32LE(centralHeader, 20, entry.data.byteLength);
+    writeUInt32LE(centralHeader, 24, entry.data.byteLength);
     writeUInt16LE(centralHeader, 28, nameBuffer.length);
     writeUInt16LE(centralHeader, 30, 0);
     writeUInt16LE(centralHeader, 32, 0);
@@ -139,7 +139,7 @@ function createZipBlob(entries: ZipEntry[]) {
     writeUInt32LE(centralHeader, 42, offset);
     centralParts.push(centralHeader, nameBuffer);
 
-    offset += localHeader.length + nameBuffer.length + entry.data.length;
+    offset += localHeader.length + nameBuffer.length + entry.data.byteLength;
   }
 
   const centralDirectory = concatUint8Arrays(centralParts);
@@ -262,7 +262,7 @@ async function readRenderError(response: Response) {
   return "Could not generate the video batch.";
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string" && error.trim()) return error;
   if (error && typeof error === "object") {
@@ -282,7 +282,7 @@ function getErrorMessage(error: unknown) {
     if (message) return name && name !== "Error" ? `${name}: ${message}` : message;
 
     if (errorLike.cause && errorLike.cause !== error) {
-      const causeMessage = getErrorMessage(errorLike.cause);
+      const causeMessage: string = getErrorMessage(errorLike.cause);
       if (causeMessage && causeMessage !== "Unknown error object.") return causeMessage;
     }
 
@@ -568,7 +568,7 @@ export function ExpressVideoGenerationWorkspace() {
           );
           try {
             activeStage = "adding the rendered video to the ZIP";
-            files.push({ name: fileName, data: new Uint8Array(await result.blob.arrayBuffer()) });
+            files.push({ name: fileName, data: await result.blob.arrayBuffer() });
           } finally {
             URL.revokeObjectURL(result.url);
           }
@@ -585,7 +585,7 @@ export function ExpressVideoGenerationWorkspace() {
           }
 
           const videoBuffer = await response.arrayBuffer();
-          files.push({ name: fileName, data: new Uint8Array(videoBuffer) });
+          files.push({ name: fileName, data: videoBuffer });
         }
 
         updateFromProgress({

@@ -32,6 +32,7 @@ let renderRoot: ReturnType<ReactClientModule["createRoot"]> | null = null;
 let renderHostSize: { width: number; height: number } | null = null;
 let announcementHeroBackgroundVideo: HTMLVideoElement | null = null;
 let announcementHeroBackgroundVideoReadyPromise: Promise<HTMLVideoElement> | null = null;
+const exportFontEmbedCssCache = new Map<string, Promise<string>>();
 
 const coreBaseUrl = "/ffmpeg";
 const exportMediaReadyTimeoutMs = 3500;
@@ -215,6 +216,117 @@ function syncExportHostStyles(host: HTMLDivElement) {
   host.style.backgroundColor = "transparent";
 }
 
+function normalizeFontFamilyName(value: string) {
+  return value.trim().replace(/["']/g, "").toLowerCase();
+}
+
+function getUsedFontFamilies(node: HTMLElement) {
+  const families = new Set<string>();
+  const elements = [node, ...Array.from(node.querySelectorAll<HTMLElement>("*"))];
+
+  for (const element of elements) {
+    for (const family of getComputedStyle(element).fontFamily.split(",")) {
+      const normalized = normalizeFontFamilyName(family);
+      if (normalized && !["serif", "sans-serif", "monospace", "system-ui", "cursive", "fantasy", "ui-sans-serif"].includes(normalized)) {
+        families.add(normalized);
+      }
+    }
+  }
+
+  return families;
+}
+
+function collectFontFaceRules(rules: CSSRuleList, result: Array<{ rule: CSSFontFaceRule; baseUrl: string }>, baseUrl: string) {
+  for (const rule of Array.from(rules)) {
+    if (rule.type === CSSRule.FONT_FACE_RULE) {
+      result.push({ rule: rule as CSSFontFaceRule, baseUrl });
+      continue;
+    }
+
+    const importedSheet = (rule as CSSImportRule).styleSheet;
+    if (importedSheet) {
+      try {
+        collectFontFaceRules(importedSheet.cssRules, result, importedSheet.href ?? baseUrl);
+      } catch {
+        // Ignore cross-origin imports; the app's bundled local fonts are read below.
+      }
+    }
+
+    if ("cssRules" in rule) {
+      try {
+        collectFontFaceRules((rule as CSSGroupingRule).cssRules, result, baseUrl);
+      } catch {
+        // Some browser or extension stylesheets do not expose their rules.
+      }
+    }
+  }
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+  }
+  return btoa(binary);
+}
+
+async function inlineFontFaceUrls(cssText: string, baseUrl: string) {
+  const matches = Array.from(cssText.matchAll(/url\(([^)]+)\)/gi));
+  let inlinedCss = cssText;
+
+  for (const match of matches) {
+    const wholeMatch = match[0];
+    const rawUrl = match[1]?.trim().replace(/^['"]|['"]$/g, "");
+    if (!rawUrl || rawUrl.startsWith("data:")) continue;
+
+    try {
+      const fontUrl = new URL(rawUrl, baseUrl);
+      if (fontUrl.origin !== window.location.origin) continue;
+      const response = await fetch(fontUrl);
+      if (!response.ok) continue;
+
+      const mimeType = response.headers.get("content-type")?.split(";")[0].trim() || "font/woff2";
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      inlinedCss = inlinedCss.replace(wholeMatch, `url("data:${mimeType};base64,${bytesToBase64(bytes)}")`);
+    } catch {
+      // Keep the browser's original font source if it cannot be embedded.
+    }
+  }
+
+  return inlinedCss;
+}
+
+async function getExportFontEmbedCss(node: HTMLElement) {
+  const usedFamilies = getUsedFontFamilies(node);
+  const cacheKey = [...usedFamilies].sort().join("|");
+  const cached = exportFontEmbedCssCache.get(cacheKey);
+  if (cached) return cached;
+
+  const cssPromise = (async () => {
+    const fontFaceRules: Array<{ rule: CSSFontFaceRule; baseUrl: string }> = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        collectFontFaceRules(sheet.cssRules, fontFaceRules, sheet.href ?? document.baseURI);
+      } catch {
+        // Cross-origin stylesheets are not readable; skip them without failing export.
+      }
+    }
+
+    const matchingRules = fontFaceRules.filter(({ rule }) => usedFamilies.has(normalizeFontFamilyName(rule.style.fontFamily)));
+    const embeddedRules = await Promise.all(matchingRules.map(({ rule, baseUrl }) => inlineFontFaceUrls(rule.cssText, baseUrl)));
+    return embeddedRules.join("\n");
+  })();
+
+  exportFontEmbedCssCache.set(cacheKey, cssPromise);
+  try {
+    return await cssPromise;
+  } catch (error) {
+    exportFontEmbedCssCache.delete(cacheKey);
+    throw error;
+  }
+}
+
 async function waitForImageReady(image: HTMLImageElement) {
   if (image.complete && image.naturalWidth > 0) {
     try {
@@ -359,6 +471,7 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
   }
 
   try {
+    const fontEmbedCSS = await getExportFontEmbedCss(node);
     return await toCanvas(node, {
       pixelRatio: 1,
       canvasWidth: videoWidth,
@@ -366,11 +479,9 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
       width: videoWidth,
       height: videoHeight,
       skipAutoScale: true,
-      // Reading cssRules from cross-origin stylesheets (including browser
-      // injected stylesheets) can throw SecurityError during font embedding.
-      // Fonts are already loaded above; keep their computed family styles and
-      // skip html-to-image's global stylesheet scan.
-      skipFonts: true,
+      // Pass only accessible app font rules. This keeps brand typography in the
+      // captured SVG without letting html-to-image scan cross-origin sheets.
+      fontEmbedCSS,
       // A remote image may be unavailable or block CORS. Replacing it with a
       // transparent pixel lets the rest of the scene render instead of making
       // the generated SVG fail to load with a generic Event rejection.

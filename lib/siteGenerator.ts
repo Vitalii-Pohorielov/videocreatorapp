@@ -3,7 +3,7 @@
 import { getFeatureAnimatedIcons } from "@/lib/animatedFeatureIcons";
 import { createScene, getRandomAudienceTitle, presetDefaults, type ExportSettings, type Scene, type SceneTrack, type TemplatePreset, type VideoFontChoice } from "@/lib/sceneDefinitions";
 import { splitSloganIntoThreeLines } from "@/lib/sloganLines";
-import { captureWebsiteScreenshotDataUrl } from "@/lib/websiteScreenshot";
+import { captureWebsiteScreenshotWithFinalUrl } from "@/lib/websiteScreenshot";
 
 type ScrapedSiteData = {
   sourceUrl: string;
@@ -890,17 +890,47 @@ function getHostname(value: string) {
   }
 }
 
+function isAuthOrOnboardingUrl(value: string) {
+  try {
+    const path = decodeURIComponent(new URL(value).pathname).toLowerCase();
+    return /(?:^|\/)(?:sign-?up|signup|register|registration|create-account|login|log-in|signin|sign-in|auth|oauth|authorize|onboarding)(?:\/|$)/.test(path);
+  } catch {
+    return false;
+  }
+}
+
+function getOriginRoot(value: string) {
+  try {
+    return `${new URL(value).origin}/`;
+  } catch {
+    return value;
+  }
+}
+
 // When the input URL is a listing/directory page (e.g. https://devhunt.org/tool/difsh),
 // the "Visit website" button points to the real product site on a different host.
 // In that case we capture the product site for the scroll scene; otherwise we keep
 // the original input URL.
 function resolveScreenshotTargetUrl(inputUrl: string, productUrl: string) {
   const candidate = productUrl?.trim();
-  if (!candidate) return inputUrl;
+  const inputIsAuthPage = isAuthOrOnboardingUrl(inputUrl);
+  const candidateIsAuthPage = candidate ? isAuthOrOnboardingUrl(candidate) : false;
+
+  // Directory links labelled "Get started" or "Open app" often lead straight
+  // to signup/login routes. Use the product homepage for the visual and CTA URL.
+  if (candidateIsAuthPage) {
+    const candidateHost = getHostname(candidate);
+    const inputHost = getHostname(inputUrl);
+    if (candidateHost && candidateHost !== inputHost) return getOriginRoot(candidate);
+  }
+
+  if (!candidate) return inputIsAuthPage ? getOriginRoot(inputUrl) : inputUrl;
 
   const inputHost = getHostname(inputUrl);
   const candidateHost = getHostname(candidate);
   if (!candidateHost) return inputUrl;
+  if (candidateIsAuthPage) return inputIsAuthPage ? getOriginRoot(inputUrl) : inputUrl;
+  if (inputIsAuthPage) return candidate;
   if (candidateHost === inputHost) return inputUrl;
 
   return candidate;
@@ -3099,17 +3129,39 @@ export async function generateProjectFromUrl(inputUrl: string): Promise<Generate
   // Prefer the "Visit website" / product target when the input page is a listing
   // or directory page (e.g. https://devhunt.org/tool/difsh) so the scroll scene
   // shows the real product site instead of the directory page.
-  const screenshotTargetUrl = resolveScreenshotTargetUrl(normalizedUrl, scraped.productUrl);
-  const screenshotResult = await captureWebsiteScreenshotDataUrl(screenshotTargetUrl).then(
+  let screenshotTargetUrl = resolveScreenshotTargetUrl(normalizedUrl, scraped.productUrl);
+  const screenshotResult = await captureWebsiteScreenshotWithFinalUrl(screenshotTargetUrl).then(
     (value) => ({ status: "fulfilled" as const, value }),
     (reason) => ({ status: "rejected" as const, reason }),
   );
 
-  if (screenshotResult.status === "fulfilled" && screenshotResult.value) {
-    scraped.screenshotImageUrls = uniqueNonEmpty([screenshotResult.value, ...scraped.screenshotImageUrls], 5);
-    scraped.ogImageUrl = scraped.ogImageUrl || screenshotResult.value;
-  } else if (screenshotResult.status === "rejected") {
+  let capturedScreenshot: Awaited<ReturnType<typeof captureWebsiteScreenshotWithFinalUrl>> | null = null;
+  if (screenshotResult.status === "fulfilled") {
+    if (isAuthOrOnboardingUrl(screenshotResult.value.finalUrl)) {
+      console.warn("[generate-from-url] Screenshot target redirected to an auth page; ignoring that capture.", screenshotResult.value.finalUrl);
+
+      // If a directory page linked to a product URL that redirects to signup,
+      // use the original listing page as a visual fallback instead.
+      if (getHostname(normalizedUrl) !== getHostname(screenshotTargetUrl) && !isAuthOrOnboardingUrl(normalizedUrl)) {
+        const fallbackCapture = await captureWebsiteScreenshotWithFinalUrl(normalizedUrl).then(
+          (value) => ({ status: "fulfilled" as const, value }),
+          (reason) => ({ status: "rejected" as const, reason }),
+        );
+        if (fallbackCapture.status === "fulfilled" && !isAuthOrOnboardingUrl(fallbackCapture.value.finalUrl)) {
+          capturedScreenshot = fallbackCapture.value;
+        }
+      }
+    } else {
+      capturedScreenshot = screenshotResult.value;
+    }
+  } else {
     console.warn("[generate-from-url] Website screenshot capture failed, using scraped imagery.", screenshotResult.reason);
+  }
+
+  if (capturedScreenshot) {
+    screenshotTargetUrl = capturedScreenshot.finalUrl;
+    scraped.screenshotImageUrls = uniqueNonEmpty([capturedScreenshot.screenshotDataUrl, ...scraped.screenshotImageUrls], 5);
+    scraped.ogImageUrl = scraped.ogImageUrl || capturedScreenshot.screenshotDataUrl;
   }
 
   const fallbackBrief = buildDeterministicSiteBrief(scraped, normalizedUrl);
