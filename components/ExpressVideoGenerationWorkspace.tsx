@@ -262,6 +262,48 @@ async function readRenderError(response: Response) {
   return "Could not generate the video batch.";
 }
 
+async function prepareBrowserRenderPayload(
+  payload: { projectName: string; exportSettings: ExportSettings; scenes: Scene[] },
+  refererUrl: string,
+) {
+  const remoteLogoUrls = Array.from(
+    new Set(
+      payload.scenes
+        .map((scene) => scene.logoImageUrl.trim())
+        .filter((url) => url && !url.startsWith("data:"))
+        .map((url) => new URL(url, refererUrl).toString()),
+    ),
+  );
+  if (remoteLogoUrls.length === 0) return payload;
+
+  const embeddedLogos = new Map<string, string>();
+  for (const url of remoteLogoUrls) {
+    const response = await fetch("/api/express-video-generation/prepare-image", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url, referer: refererUrl }),
+    });
+    if (!response.ok) throw new Error(await readRenderError(response));
+
+    const result = (await response.json()) as { dataUrl?: string; error?: string };
+    if (!result.dataUrl?.startsWith("data:image/")) {
+      throw new Error(result.error || `Could not prepare logo image: ${url}`);
+    }
+    embeddedLogos.set(url, result.dataUrl);
+  }
+
+  return {
+    ...payload,
+    scenes: payload.scenes.map((scene) => {
+      const sourceUrl = scene.logoImageUrl.trim();
+      if (!sourceUrl || sourceUrl.startsWith("data:")) return scene;
+      const normalizedUrl = new URL(sourceUrl, refererUrl).toString();
+      const dataUrl = embeddedLogos.get(normalizedUrl);
+      return dataUrl ? { ...scene, logoImageUrl: dataUrl } : scene;
+    }),
+  };
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string" && error.trim()) return error;
@@ -559,13 +601,16 @@ export function ExpressVideoGenerationWorkspace() {
 
         if (renderMode === "browser") {
           activeStage = "rendering in this browser";
+          activeStage = "preparing logo for browser rendering";
+          const browserRenderPayload = await prepareBrowserRenderPayload(renderPayload, project.sourceUrl);
+          activeStage = "rendering in this browser";
           const result = await exportSlidesToVideo(
-            renderPayload.scenes,
-            renderPayload.exportSettings,
+            browserRenderPayload.scenes,
+            browserRenderPayload.exportSettings,
             (renderProgress) => {
               setCurrentVideoProgress(renderProgress);
             },
-            renderPayload.projectName,
+            browserRenderPayload.projectName,
           );
           try {
             activeStage = "adding the rendered video to the ZIP";
