@@ -317,6 +317,7 @@ export function ExpressVideoGenerationWorkspace() {
   const [statusMessage, setStatusMessage] = useState("Waiting for URLs");
   const [downloadHref, setDownloadHref] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState("express-video-generation.zip");
+  const [currentVideoProgress, setCurrentVideoProgress] = useState(0);
   const [progress, setProgress] = useState<BatchProgress>({
     phase: "idle",
     current: 0,
@@ -544,6 +545,7 @@ export function ExpressVideoGenerationWorkspace() {
         const renderPayload = applyPreparedProjectEdits(project);
         const fileName = getUniqueFileName(toSafeVideoFileName(renderPayload.projectName), usedNames);
         activeFileName = fileName;
+        setCurrentVideoProgress(0);
 
         updateFromProgress({
           phase: "rendering",
@@ -552,7 +554,7 @@ export function ExpressVideoGenerationWorkspace() {
           completed: files.length,
           currentUrl: project.sourceUrl,
           currentFileName: fileName,
-          message: `Rendering ${current}/${urls.length}: ${fileName}. Keep this tab open.`,
+          message: `Rendering ${current}/${urls.length}`,
         });
 
         if (renderMode === "browser") {
@@ -561,14 +563,14 @@ export function ExpressVideoGenerationWorkspace() {
             renderPayload.scenes,
             renderPayload.exportSettings,
             (renderProgress) => {
-              const percent = Math.round(renderProgress * 100);
-              setStatusMessage(`Rendering ${current}/${urls.length}: ${fileName} (${percent}%) on this device`);
+              setCurrentVideoProgress(renderProgress);
             },
             renderPayload.projectName,
           );
           try {
             activeStage = "adding the rendered video to the ZIP";
             files.push({ name: fileName, data: await result.blob.arrayBuffer() });
+            setCurrentVideoProgress(1);
           } finally {
             URL.revokeObjectURL(result.url);
           }
@@ -586,6 +588,7 @@ export function ExpressVideoGenerationWorkspace() {
 
           const videoBuffer = await response.arrayBuffer();
           files.push({ name: fileName, data: videoBuffer });
+          setCurrentVideoProgress(1);
         }
 
         updateFromProgress({
@@ -943,8 +946,21 @@ export function ExpressVideoGenerationWorkspace() {
                 <p className={status === "error" ? "mt-1 break-words text-sm font-medium text-rose-200" : "mt-1 break-words text-sm font-medium text-slate-200"}>
                   {statusMessage}
                 </p>
-                {progress.currentUrl ? <p className="mt-2 break-all text-xs leading-5 text-slate-500">{progress.currentUrl}</p> : null}
                 {progress.currentFileName ? <p className="mt-2 break-all text-xs leading-5 text-sky-300">{progress.currentFileName}</p> : null}
+                {status === "rendering" && isRunning ? (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+                      <span>Current video</span>
+                      <span>{renderMode === "browser" ? `${Math.round(currentVideoProgress * 100)}%` : "Rendering on server"}</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full bg-sky-400 transition-all duration-300 ${renderMode === "server" ? "animate-pulse" : ""}`}
+                        style={{ width: renderMode === "browser" ? `${Math.round(currentVideoProgress * 100)}%` : "40%" }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="rounded-lg border border-white/10 bg-slate-950/60 p-3">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Progress</p>
