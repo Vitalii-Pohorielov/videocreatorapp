@@ -22,9 +22,18 @@ export async function POST(request: Request) {
 
     const project = await generateProjectFromUrl(sourceUrl);
     const logoImageUrl = getProjectLogo(project);
-    const exportLogoImageUrl = logoImageUrl
-      ? await remoteImageToDataUrl(logoImageUrl).catch(() => logoImageUrl)
-      : "";
+    let exportLogoImageUrl = logoImageUrl;
+    if (logoImageUrl) {
+      try {
+        exportLogoImageUrl = await remoteImageToDataUrl(logoImageUrl, sourceUrl);
+      } catch (error) {
+        console.warn("[express-video-generation] Could not embed project logo for browser rendering.", {
+          projectName: project.projectName,
+          logoImageUrl,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
     const sceneTrack = {
       ...project.sceneTrack,
       scenes: project.sceneTrack.scenes.map((scene) =>
