@@ -372,6 +372,48 @@ async function waitForExportAssets(node: HTMLElement) {
   await nextFrame();
 }
 
+async function rasterizeSvgDataUrl(imageUrl: string) {
+  if (!/^data:image\/svg\+xml(?:[;,])/i.test(imageUrl)) return imageUrl;
+
+  try {
+    const image = new Image();
+    image.src = imageUrl;
+    await image.decode();
+
+    const originalWidth = image.naturalWidth || 512;
+    const originalHeight = image.naturalHeight || 512;
+    const scale = Math.min(1, 2048 / Math.max(originalWidth, originalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(originalWidth * scale));
+    canvas.height = Math.max(1, Math.round(originalHeight * scale));
+
+    const context = canvas.getContext("2d");
+    if (!context) return imageUrl;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png");
+  } catch {
+    // Leave non-decodable SVGs unchanged; the normal image export fallback applies.
+    return imageUrl;
+  }
+}
+
+async function prepareSceneImagesForCanvasExport(scenes: Scene[]) {
+  return Promise.all(
+    scenes.map(async (scene) => {
+      const [logoImageUrl, projectImageUrls] = await Promise.all([
+        rasterizeSvgDataUrl(scene.logoImageUrl),
+        Promise.all((scene.projectImageUrls ?? []).map(rasterizeSvgDataUrl)),
+      ]);
+
+      return {
+        ...scene,
+        logoImageUrl,
+        projectImageUrls,
+      };
+    }),
+  );
+}
+
 function getExportAssetKey(scene: Scene, renderLayer: "full" | "background" | "content") {
   return [
     scene.id,
@@ -667,15 +709,16 @@ function toSafeVideoFileName(projectName?: string) {
 export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSettings, onProgress?: (value: number) => void, projectName?: string) {
   if (scenes.length === 0) throw new Error("Add at least one scene before exporting.");
   onProgress?.(0.02);
+  const exportScenes = await prepareSceneImagesForCanvasExport(scenes);
   await ensureFFmpegLoaded();
   if (!ffmpeg) throw new Error("FFmpeg is not ready yet.");
 
-  const hasAnnouncementScenes = scenes.some((scene) => isAnnouncementScene(scene));
+  const hasAnnouncementScenes = exportScenes.some((scene) => isAnnouncementScene(scene));
   const useAnimatedTransitions = hasAnnouncementScenes;
   const { fps, frameExtension, frameMimeType, frameQuality, ffmpegPreset, crf } = getExportProfileConfig(settings);
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const transitionFrameCount = Math.max(1, Math.round(settings.transitionSeconds * fps));
-  const totalFrameCount = Math.max(1, getTotalFrameCount(scenes, fps, transitionFrameCount));
+  const totalFrameCount = Math.max(1, getTotalFrameCount(exportScenes, fps, transitionFrameCount));
   const frameRenderWeight = 0.88;
   const encodeWeight = 0.12;
   const renderCache = new Map<string, HTMLCanvasElement>();
@@ -705,9 +748,9 @@ export async function exportSlidesToVideo(scenes: Scene[], settings: ExportSetti
       onProgress?.(clampProgress((renderedFrameCount / totalFrameCount) * frameRenderWeight));
     };
 
-    for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex += 1) {
-      const scene = scenes[sceneIndex];
-      const nextScene = scenes[sceneIndex + 1];
+    for (let sceneIndex = 0; sceneIndex < exportScenes.length; sceneIndex += 1) {
+      const scene = exportScenes[sceneIndex];
+      const nextScene = exportScenes[sceneIndex + 1];
       const totalSceneFrameCount = Math.max(1, Math.round(scene.durationSeconds * fps));
       const stillFrameCount = totalSceneFrameCount;
 
