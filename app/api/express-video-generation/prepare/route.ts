@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { generateProjectFromUrl } from "@/lib/siteGenerator";
+import { remoteImageToDataUrl } from "@/lib/remoteImageDataUrl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,13 +21,25 @@ export async function POST(request: Request) {
     }
 
     const project = await generateProjectFromUrl(sourceUrl);
+    const logoImageUrl = getProjectLogo(project);
+    const exportLogoImageUrl = logoImageUrl
+      ? await remoteImageToDataUrl(logoImageUrl).catch(() => logoImageUrl)
+      : "";
+    const sceneTrack = {
+      ...project.sceneTrack,
+      scenes: project.sceneTrack.scenes.map((scene) =>
+        scene.logoImageUrl === logoImageUrl && exportLogoImageUrl !== logoImageUrl
+          ? { ...scene, logoImageUrl: exportLogoImageUrl }
+          : scene,
+      ),
+    };
 
     return NextResponse.json({
       sourceUrl,
       projectName: project.projectName,
       slogan: project.slogan,
-      logoImageUrl: getProjectLogo(project),
-      sceneTrack: project.sceneTrack,
+      logoImageUrl: exportLogoImageUrl,
+      sceneTrack,
       exportSettings: project.exportSettings,
     });
   } catch (error) {

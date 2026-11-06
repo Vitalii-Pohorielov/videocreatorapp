@@ -35,6 +35,8 @@ let announcementHeroBackgroundVideoReadyPromise: Promise<HTMLVideoElement> | nul
 
 const coreBaseUrl = "/ffmpeg";
 const exportMediaReadyTimeoutMs = 3500;
+const maxCachedExportCanvases = 4;
+const exportImagePlaceholder = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
 const announcementHeroBackgroundVideoSrc = "/scene-assets/announcement-backgrounds/announcement-hero-bg.mp4";
 
 function getVideoSize(settings: ExportSettings) {
@@ -364,6 +366,15 @@ async function renderSceneLayerToCanvas(scene: Scene, settings: ExportSettings, 
       width: videoWidth,
       height: videoHeight,
       skipAutoScale: true,
+      // Reading cssRules from cross-origin stylesheets (including browser
+      // injected stylesheets) can throw SecurityError during font embedding.
+      // Fonts are already loaded above; keep their computed family styles and
+      // skip html-to-image's global stylesheet scan.
+      skipFonts: true,
+      // A remote image may be unavailable or block CORS. Replacing it with a
+      // transparent pixel lets the rest of the scene render instead of making
+      // the generated SVG fail to load with a generic Event rejection.
+      imagePlaceholder: exportImagePlaceholder,
     });
   } finally {
     flushSync(() => {
@@ -405,10 +416,24 @@ async function renderSceneCanvasCached(scene: Scene, settings: ExportSettings, p
   if (!allowCache) return renderSceneDomToCanvas(scene, settings, progress, assetReadinessCache);
   const cacheKey = getRenderCacheKey(scene, settings, progress);
   const cached = cache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    cache.delete(cacheKey);
+    cache.set(cacheKey, cached);
+    return cached;
+  }
   const rendered = await renderSceneDomToCanvas(scene, settings, progress, assetReadinessCache);
-  cache.set(cacheKey, rendered);
+  cacheExportCanvas(cache, cacheKey, rendered);
   return rendered;
+}
+
+function cacheExportCanvas(cache: Map<string, HTMLCanvasElement>, key: string, canvas: HTMLCanvasElement) {
+  cache.delete(key);
+  cache.set(key, canvas);
+  while (cache.size > maxCachedExportCanvases) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    cache.delete(oldestKey);
+  }
 }
 
 function getFrameProgress(frameIndex: number, frameCount: number) {
@@ -426,7 +451,11 @@ async function renderSceneCompositeCanvasCached(
 ) {
   const cacheKey = `${getRenderCacheKey(scene, settings, progress)}::composite`;
   const cached = allowCache ? cache.get(cacheKey) : null;
-  if (cached) return cached;
+  if (cached) {
+    cache.delete(cacheKey);
+    cache.set(cacheKey, cached);
+    return cached;
+  }
 
   const { width: videoWidth, height: videoHeight } = getVideoSize(settings);
   const { canvas, ctx } = createCanvas(videoWidth, videoHeight);
@@ -439,7 +468,7 @@ async function renderSceneCompositeCanvasCached(
   }
   ctx.drawImage(contentCanvas, 0, 0, videoWidth, videoHeight);
 
-  if (allowCache) cache.set(cacheKey, canvas);
+  if (allowCache) cacheExportCanvas(cache, cacheKey, canvas);
   return canvas;
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fileToStoredUrl } from "@/lib/imageUpload";
+import { exportSlidesToVideo } from "@/lib/ffmpeg";
 import type { ExportSettings, Scene, SceneTrack } from "@/lib/sceneDefinitions";
 import { splitSloganIntoThreeLines } from "@/lib/sloganLines";
 
@@ -152,7 +153,10 @@ function createZipBlob(entries: ZipEntry[]) {
   writeUInt32LE(endRecord, 16, offset);
   writeUInt16LE(endRecord, 20, 0);
 
-  return new Blob([concatUint8Arrays([...localParts, centralDirectory, endRecord])], { type: "application/zip" });
+  // Keep MP4 buffers as Blob parts instead of copying the complete archive
+  // into one more contiguous allocation, which can exhaust browser memory for
+  // large batches.
+  return new Blob([...localParts, centralDirectory, endRecord], { type: "application/zip" });
 }
 
 function toSafeVideoFileName(projectName?: string) {
@@ -258,6 +262,39 @@ async function readRenderError(response: Response) {
   return "Could not generate the video batch.";
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    if (typeof Event !== "undefined" && error instanceof Event) {
+      const target = error.target;
+      if (typeof HTMLImageElement !== "undefined" && target instanceof HTMLImageElement) {
+        const source = target.currentSrc || target.src;
+        const readableSource = source && !source.startsWith("data:") ? `: ${source}` : "";
+        return `Image load failed during scene capture${readableSource}.`;
+      }
+      return `Browser resource load failed during scene capture (${error.type || "unknown event"}).`;
+    }
+
+    const errorLike = error as { name?: unknown; message?: unknown; stack?: unknown; cause?: unknown };
+    const name = typeof errorLike.name === "string" ? errorLike.name : "";
+    const message = typeof errorLike.message === "string" ? errorLike.message.trim() : "";
+    if (message) return name && name !== "Error" ? `${name}: ${message}` : message;
+
+    if (errorLike.cause && errorLike.cause !== error) {
+      const causeMessage = getErrorMessage(errorLike.cause);
+      if (causeMessage && causeMessage !== "Unknown error object.") return causeMessage;
+    }
+
+    const ownKeys = Reflect.ownKeys(error).map(String);
+    const constructorName = Object.getPrototypeOf(error)?.constructor?.name;
+    if (ownKeys.length > 0) return `${name || constructorName || "Error object"} (fields: ${ownKeys.join(", ")})`;
+    return `${name || constructorName || "Error object"} without a readable message`;
+  }
+
+  return error == null ? "Unknown rendering error." : String(error);
+}
+
 function parseUrlLines(value: string) {
   const seen = new Set<string>();
 
@@ -274,6 +311,7 @@ function parseUrlLines(value: string) {
 }
 
 export function ExpressVideoGenerationWorkspace() {
+  const [renderMode, setRenderMode] = useState<"server" | "browser">("server");
   const [urlInput, setUrlInput] = useState("");
   const [status, setStatus] = useState<BatchStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("Waiting for URLs");
@@ -493,6 +531,9 @@ export function ExpressVideoGenerationWorkspace() {
       return;
     }
 
+    let activeFileName: string | null = null;
+    let activeStage = "starting batch";
+
     try {
       resetDownload();
       const files: ZipEntry[] = [];
@@ -502,6 +543,7 @@ export function ExpressVideoGenerationWorkspace() {
         const current = index + 1;
         const renderPayload = applyPreparedProjectEdits(project);
         const fileName = getUniqueFileName(toSafeVideoFileName(renderPayload.projectName), usedNames);
+        activeFileName = fileName;
 
         updateFromProgress({
           phase: "rendering",
@@ -513,18 +555,38 @@ export function ExpressVideoGenerationWorkspace() {
           message: `Rendering ${current}/${urls.length}: ${fileName}. Keep this tab open.`,
         });
 
-        const response = await fetch("/api/mobile-video/render", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(renderPayload),
-        });
+        if (renderMode === "browser") {
+          activeStage = "rendering in this browser";
+          const result = await exportSlidesToVideo(
+            renderPayload.scenes,
+            renderPayload.exportSettings,
+            (renderProgress) => {
+              const percent = Math.round(renderProgress * 100);
+              setStatusMessage(`Rendering ${current}/${urls.length}: ${fileName} (${percent}%) on this device`);
+            },
+            renderPayload.projectName,
+          );
+          try {
+            activeStage = "adding the rendered video to the ZIP";
+            files.push({ name: fileName, data: new Uint8Array(await result.blob.arrayBuffer()) });
+          } finally {
+            URL.revokeObjectURL(result.url);
+          }
+        } else {
+          activeStage = "requesting server render";
+          const response = await fetch("/api/mobile-video/render", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(renderPayload),
+          });
 
-        if (!response.ok) {
-          throw new Error(await readRenderError(response));
+          if (!response.ok) {
+            throw new Error(await readRenderError(response));
+          }
+
+          const videoBuffer = await response.arrayBuffer();
+          files.push({ name: fileName, data: new Uint8Array(videoBuffer) });
         }
-
-        const videoBuffer = await response.arrayBuffer();
-        files.push({ name: fileName, data: new Uint8Array(videoBuffer) });
 
         updateFromProgress({
           phase: "rendering",
@@ -547,6 +609,7 @@ export function ExpressVideoGenerationWorkspace() {
         message: `Preparing ZIP archive with ${files.length} video${files.length === 1 ? "" : "s"}.`,
       });
 
+      activeStage = "building the ZIP archive";
       const archiveBlob = createZipBlob(files);
       const archiveUrl = URL.createObjectURL(archiveBlob);
       setDownloadHref(archiveUrl);
@@ -561,7 +624,11 @@ export function ExpressVideoGenerationWorkspace() {
         message: `Done ${urls.length}/${urls.length}. ZIP is ready.`,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not generate the video batch.";
+      const errorMessage = getErrorMessage(error);
+      const message = activeFileName
+        ? `Failed while ${activeStage} for ${activeFileName}: ${errorMessage}`
+        : `Failed while ${activeStage}: ${errorMessage}`;
+      console.error(`[express-video-generation] ${message}`);
       setStatus("error");
       setStatusMessage(message);
       setProgress((currentProgress) => ({
@@ -798,6 +865,35 @@ export function ExpressVideoGenerationWorkspace() {
                   );
                 })}
               </div>
+            ) : null}
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-xs font-medium text-slate-400">Render videos on</span>
+              <div role="group" aria-label="Choose where to render express videos" className="inline-flex w-fit items-center gap-1 rounded-lg border border-white/10 bg-slate-950/70 p-1">
+                <button
+                  type="button"
+                  aria-pressed={renderMode === "server"}
+                  disabled={isRunning}
+                  onClick={() => setRenderMode("server")}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-60 ${renderMode === "server" ? "bg-white/15 text-white" : "text-slate-400 hover:text-white"}`}
+                >
+                  Server
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={renderMode === "browser"}
+                  disabled={isRunning}
+                  onClick={() => setRenderMode("browser")}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-60 ${renderMode === "browser" ? "bg-sky-400/20 text-sky-200" : "text-slate-400 hover:text-white"}`}
+                >
+                  This device
+                </button>
+              </div>
+            </div>
+            {renderMode === "browser" ? (
+              <p className="mt-2 text-xs leading-5 text-amber-200/75">
+                Videos render sequentially in this tab. A batch of 15 may use substantial device memory; keep this tab open until the ZIP is ready.
+              </p>
             ) : null}
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

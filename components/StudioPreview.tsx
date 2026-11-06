@@ -55,6 +55,8 @@ type StudioPreviewProps = {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  exportMode: "browser" | "remotion-server";
+  onExportModeChange: (mode: "browser" | "remotion-server") => void;
   onExport: () => void;
   onTogglePlayback: () => void;
   onUpdateScene: (id: string, updates: Partial<Omit<Scene, "id" | "type">>) => void;
@@ -120,6 +122,8 @@ export function StudioPreview({
   onRedo,
   canUndo,
   canRedo,
+  exportMode,
+  onExportModeChange,
   onExport,
   onTogglePlayback,
   onUpdateScene,
@@ -257,6 +261,26 @@ export function StudioPreview({
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-start xl:flex-[0_1_auto] xl:flex-nowrap xl:justify-end">
+            <div role="group" aria-label="Choose where to render the video" className="col-span-2 flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.04] p-1 sm:col-span-1">
+              <button
+                type="button"
+                aria-pressed={exportMode === "remotion-server"}
+                disabled={isExporting}
+                onClick={() => onExportModeChange("remotion-server")}
+                className={`rounded-lg px-2 py-1.5 text-xs font-medium transition disabled:opacity-60 ${exportMode === "remotion-server" ? "bg-white/15 text-white" : "text-slate-400 hover:text-white"}`}
+              >
+                Server
+              </button>
+              <button
+                type="button"
+                aria-pressed={exportMode === "browser"}
+                disabled={isExporting}
+                onClick={() => onExportModeChange("browser")}
+                className={`rounded-lg px-2 py-1.5 text-xs font-medium transition disabled:opacity-60 ${exportMode === "browser" ? "bg-sky-400/20 text-sky-200" : "text-slate-400 hover:text-white"}`}
+              >
+                This device
+              </button>
+            </div>
             {downloadUrl ? (
               <a
                 href={downloadUrl}

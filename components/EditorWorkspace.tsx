@@ -85,6 +85,7 @@ export function EditorWorkspace({
   const restoreWorkspaceState = useStore((state) => state.restoreWorkspaceState);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [activeExportMode, setActiveExportMode] = useState<"browser" | "remotion-server">(exportMode);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState("video-project.mp4");
   const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
@@ -456,16 +457,16 @@ export function EditorWorkspace({
 
     try {
       setIsExporting(true);
-      setExportProgress(exportMode === "remotion-server" ? 0.1 : 0);
-      setCloudStatus(exportMode === "remotion-server" ? "Rendering video on the server..." : "Exporting video...");
+      setExportProgress(activeExportMode === "remotion-server" ? 0.1 : 0);
+      setCloudStatus(activeExportMode === "remotion-server" ? "Rendering video on the server..." : "Rendering video in your browser...");
       resetDownload();
 
       const result =
-        exportMode === "remotion-server"
+        activeExportMode === "remotion-server"
           ? await exportMobileVideo(createMobileVideoRenderPayload(projectName, scenes, exportSettings))
           : await exportSlidesToVideo(scenes, exportSettings, setExportProgress, projectName);
 
-      if (exportMode === "remotion-server") {
+      if (activeExportMode === "remotion-server") {
         setExportProgress(1);
       }
 
@@ -808,6 +809,8 @@ export function EditorWorkspace({
               onRedo={handleRedo}
               canUndo={canUndo}
               canRedo={canRedo}
+              exportMode={activeExportMode}
+              onExportModeChange={setActiveExportMode}
               onExport={handleExport}
               onTogglePlayback={togglePlayback}
               onUpdateScene={handlePreviewSceneUpdate}
